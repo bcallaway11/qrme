@@ -1,0 +1,9 @@
+Package: qrme
+Title: Quantile Regression with Measurement Error
+Version: 1.0.0
+Authors@R: c(person("Callaway", "Brantly", email = "brantly.callaway@temple.edu", role = c("aut", "cre")), person("Li", "Tong", email="tong.li@vanderbilt.edu", role="aut"), person("Murtazashvili", "Irina", email="im99@drexel.edu", role="aut"))
+Description: What the package does (one paragraph).
+Depends: R (>= 3.4.4)
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
