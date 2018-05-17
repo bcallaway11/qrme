@@ -4,7 +4,7 @@
 \alias{getParams}
 \title{getParams}
 \usage{
-getParams(optout, ksig)
+getParams(optout, formla, data, tau, nmix)
 }
 \arguments{
 \item{optout}{results of call to optim}

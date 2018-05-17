@@ -4,12 +4,14 @@
 \alias{parms2coppar}
 \title{parms2coppar}
 \usage{
-parms2coppar(params, copula = "gumbel")
+parms2coppar(params, copula = "gumbel", x)
 }
 \arguments{
 \item{params}{a vector of parameters}
 
 \item{copula}{the type of copula, should be supported by cop.pdf}
+
+\item{x}{a matrix of values of x}
 }
 \value{
 a vector of copula parameters

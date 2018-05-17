@@ -4,7 +4,7 @@
 \alias{cop.pdf}
 \title{cop.pdf}
 \usage{
-cop.pdf(u, v, type = "gumbel", delt)
+cop.pdf(u, v, type = "gumbel", delt, eps = 1e-300)
 }
 \arguments{
 \item{u}{first copula argument (u and v can be vectors)}

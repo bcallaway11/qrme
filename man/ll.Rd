@@ -5,7 +5,7 @@
 \title{ll}
 \usage{
 ll(params, y, t, x, copula = "gumbel", Fyx, Ftx, fyx, ftx, Upi, Umu, Usig,
-  Vpi, Vmu, Vsig, ndraws = 100)
+  Vpi, Vmu, Vsig, ndraws = 100, eps = 1e-300)
 }
 \arguments{
 \item{params}{a value of the parameters to calculate the log likelihood for}

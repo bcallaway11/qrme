@@ -4,7 +4,7 @@
 \alias{makeRQS}
 \title{makeRQS}
 \usage{
-makeRQS(optout)
+makeRQS(params, formla, data)
 }
 \arguments{
 \item{optout}{results of call to optim}
