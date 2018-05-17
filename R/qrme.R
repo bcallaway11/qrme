@@ -11,7 +11,7 @@
 #' @return vector of copula pdf values
 #'
 #' @export
-cop.pdf <- function(u,v,type="gumbel",delt) {
+cop.pdf <- function(u,v,type="gumbel",delt,eps=1e-300) {
     if ( !(all(0 < u) & all(u < 1)) | !(all(0 < v) & all(v < 1))) {
         stop("u and v must be between 0 and 1")
     }
@@ -25,6 +25,7 @@ cop.pdf <- function(u,v,type="gumbel",delt) {
     } else {
         stop(paste0("copula: ", type, " not supported"))
     }
+    out <- max(out, eps)
     return(out)
 }
 
@@ -50,7 +51,7 @@ cop.pdf <- function(u,v,type="gumbel",delt) {
 #' @return scalar negative value of log likelihood function
 #'
 #' @export
-ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx, Upi, Umu, Usig, Vpi, Vmu, Vsig, ndraws=100) {
+ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx, Upi, Umu, Usig, Vpi, Vmu, Vsig, ndraws=100, eps=1e-300) {
     k <- length(params)
     params <- as.matrix(params)
     x <- as.matrix(x)
@@ -60,6 +61,7 @@ ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx, Upi, Umu, U
     } else if (copula == "frank") {
         delt <- x%*%params
     }
+    ## make draws from the mixture distribution
     ksig <- length(Usig)
     Ucomponents <- sample(1:ksig, ndraws, replace=TRUE, prob=Upi)
     Us <- rnorm(ndraws, Umu[Ucomponents], Usig[Ucomponents])
@@ -67,9 +69,10 @@ ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx, Upi, Umu, U
     Vs <- rnorm(ndraws, Vmu[Vcomponents], Vsig[Vcomponents])
 
     lval <- sapply(1:n, function(i) {
-        mean(cop.pdf(Fyx[[i]](y[i] - Us), Ftx[[i]](t[i] - Vs), type=copula,
+        max( mean(cop.pdf(Fyx[[i]](y[i] - Us), Ftx[[i]](t[i] - Vs), type=copula,
                 delt=delt[i]) *
-            fyx[[i]](y[i] - Us) * ftx[[i]](t[i] - Vs))
+                fyx[[i]](y[i] - Us) * ftx[[i]](t[i] - Vs)), eps) ## here, eps
+        ## avoids this being exactly equal to 0
         })
     -sum(log(lval))
 }
@@ -122,7 +125,53 @@ llme <- function(params, y, x, tau, ksig, kmu=(ksig-1)) {
     ll <- log(apply(fu, 1, sum)) ## p. 29 in hausman, liu, luo, palmer
 
     return(-sum(ll)) ## for maximization 
-    
+}
+
+#' @title qrme
+#'
+#' @description Quantile Regression with measurement error in the dependent
+#'  variable using the approach in Hausman, Liu, Luo, and Palmer (2016)
+#'
+#' @param formla y ~ x
+#' @param tau vector for which quantiles to compute quantile regression
+qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, startsig=NULL, startpi=NULL, method="BFGS", maxit=1000) {
+    xformla <- formla
+    xformla[[2]] <- NULL ## drop y variable
+    x <- model.matrix(xformla, data)
+    yname <- as.character(formla[[2]])
+    y <- data[,yname]
+    k <- ncol(x) ## number of x variables
+    m <- nmix
+    if (is.null(startbet)) {
+        ## this defaults the start values of the beta_0 to be
+        ## the observed quantiles of the outcome and the other
+        ## betas to be equal to 0
+        betvals <- unlist(lapply(1:length(tau), function(i) c(quantile(dta$lincF, probs=tau[i], type=1), rep(0, (k-1)))))
+    } else {
+        betvals <- startbet
+    }
+    if (is.null(startmu)) {
+        muvals <- seq(-1, by=1, length.out=(m-1))
+    } else {
+        muvals <- startmu
+    }
+    if (is.null(startsig)) {
+        sigvals <- rep(1,m)
+    } else {
+        sigvals <- startsig
+    }
+    if (is.null(startpi)) {
+        pivals <- rep(1/m, (m-1))
+    } else {
+        pivals <- startpi
+    }
+    qrparams <- c(betvals, pivals, muvals, sigvals)
+
+    out <- optim(qrparams, llme, method=method, y=y, x=x, tau=tau, ksig=m, control=list(maxit=maxit))
+
+    params <- getParams(out, formla, data, tau, nmix)
+
+    makeRQS(params, formla, data)
 }
 
 #' @title getParams
@@ -136,16 +185,18 @@ llme <- function(params, y, x, tau, ksig, kmu=(ksig-1)) {
 #' @return list of parameters
 #'
 #' @export
-getParams <- function(optout, ksig) {
-    x <- as.matrix(x)
+getParams <- function(optout, formla, data, tau, nmix) {
+    xformla <- formla
+    xformla[[2]] <- NULL ## drop y variable
+    x <- model.matrix(xformla, data)
     kx <- ncol(x)*length(tau)
     bet <- optout$par[1:kx]
     k <- kx/length(tau)
     n <- nrow(x)
     ktau <- length(tau)
     bet <- split(bet,ceiling(seq_along(bet)/k))
-    kmu <- ksig-1
-    if (ksig > 1) {
+    kmu <- nmix-1
+    if (nmix > 1) {
         pi1 <- optout$par[(kx+1):(kx+kmu)]
         mu1 <- optout$par[(kx+kmu+1):(kx+kmu+kmu)]
         pi <- c(pi1, 1-sum(pi1))
@@ -154,8 +205,11 @@ getParams <- function(optout, ksig) {
         pi <- 1
         mu <- 0
     }
+    ksig <- nmix
     sig <- optout$par[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
-    list(bet=bet, pi=pi, mu=mu, sig=sig)
+    out <- list(bet=bet, pi=pi, mu=mu, sig=sig)
+    class(out) <- "PARAM"
+    out
 }
 
 #' @title makeRQS
@@ -176,12 +230,16 @@ getParams <- function(optout, ksig) {
 #' @return rqs object
 #'
 #' @export
-makeRQS <- function(optout) {
+makeRQS <- function(params, formla, data) {
+    xformla <- formla
+    xformla[[2]] <- NULL ## drop y variable
+    x <- model.matrix(xformla, data)
+    optout <- list()
     class(optout) <- "rqs"
-    optout$terms <- qrfout$terms ## some of this needs to be "more general"
-    optout$formula <- lincS ~ ageF + ageS ## here too
-    bet1 <- optout$par[1:length(betvals)]
-    bet <- split(bet1,ceiling(seq_along(bet1)/k))
+    optout$terms <- terms(formla)
+    optout$formula <- formla
+    bet <- params$bet
+    ##bet <- split(bet1,ceiling(seq_along(bet1)/k))
     ## rearrangement (as in HLLP though double check)
     barx <- apply(x, 2, mean)
     betorder <- order(sapply(bet, function(b) sum(b*barx)))
@@ -189,6 +247,7 @@ makeRQS <- function(optout) {
     bet <- bet[betorder,]
     optout$coefficients <- t(bet)
     optout$tau <- tau
+    optout$params <- params
     optout
 }
 
@@ -203,7 +262,11 @@ makeRQS <- function(optout) {
 #' @return a vector of copula parameters
 #'
 #' @export
-parms2coppar <- function(params, copula="gumbel") {
+parms2coppar <- function(params, copula="gumbel",x) {
+    x <- as.matrix(x)
+    if (ncol(x)==1) {
+        x <- t(x)
+    }
     if (copula=="gumbel") {
         deltx <- 1 + exp(x%*%params)
     } else if (copula=="frank") {
@@ -212,4 +275,79 @@ parms2coppar <- function(params, copula="gumbel") {
         stop( paste0("copula ", copula, " not supported") )
     }
     deltx
+}
+
+
+qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
+                  copula="gumbel", Qyx, Qtx,
+                  Fyx, Ftx, fyx, ftx, Upi, Umu, Usig, Vpi, Vmu, Vsig,
+                  startparams=NULL, method="BFGS", maxit=1000) {
+    x <- model.matrix(xformla, data)
+    if (is.null(startparams)) {
+        startparams <- rep(0, ncol(x))
+    }
+
+    browser()
+    ll(startparams, data[,yname], data[,tname], x=x, copula=copula,
+       Fyx=Fyx, Ftx=Ftx, fyx=fyx, ftx=ftx, Upi=Upi, Umu=Umu, Usig=Usig,
+       Vpi=Vpi, Vmu=Vmu, Vsig=Vsig)
+
+
+    res <- optim(startparams, ll, method=method,
+                 y=data[,yname], t=data[,tname], x=x, copula=copula,
+                 Fyx=Fyx, Ftx=Ftx, fyx=fyx, ftx=ftx,
+                 Upi=Upi, Umu=Umu, Usig=Usig,
+                 Vpi=Upi, Vmu=Umu, Vsig=Usig,
+                 control=list(maxit=maxit))
+
+    if (!is.null(xdf)) {
+ 
+        ##xtdf <- cbind(tvals, xdf)
+        ## todo, this gives the copula, now convert to conditional distribution
+        U <- runif(ndraws)
+        delt <- parms2coppar(res$par, copula, xdf)
+        ##tvals <- quantile(data[,tname], tau, type=1)
+        yvals <- unique(data[,yname]) ##quantile(data[,yname], tau, type=1)
+        yvals <- yvals[order(yvals)]
+        QQyx <- predict( Qyx, newdata=as.data.frame(rbind(xdf,x[1,])), stepfun=TRUE)  ## super hack:  but predict.rqs is throwing an error that I think it shouldn't, and this gets around it.
+        QQyx <- QQyx[-length(QQyx)]
+        QQyx <- lapply(QQyx, rearrange)
+        FFtx <- predict(Qtx, newdata=as.data.frame(rbind(xdf, x[1,])),
+                        type="Fhat", stepfun=TRUE)
+        FFtx <- FFtx[-length(FFtx)]
+        FFtx <- lapply(FFtx, rearrange)
+    
+        Fytx <- lapply(tvals, function(tt) {
+            pblapply(1:length(QQyx), function(i) {
+                qfun <- QQyx[[i]]
+                ffun <- FFtx[[i]]
+                BMisc::makeDist(yvals, sapply(yvals, function(yy) {
+                    if (copula=="frank") {
+                        cop <- copula::frankCopula(as.numeric(delt[i]))
+                    } else if (copula=="gumbel") {
+                        cop <- copula::gumbelCopula(as.numeric(delt[i]))
+                    } else {
+                        stop(paste0("copula type:", copula, " is not supported"))
+                    }
+                    mean(1*(qfun(U)<=yy)*dCopula(cbind(U, ffun(tt)), cop))
+                }))
+            }, cl=4) ## might want to make this a function with makeRQS (modified) or makeDist eventually
+        })
+        ##Qytx <- lapply(Fytx, function(FF) quantile(FF, tau, type=1))
+
+        Fyt <- lapply(Fytx, function(FFytx) {
+            combineDfs(yvals, FFytx)
+        })
+
+        out <- Fyt
+        
+        ##QytxOut <- list(Qytx=Qytx, x=xdf, t=tvals, tau=tau, delt=delt)
+
+### only do above if you want the results for a particular value of t and x;
+    ### otherwise can just return all results 
+    } else {
+        out <- parms2coppar(res$par, copula=copula, x=x) 
+    }
+
+    return(out)
 }
