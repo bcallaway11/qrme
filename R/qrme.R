@@ -279,20 +279,32 @@ parms2coppar <- function(params, copula="gumbel",x) {
 
 
 qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
-                  copula="gumbel", Qyx, Qtx,
-                  Fyx, Ftx, fyx, ftx, Upi, Umu, Usig, Vpi, Vmu, Vsig,
-                  startparams=NULL, method="BFGS", maxit=1000) {
+                  copula="gumbel", Qyx, Qtx, Upi, Umu, Usig, Vpi, Vmu, Vsig,
+                  startparams=NULL, method="BFGS", maxit=1000, ndraws=1000) {
+
+    cat("\nqr2me method...")
+    cat("\nCite: Callaway, Brantly, Tong Li, and Irina Murtazashvili (2018)...")
     x <- model.matrix(xformla, data)
     if (is.null(startparams)) {
         startparams <- rep(0, ncol(x))
     }
 
-    browser()
-    ll(startparams, data[,yname], data[,tname], x=x, copula=copula,
-       Fyx=Fyx, Ftx=Ftx, fyx=fyx, ftx=ftx, Upi=Upi, Umu=Umu, Usig=Usig,
-       Vpi=Vpi, Vmu=Vmu, Vsig=Vsig)
+    Fyx <- predict(Qyx, newdata=as.data.frame(x), type="Fhat", stepfun=TRUE)
+    Ftx <- predict(Qtx, newdata=as.data.frame(x), type="Fhat", stepfun=TRUE)
+
+    Fyx <- lapply(Fyx, rearrange)
+    Ftx <- lapply(Ftx, rearrange)
+
+    fyx <- predict(Qyx, newdata=as.data.frame(x), type="fhat")
+    ftx <- predict(Qyx, newdata=as.data.frame(x), type="fhat")
+
+    
+    ##ll(startparams, data[,yname], data[,tname], x=x, copula=copula,
+    ##   Fyx=Fyx, Ftx=Ftx, fyx=fyx, ftx=ftx, Upi=Upi, Umu=Umu, Usig=Usig,
+    ##   Vpi=Vpi, Vmu=Vmu, Vsig=Vsig)
 
 
+    cat("\nStep 1 of 2: Estimating copula parameter...")
     res <- optim(startparams, ll, method=method,
                  y=data[,yname], t=data[,tname], x=x, copula=copula,
                  Fyx=Fyx, Ftx=Ftx, fyx=fyx, ftx=ftx,
@@ -300,27 +312,30 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
                  Vpi=Upi, Vmu=Umu, Vsig=Usig,
                  control=list(maxit=maxit))
 
-    if (!is.null(xdf)) {
+    if (!is.null(tvals)) {
+
+        if (is.null(xdf)) xdf <- x
  
         ##xtdf <- cbind(tvals, xdf)
         ## todo, this gives the copula, now convert to conditional distribution
         U <- runif(ndraws)
         delt <- parms2coppar(res$par, copula, xdf)
         ##tvals <- quantile(data[,tname], tau, type=1)
-        yvals <- unique(data[,yname]) ##quantile(data[,yname], tau, type=1)
+        yvals <- quantile(data[,yname], seq(.01,.99,.01)) ## could also take all unique yvals or let user pass them all in
         yvals <- yvals[order(yvals)]
         QQyx <- predict( Qyx, newdata=as.data.frame(rbind(xdf,x[1,])), stepfun=TRUE)  ## super hack:  but predict.rqs is throwing an error that I think it shouldn't, and this gets around it.
         QQyx <- QQyx[-length(QQyx)]
         QQyx <- lapply(QQyx, rearrange)
-        FFtx <- predict(Qtx, newdata=as.data.frame(rbind(xdf, x[1,])),
+        Ftx <- predict(Qtx, newdata=as.data.frame(rbind(xdf, x[1,])),
                         type="Fhat", stepfun=TRUE)
-        FFtx <- FFtx[-length(FFtx)]
-        FFtx <- lapply(FFtx, rearrange)
-    
-        Fytx <- lapply(tvals, function(tt) {
-            pblapply(1:length(QQyx), function(i) {
-                qfun <- QQyx[[i]]
-                ffun <- FFtx[[i]]
+        Ftx <- Ftx[-length(Ftx)]
+        Ftx <- lapply(Ftx, rearrange)
+
+        cat("\nStep 2 of 2: Building conditional distributions...\n")
+        Fytx <- pblapply(1:length(QQyx), function(i) {
+            qfun <- QQyx[[i]]
+            ffun <- Ftx[[i]]
+            lapply(tvals, function(tt) {
                 BMisc::makeDist(yvals, sapply(yvals, function(yy) {
                     if (copula=="frank") {
                         cop <- copula::frankCopula(as.numeric(delt[i]))
@@ -331,15 +346,37 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
                     }
                     mean(1*(qfun(U)<=yy)*dCopula(cbind(U, ffun(tt)), cop))
                 }))
-            }, cl=4) ## might want to make this a function with makeRQS (modified) or makeDist eventually
-        })
+            }) ## might want to make this a function with makeRQS (modified) or makeDist eventually
+        }, cl=4)
         ##Qytx <- lapply(Fytx, function(FF) quantile(FF, tau, type=1))
+
+        ## next we want to reverse the list
+        reverseListIndex <- function(l) {
+            outlist <- list()
+            length(outlist) <- length(l[[1]])
+            outlist <- lapply(outlist, function(f) {
+                g <- list()
+                length(g) <- length(l)
+                g
+            })
+        
+            for (i in 1:length(l)) {
+                for (j in 1:length(l[[1]])) {
+                    outlist[[j]][[i]] <- l[[i]][[j]]
+                }
+            }
+            outlist
+        }
+
+        Fytx <- reverseListIndex(Fytx)
+            
 
         Fyt <- lapply(Fytx, function(FFytx) {
             combineDfs(yvals, FFytx)
         })
 
-        out <- Fyt
+        out <- list(parms=parms2coppar(res$par, copula=copula, x=x),
+                    Fyt=Fyt, Fytxlist=Fytx)
         
         ##QytxOut <- list(Qytx=Qytx, x=xdf, t=tvals, tau=tau, delt=delt)
 
