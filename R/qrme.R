@@ -71,7 +71,7 @@ ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx, Us, Vs, ndr
     ## } else if (copula == "gaussian") {
     ##     delt <- 2 * exp(x%*%params) / (1 + exp(x%*%params)) - 1
     ## }
-    
+
     lval <- sapply(1:n, function(i) {
         max(
             mean(
@@ -119,6 +119,15 @@ llme <- function(params, y, x, tau, ksig, kmu=(ksig-1)) {
     }
 
     sig <- params[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
+
+    ## just testing things out, delete these
+    ## sig <- 1
+    ## bet <- lapply(1:length(tau), function(i) {
+    ##     b <- bet[[i]]
+    ##     b[1] <- b0Y(tau[i])
+    ##     b})
+    ##
+    
     u <- lapply(bet, function(b) {
         b <- as.matrix(b)
         y - x%*%b
@@ -197,7 +206,7 @@ llme.gr <- function(params, y, x, tau, ksig, kmu=(ksig-1)) {
 
         p2a <- simplify2array(lapply(u, function(uu) {
             sapply(1:ksig, function(i) {
-                pi[i]/sig[i] * (uu - mu[i] / sig[i]) * dnorm( (uu - mu[i]) / sig[i] )
+                pi[i]/sig[i] * (uu - mu[i] / sig[i]^2) * dnorm( (uu - mu[i]) / sig[i] )
             })
         }))
         p2 <- apply(p2a, c(1,2), sum) ## integration step, should be nxksig
@@ -216,7 +225,7 @@ llme.gr <- function(params, y, x, tau, ksig, kmu=(ksig-1)) {
 
         p2b <- simplify2array(lapply(u, function(uu) {
             sapply(1:ksig, function(i) {
-                pi[i]/sig[i] * (uu - mu[i])^2 / sig[i]^3 * dnorm( (uu - mu[i]) / sig[i] )
+                1/sig[i] * (uu - mu[i])^2 / sig[i]^3 * dnorm( (uu - mu[i]) / sig[i] )
             })
         }))
 
@@ -307,27 +316,31 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
 
 
     ## implement constraints that variance is positive and weights are postive
-    cst <- c(rep(.01, length(pivals)),
-             -.99, ## thisone is so that 1-pi1-pi2>= .01
-             rep(.01, length(sigvals)))
+    cst <- NULL
+    ust <- NULL
+    if (nmix > 1) {
+        cst <- c(rep(.01, length(pivals)),
+                 -.99, ## thisone is so that 1-pi1-pi2>= .01
+                 rep(.01, length(sigvals)))
 
-    u1 <- rep(0, length(qrparams))
+        u1 <- rep(0, length(qrparams))
 
-    ust <- t(simplify2array(c(lapply(1:length(pivals), function(i) {
-        u2 <- u1
-        u2[length(betvals)+i] <- 1
-        u2
-    }), lapply(length(pivals), function(l) {
-        u2 <- u1
-        for (i in 1:l) {
-            u2[length(betvals)+i] <- -1
-        }
-        u2
-    }), lapply(1:length(sigvals), function(i) {
-        u2 <- u1
-        u2[length(betvals) + length(pivals) + length(muvals) + i] <- 1
-        u2
-    }))))
+        ust <- t(simplify2array(c(lapply(1:length(pivals), function(i) {
+            u2 <- u1
+            u2[length(betvals)+i] <- 1
+            u2
+        }), lapply(length(pivals), function(l) {
+            u2 <- u1
+            for (i in 1:l) {
+                u2[length(betvals)+i] <- -1
+            }
+            u2
+        }), lapply(1:length(sigvals), function(i) {
+            u2 <- u1
+            u2[length(betvals) + length(pivals) + length(muvals) + i] <- 1
+            u2
+        }))))
+    }
     
              
     
@@ -338,15 +351,16 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
     ##         rep(Inf, length(muvals)), rep(Inf, length(sigvals)))
 
     ## problem looks like it is in gradient for the mu, pi, or sigma...
-
-    ##out <- optim(qrparams, llme, gr=llme.gr, method="L-BFGS-B",
-    ##             y=y, x=x, tau=tau, ksig=m,
-    ##             lower=lb, upper=ub,
-    ##             control=list(maxit=maxit, trace=6))
-
-    res <- constrOptim(qrparams, llme, llme.gr, ust, cst,
-                       y=y, x=x, tau=tau, ksig=m,
-                       control=list(maxit=maxit, trace=6))
+    
+    if (nmix == 1) {
+        res <- optim(qrparams, llme, gr=llme.gr, method="BFGS",
+                     y=y, x=x, tau=tau, ksig=m,
+                     control=list(maxit=maxit, trace=6))
+    } else {
+        res <- constrOptim(qrparams, llme, llme.gr, ust, cst,
+                           y=y, x=x, tau=tau, ksig=m,
+                           control=list(maxit=maxit, trace=6))
+    }
     
     params <- getParams(res, formla, data, tau, nmix)
 
@@ -355,17 +369,20 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
     class(out) <- c("merr", class(out))
     
     out$params <- res$par
-    idx <- length(betvals)+1
-    nidx <- length(betvals)+length(pivals)
-    pi1 <- res$par[idx:nidx]
-    out$pi <- c(pi1, 1-sum(pi1))
-    idx <- nidx+1
-    nidx <- nidx+length(muvals)
-    mu1 <- res$par[idx:nidx]
-    out$mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
-    idx <- nidx+1
-    nidx <- nidx+length(sigvals)
-    out$sig <- res$par[idx:nidx]
+    ## idx <- length(betvals)+1
+    ## nidx <- length(betvals)+length(pivals)
+    ## pi1 <- res$par[idx:nidx]
+    ## out$pi <- c(pi1, 1-sum(pi1))
+    ## idx <- nidx+1
+    ## nidx <- nidx+length(muvals)
+    ## mu1 <- res$par[idx:nidx]
+    ## out$mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
+    ## idx <- nidx+1
+    ## nidx <- nidx+length(sigvals)
+    ## out$sig <- res$par[idx:nidx]
+    out$pi <- params$pi
+    out$mu <- params$mu
+    out$sig <- params$sig
 
     out
 }
@@ -386,15 +403,20 @@ getParams <- function(optout, formla, data, tau, nmix) {
     xformla[[2]] <- NULL ## drop y variable
     x <- model.matrix(xformla, data)
     kx <- ncol(x)*length(tau)
-    bet <- optout$par[1:kx]
+    if (class(optout) == "numeric") {
+        par <- optout
+    } else { ## output of optim
+        par <- optout$par
+    }
+    bet <- par[1:kx]
     k <- kx/length(tau)
     n <- nrow(x)
     ktau <- length(tau)
     bet <- split(bet,ceiling(seq_along(bet)/k))
     kmu <- nmix-1
     if (nmix > 1) {
-        pi1 <- optout$par[(kx+1):(kx+kmu)]
-        mu1 <- optout$par[(kx+kmu+1):(kx+kmu+kmu)]
+        pi1 <- par[(kx+1):(kx+kmu)]
+        mu1 <- par[(kx+kmu+1):(kx+kmu+kmu)]
         pi <- c(pi1, 1-sum(pi1))
         mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
     } else {
@@ -402,7 +424,7 @@ getParams <- function(optout, formla, data, tau, nmix) {
         mu <- 0
     }
     ksig <- nmix
-    sig <- optout$par[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
+    sig <- par[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
     out <- list(bet=bet, pi=pi, mu=mu, sig=sig)
     class(out) <- "PARAM"
     out
@@ -504,7 +526,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
     cat("\nqr2me method...\n")
     cat("----------------------")
-    cat("\nCitation: Callaway, Brantly, Tong Li, and Irina Murtazashvili, Quantile Treatment Effects with Two-Sided Measurement Error, 2018....\n")
+    cat("\nCitation: Callaway, Brantly, Tong Li, and Irina Murtazashvili, Quantile Treatment Effects with Two-Sided Measurement Error, Working Paper, 2018....\n")
     cat("----------------------")
     cat("\n")
     x <- model.matrix(xformla, data)
@@ -571,13 +593,13 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
         U <- seq(0,1,length.out=ndraws)
         if (copula=="frank") {
-            cop <- copula::frankCopula(as.numeric(delt[i]))
+            cop <- copula::frankCopula(as.numeric(delt[1])) ## all delts restricted to be the same so just choose first one
         } else if (copula=="gumbel") {
-            cop <- copula::gumbelCopula(as.numeric(delt[i]))
+            cop <- copula::gumbelCopula(as.numeric(delt[1]))
         } else if (copula=="clayton") {
-            cop <- copula::claytonCopula(as.numeric(delt[i]))
+            cop <- copula::claytonCopula(as.numeric(delt[1]))
         } else if (copula=="gaussian") {
-            cop <- copula::normalCopula(as.numeric(delt[i]))
+            cop <- copula::normalCopula(as.numeric(delt[1]))
         } else {
             stop(paste0("copula type:", copula, " is not supported"))
         }
@@ -686,4 +708,426 @@ print.merr <- function(obj) {
     rownames(U) <- sapply(1:nrow(U), function(i) paste0("Comp. ",i))
     colnames(U) <- c("Prob.", "Mean", "Variance")
     print(U)    
+}
+
+getListElement <- function(listolists, whichone=1) {
+    lapply(listolists, function(l) l[[whichone]])
+}
+
+plot.qr2meobj <- function(obj, whichone=1, tau=c(.1,.5,.9), ylim=NULL) {
+    qq <- t(sapply(getListElement(obj$Fytxlist, whichone),
+                   function(FF) quantile(FF, probs=tau)))
+    tvals <- obj$tvals
+    
+    cmat <- cbind.data.frame(tvals, qq)
+    colnames(cmat) <- c("tvals", paste0("c",tau*100))
+    cmat <- gather(cmat, quantile, value, -tvals)
+
+    p <- ggplot(cmat, mapping=aes(x=tvals,y=value, group=quantile, color=quantile)) +
+        geom_line() +
+        geom_point()
+
+    if (!is.null(ylim)) {
+        p <- p + scale_y_continuous(limits=ylim)
+    }
+
+    p
+}
+
+addplot <- function(obj, p, whichone=1, tau=c(.1,.5,.9)) {
+    qq <- t(sapply(getListElement(obj$Fytxlist, 1),
+                   function(FF) quantile(FF, probs=tau)))
+    cmat <- cbind.data.frame(tvals, qq)
+    colnames(cmat) <- c("tvals", paste0("c",tau*100))
+    cmat <- gather(cmat, quantile, value, -tvals)
+    p <- p + geom_line(data=cmat, mapping=aes(x=tvals, y=value, group=quantile,
+                                              color=quantile),
+                       linetype="dashed")
+    p <- p + geom_point(data=cmat, mapping=aes(x=tvals, y=value, group=quantile,
+                                               color=quantile))
+    p
+}
+
+
+qrme.alt <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, startsig=NULL, startpi=NULL, method="BFGS", maxit=1000, maxemiters=25, tol=1) {
+
+        
+    newparams <- em.alt(formla, tau, data, nmix, startbet, startmu, startsig, startpi, method, maxit)
+
+    
+
+    cval <- tol+1
+    i <- 1
+    while( (cval > tol) & (i <= maxemiters)) {
+        paramvals <- newparams
+        params <- getParams(newparams, formla, data, tau, nmix)
+        sbet <- unlist(params$bet)
+        ssig <- params$sig
+        ksig <- length(ssig)
+        smu <- params$mu[-ksig]
+        spi <- params$pi[-ksig]
+        newparams <- em.alt(formla, tau, data, nmix, sbet, smu, ssig, spi, method, maxit)
+        cval <- sum((paramvals-newparams)^2)
+        cat("iter: ", i, "\n")
+        cat("change in objective function: ", round(cval,4),"\n")
+        i <- i + 1
+        ## if (cval < tol) {
+        ##     break
+        ## }
+    }
+    
+    browser()
+    
+    out <- makeRQS(newparams, formla, data)
+
+    class(out) <- c("merr", class(out))
+    
+    out$params <- newparams
+        
+    ## idx <- length(betvals)+1
+    ## nidx <- length(betvals)+length(pivals)
+    ## pi1 <- res$par[idx:nidx]
+    ## out$pi <- c(pi1, 1-sum(pi1))
+    ## idx <- nidx+1
+    ## nidx <- nidx+length(muvals)
+    ## mu1 <- res$par[idx:nidx]
+    ## out$mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
+    ## idx <- nidx+1
+    ## nidx <- nidx+length(sigvals)
+    ## out$sig <- res$par[idx:nidx]
+    out$pi <- params$pi
+    out$mu <- params$mu
+    out$sig <- params$sig
+
+}
+
+em.alt <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, startsig=NULL, startpi=NULL, method="BFGS", maxit=1000) {
+    xformla <- formla
+    xformla[[2]] <- NULL ## drop y variable
+    x <- model.matrix(xformla, data)
+    yname <- as.character(formla[[2]])
+    y <- data[,yname]
+    k <- ncol(x) ## number of x variables
+    m <- nmix
+    if (is.null(startbet)) {
+        ## this defaults the start values of the beta_0 to be
+        ## the observed quantiles of the outcome and the other
+        ## betas to be equal to 0
+        ## betvals <- unlist(lapply(1:length(tau), function(i) c(quantile(y, probs=tau[i], type=1), rep(0, (k-1)))))
+        betvals <- c(rq(formla, tau=tau, data=data)$coefficients)
+        
+    } else {
+        betvals <- startbet
+    }
+    if (is.null(startmu)) {
+        muvals <- seq(-1, by=1, length.out=(m-1))
+    } else {
+        muvals <- startmu
+    }
+    if (is.null(startsig)) {
+        sigvals <- rep(1,m)
+    } else {
+        sigvals <- startsig
+    }
+    if (is.null(startpi)) {
+        pivals <- rep(1/m, (m-1))
+    } else {
+        pivals <- startpi
+    }
+    qrparams <- c(betvals, pivals, muvals, sigvals)
+    
+    x <- as.matrix(x)
+    kx <- ncol(x)*length(tau)
+    ksig <- nmix
+    kmu <- nmix-1
+    params <- qrparams
+    bet <- params[1:kx]
+    k <- kx/length(tau)
+    n <- nrow(x)
+    ktau <- length(tau)
+    bet <- split(bet,ceiling(seq_along(bet)/k))
+    if (kmu > 0) {
+        pi1 <- params[(kx+1):(kx+kmu)]
+        mu1 <- params[(kx+kmu+1):(kx+kmu+kmu)]
+        pi <- c(pi1, 1-sum(pi1))
+        mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
+    } else {
+        pi <- 1
+        mu <- 0
+    }
+    
+    sig <- params[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
+
+    
+    ndraws <- 100
+    ##Ucomponents <- sample(1:ksig, ndraws, replace=TRUE, prob=Upi)
+    ##Us <- rnorm(ndraws, Umu[Ucomponents], Usig[Ucomponents])
+
+    out <- list()
+    out$par <- params
+    Qyx.rqs <- makeRQS(getParams(out, formla, data, tau, 1), formla, data)
+
+    Qyx <- predict(Qyx.rqs, newdata=data, type="Qhat", stepfun=TRUE)
+    Fyx <- predict(Qyx.rqs, newdata=data, type="Fhat", stepfun=TRUE)
+    fyx <- predict(Qyx.rqs, newdata=data, type="fhat")
+    qyxi <- function(u, i) {
+        taul <- tau[max(which(tau<=u))]
+        tauu <- tau[min(which(tau>u))]
+        Qyx[[i]](taul) + (u-taul)*(Qyx[[i]](tauu) - Qyx[[i]](taul))/(tauu-taul)
+    }
+
+    fyexi <- function(y, e, i) {
+        1 / qyxi(Fyx[[i]](y - e), i)
+    }
+    
+    u <- lapply(bet, function(b) {
+        b <- as.matrix(b)
+        y - x%*%b
+    })
+
+    fe <- function(e) {
+        sum( pi * dnorm( e - mu ) / sig)
+    }
+    
+    fu <- sapply(u, function(uu) {
+        apply(sapply(1:ksig, function(i) {
+            pi[i]/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+        }), 1, sum)
+    }) ## this will contain a matrix with n rows and ktau columns
+
+    fu <- apply(fu, 1, sum)
+    
+    n <- nrow(data)
+    y <- data[,yname]
+
+    ## this is the posterior distribution
+    feyxi <- function(e, i) {
+        fyexi(y[i], e, i) * fe(e) / fu[i]
+    }
+
+    ##metropolis hastings
+    e0 <- 0
+    evec <- c()
+
+    elist <- list()
+    for (i in 1:n) {
+        for (j in 1:200) {
+            e1 <- e0 + rnorm(1)
+            fe1 <- feyxi(e1, i)
+            fe0 <- feyxi(e0, i)
+            if (fe1 > fe0) {
+                evec <- c(evec, e1)
+                e0 <- e1
+            } else {
+                u <- runif(1)
+                if (u <= fe1/fe0) {
+                    evec <- c(evec, e1)
+                    e0 <- e1
+                } else {
+                    evec <- c(evec, e0)
+                }
+            }
+        }
+        evec <- evec[101:200] ## can update these later, increase to around 1000 burn-in
+        elist[[i]] <- evec
+    }
+
+    ddf <- lapply(1:n, function(i) {
+        cbind(matrix(rep(c(y[i], x[i,]), length(elist[[i]])), nrow=length(elist[[i]]), byrow=TRUE), elist[[i]])
+    })
+
+    ddf <- do.call(rbind.data.frame, ddf)
+    colnames(ddf) <- c(yname, colnames(x), "E")
+
+    ddf$Ystar <- ddf[,yname] - ddf[,"E"]
+
+    formla[[2]] <- as.name("Ystar")
+    
+    betp <- t(coef(rq(formla, tau=tau, data=ddf)))    
+    
+
+
+
+
+    llme.alt <- function(params, y, x, bet, tau, ksig, kmu=(ksig-1)) {
+        x <- as.matrix(x)
+        kx <- 0 ## this a bit hack cause just copied and pasted, but will work ##ncol(x)*length(tau)
+        k <- kx/length(tau)
+        n <- nrow(x)
+        ktau <- length(tau)
+        if (kmu > 0) {
+            pi1 <- params[(kx+1):(kx+kmu)]
+            mu1 <- params[(kx+kmu+1):(kx+kmu+kmu)]
+            pi <- c(pi1, 1-sum(pi1))
+            mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
+        } else {
+            pi <- 1
+            mu <- 0
+        }
+
+        sig <- params[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
+
+        
+        u <- lapply(bet, function(b) {
+            b <- as.matrix(b)
+            y - x%*%b
+        })
+        
+        fu <- sapply(u, function(uu) {
+            apply(sapply(1:ksig, function(i) {
+                pi[i]/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+            }), 1, sum)
+        }) ## this will contain a matrix with n rows and ktau columns
+
+        ll <- log(apply(fu, 1, sum)) ## p. 29 in hausman, liu, luo, palmer
+
+        return(-sum(ll))
+
+    }
+
+
+    llme.gr.alt <- function(params, y, x, bet, tau, ksig, kmu=(ksig-1)) {
+        x <- as.matrix(x)
+        kx <- 0 ##ncol(x)*length(tau)
+        k <- kx/length(tau)
+        n <- nrow(x)
+        ktau <- length(tau)
+        if (kmu > 0) {
+            pi1 <- params[(kx+1):(kx+kmu)]
+            mu1 <- params[(kx+kmu+1):(kx+kmu+kmu)]
+            pi <- c(pi1, 1-sum(pi1))
+            mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
+        } else {
+            pi <- 1
+            mu <- 0
+        }
+
+        sig <- params[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
+        ## u is a list with as many elements as the length of tau
+        ## each element contains an nx1 vector containing y - x'beta(tau)
+        u <- lapply(bet, function(b) {
+            b <- as.matrix(b)
+            y - x%*%b
+        }) 
+        ## 
+
+        ## fu contains the density of u (the measurement error) evaluated
+        ## at (y - x'beta(tau)) / sig, and given the values of the parameters
+        ## for the mixture model
+        ## this will contain a matrix with n rows and ktau columns
+        fu <- sapply(u, function(uu) {
+            apply(sapply(1:ksig, function(i) {
+                pi[i]/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+            }), 1, sum)
+        }) 
+
+        ## ifu contains the integrated values (over 0 to 1) of fu
+        ## this object is useful throughout and is an nx1 vector
+        ifu <- apply(fu, 1, sum) ## this is integration step
+
+        ## the gradient with respect to pi
+        ## this should contain a vector of length ksig x 1
+        gr.pi <- function() {
+            p1 <- 1/ifu
+
+            p2a <- simplify2array(lapply(u, function(uu) {
+                sapply(1:ksig, function(i) {
+                    1/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+                })
+            }))
+            
+            p2 <- apply(p2a, c(1,2), sum) ## integration step, should be nxksig
+
+            as.numeric(apply(p2*p1, 2, sum))
+        }
+
+        gr.mu <- function() {
+            p1 <- 1/ifu
+
+            p2a <- simplify2array(lapply(u, function(uu) {
+                sapply(1:ksig, function(i) {
+                    pi[i]/sig[i] * (uu - mu[i] / sig[i]^2) * dnorm( (uu - mu[i]) / sig[i] )
+                })
+            }))
+            p2 <- apply(p2a, c(1,2), sum) ## integration step, should be nxksig
+
+            as.numeric(apply(p2*p1, 2, sum))
+        }
+
+        gr.sig <- function() {
+            p1 <- 1/ifu
+
+            p2a <- simplify2array(lapply(u, function(uu) {
+                sapply(1:ksig, function(i) {
+                    -pi[i]/sig[i]^2 * dnorm( (uu - mu[i]) / sig[i] )
+                })
+            }))
+
+            p2b <- simplify2array(lapply(u, function(uu) {
+                sapply(1:ksig, function(i) {
+                    1/sig[i] * (uu - mu[i])^2 / sig[i]^3 * dnorm( (uu - mu[i]) / sig[i] )
+                })
+            }))
+
+            p2 <- apply(p2a+p2b, c(1,2), sum) ## integration step, should be nxksig
+            
+            as.numeric(apply(p2*p1, 2, sum))
+        }
+
+        cgr.pi <- function() {
+            (gr.pi() - gr.pi()[ksig] - (mu*(1-sum(pi[-ksig]))+sum( (mu*pi)[-ksig]))*gr.mu()[ksig]/(1-sum(pi[-ksig]))^2)[-ksig]
+        }
+
+        cgr.mu <- function() {
+            (gr.mu() - pi*gr.mu()[ksig]/(sum(pi[-ksig])))[-ksig]
+        }
+        
+        c(-cgr.pi(), -cgr.mu(), -gr.sig())
+    }
+
+
+    
+    eparams <- c(pivals, muvals, sigvals)
+
+    cst <- NULL
+    ust <- NULL
+    ## check if this part is right, would notice if violating constraints
+    if (nmix > 1) {
+        cst <- c(rep(.01, length(pivals)),
+                 -.99, ## thisone is so that 1-pi1-pi2>= .01
+                 rep(.01, length(sigvals)))
+
+        u1 <- rep(0, length(eparams))
+
+        ust <- t(simplify2array(c(lapply(1:length(pivals), function(i) {
+            u2 <- u1
+            u2[i] <- 1
+            u2
+        }), lapply(length(pivals), function(l) {
+            u2 <- u1
+            for (i in 1:l) {
+                u2[i] <- -1
+            }
+            u2
+        }), lapply(1:length(sigvals), function(i) {
+            u2 <- u1
+            u2[length(pivals) + length(muvals) + i] <- 1
+            u2
+        }))))
+    }
+    
+    if (nmix == 1) {
+        res <- optim(eparams, llme.alt, gr=llme.gr.alt, method="BFGS",
+                     y=y, x=x, tau=tau, ksig=m, bet=bet,
+                     control=list(maxit=maxit, trace=6))
+    } else {
+        res <- constrOptim(params, llme, llme.gr, ust, cst,
+                           y=y, x=x, tau=tau, ksig=m,
+                           control=list(maxit=maxit, trace=6))
+    }
+
+
+    out <- c(t(betp), res$par)
+
+    out
 }
