@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • qrme</title>
+<title>em.algo — em.algo • qrme</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -30,7 +30,10 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="em.algo — em.algo" />
+
+<meta property="og:description" content="A pseudo EM algorithm for quantile regression with measurement error.  The measurement error here follows a mixture of normals." />
+<meta name="twitter:card" content="summary" />
 
 
 
@@ -46,7 +49,7 @@
   </head>
 
   <body>
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -87,78 +90,75 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>em.algo</h1>
+    
+    <div class="hidden name"><code>em.algo.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    
+    <p>A pseudo EM algorithm for quantile regression with measurement error.  The measurement error here follows a mixture of normals.</p>
+    
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
-
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      <tr>
-        
-        <td>
-          <p><code><a href="cop.pdf.html">cop.pdf()</a></code> <code><a href="cop.pdf.html">cop.pdf()</a></code> </p>
-        </td>
-        <td><p>cop.pdf</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getParams.html">getParams()</a></code> <code><a href="getParams.html">getParams()</a></code> </p>
-        </td>
-        <td><p>getParams</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="ll.html">ll()</a></code> <code><a href="ll.html">ll()</a></code> </p>
-        </td>
-        <td><p>ll</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="llme.html">llme()</a></code> </p>
-        </td>
-        <td><p>llme</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="makeRQS.html">makeRQS()</a></code> <code><a href="makeRQS.html">makeRQS()</a></code> </p>
-        </td>
-        <td><p>makeRQS</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="parms2coppar.html">parms2coppar()</a></code> <code><a href="parms2coppar.html">parms2coppar()</a></code> </p>
-        </td>
-        <td><p>parms2coppar</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="qrme.html">qrme()</a></code> <code><a href="qrme.html">qrme()</a></code> </p>
-        </td>
-        <td><p>qrme</p></td>
-      </tr>
-    </tbody>
+    <pre class="usage"><span class='fu'>em.algo</span>(<span class='no'>betmatguess</span>, <span class='kw'>k</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>piguess</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>muguess</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>sigguess</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>tol</span> <span class='kw'>=</span> <span class='fl'>0.01</span>)</pre>
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>betmatguess</th>
+      <td><p>Initial values for the beta parameters.  This should be
+an LxK matrix where L is the number of quantiles and K is the dimension
+of the covariates</p></td>
+    </tr>
+    <tr>
+      <th>k</th>
+      <td><p>The number of components of the mixture distribution for the
+measurement error</p></td>
+    </tr>
+    <tr>
+      <th>piguess</th>
+      <td><p>Starting value for the probabilities of each mixture distribution (should have length equal to k)</p></td>
+    </tr>
+    <tr>
+      <th>muguess</th>
+      <td><p>Starting value for the mean of each mixture component (should
+have length equal to k)</p></td>
+    </tr>
+    <tr>
+      <th>sigguess</th>
+      <td><p>Starting value for the standard deviation of each mixture
+component (should have length equal to k)</p></td>
+    </tr>
+    <tr>
+      <th>tol</th>
+      <td><p>This is the convergence criteria.  When the change in the
+Euclidean distance between the new parameters (at each iteration) and
+the old parameters (from the previous iteration) is smaller than tol,
+the algorithm concludes.  In general, larger values for tol will result
+in a fewer number of iterations and smaller values will result in more
+accurate estimates.</p></td>
+    </tr>
     </table>
-  </div>
+    
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>QRME object</p>
+    
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-all-functions">All functions</a></li>
-    </ul>
+      <li><a href="#arguments">Arguments</a></li>
+      
+      <li><a href="#value">Value</a></li>
+          </ul>
+
   </div>
 </div>
 

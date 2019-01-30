@@ -4,8 +4,8 @@
 \alias{ll}
 \title{ll}
 \usage{
-ll(params, y, t, x, copula = "gumbel", Fyx, Ftx, fyx, ftx, Upi, Umu, Usig,
-  Vpi, Vmu, Vsig, ndraws = 100, eps = 1e-300)
+ll(params, y, t, x, copula = "gumbel", Fyx, Ftx, fyx, ftx, Us, Vs,
+  ndraws = 100, eps = 1e-300)
 }
 \arguments{
 \item{params}{a value of the parameters to calculate the log likelihood for}
@@ -26,6 +26,8 @@ ll(params, y, t, x, copula = "gumbel", Fyx, Ftx, fyx, ftx, Upi, Umu, Usig,
 
 \item{ftx}{function that contains the pdf of t conditional on x}
 
+\item{ndraws}{the number of draws of U and V to make}
+
 \item{Upi}{vector of probabilities for measurement error mixture model for Y}
 
 \item{Umu}{vector of means for measurement error mixture model for Y}
@@ -37,8 +39,6 @@ ll(params, y, t, x, copula = "gumbel", Fyx, Ftx, fyx, ftx, Upi, Umu, Usig,
 \item{Vmu}{vector of means for measurement error mixture model for T}
 
 \item{Vsig}{vector of std. deviations for measurement error mixture model for T}
-
-\item{ndraws}{the number of draws of U and V to make}
 }
 \value{
 scalar negative value of log likelihood function

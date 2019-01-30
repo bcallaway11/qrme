@@ -4,8 +4,9 @@
 \alias{qrme}
 \title{qrme}
 \usage{
-qrme(formla, tau = 0.5, data, nmix = 3, startbet = NULL, startmu = NULL,
-  startsig = NULL, startpi = NULL, method = "BFGS", maxit = 1000)
+qrme(formla, tau = 0.5, data, nmix = 3, startbet = NULL,
+  startmu = NULL, startsig = NULL, startpi = NULL, method = "BFGS",
+  maxit = 1000, betOnly = FALSE)
 }
 \arguments{
 \item{formla}{y ~ x}
@@ -14,5 +15,5 @@ qrme(formla, tau = 0.5, data, nmix = 3, startbet = NULL, startmu = NULL,
 }
 \description{
 Quantile Regression with measurement error in the dependent
- variable using the approach in Hausman, Liu, Luo, and Palmer (2016)
+ variable using an EM-algorithm
 }

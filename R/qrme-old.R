@@ -87,11 +87,239 @@ ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx, Us, Vs, ndr
 
 
 
+#' @title llme
+#'
+#' @description Log likelihood function for estimating quantile regression model with measurement
+#'  error using the approach in Hausman, Liu, Luo, and Palmer (2016).
+#' @inheritParams ll
+#' @param ksig the number of mixture components
+#' @param kmu the number of means in the mixture model (this should almost always be ksig-1)
+#'  as the last mean is pinned down by the other means under the condition that the mean
+#'  of the measurement error is equal to 0.
+#'
+#' @return negative value of log likelihood function
+#'
+#' @export
+llme <- function(params, otherparams,
+                 y, X, tau, ksig, kmu=(ksig-1)) {
+    params <- c(params, otherparams)
+    x <- as.matrix(X)
+    kx <- ncol(x)*length(tau)
+    bet <- params[1:kx]
+    k <- kx/length(tau)
+    n <- nrow(x)
+    ktau <- length(tau)
+    bet <- split(bet,ceiling(seq_along(bet)/k))
+    if (kmu > 0) {
+        pi1 <- params[(kx+1):(kx+kmu)]
+        mu1 <- params[(kx+kmu+1):(kx+kmu+kmu)]
+        pi <- c(pi1, 1-sum(pi1))
+        mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
+    } else {
+        pi <- 1
+        mu <- 0
+    }
+
+    sig <- params[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
+
+    ## just testing things out, delete these
+    ## sig <- 1
+    ## bet <- lapply(1:length(tau), function(i) {
+    ##     b <- bet[[i]]
+    ##     b[1] <- b0Y(tau[i])
+    ##     b})
+    ##
+    
+    u <- sapply(bet, function(b) {
+        b <- as.matrix(b)
+        y - x%*%b
+    })
+
+    f.me <- function(uu) {
+        apply(sapply(1:ksig, function(i) {
+            pi[i]/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+        }), 1, sum)
+    }
+
+    fu <- t(apply(u, 1, f.me))
+       
+    
+    ## fu <- sapply(u, function(uu) {
+    ##     apply(sapply(1:ksig, function(i) {
+    ##         pi[i]/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+    ##     }), 1, sum)
+    ## })
+    ## this will contain a matrix with n rows and ktau columns
+
+    ## just for testing
+    ## fyx <- function(y,x) {
+    ##     thisu <- sapply(bet, function(b) {
+    ##         b <- as.matrix(b)
+    ##         y - x%*%b
+    ##     })
+    ##     sum(apply(sapply(1:ksig, function(i) {
+    ##         pi[i]/sig[i] * dnorm( (thisu - mu[i]) / sig[i] )
+    ##     }), 1, sum))
+    ## }
+
+    ##
+
+    l <- apply(fu,1,function(ffuu) max(sum(ffuu)/length(tau),1e-30))
+    
+    ll <- log(l) ## p. 29 in hausman, liu, luo, palmer
+
+    return(-sum(ll)) ## for maximization
+    
+}
+
+llme.gr <- function(params, otherparams=NULL, y, X, tau, ksig, kmu=(ksig-1)) {
+    params=c(params,otherparams)
+    x <- as.matrix(X)
+    kx <- ncol(x)*length(tau)
+    bet <- params[1:kx]
+    k <- kx/length(tau)
+    n <- nrow(x)
+    ktau <- length(tau)
+    bet <- split(bet,ceiling(seq_along(bet)/k))
+    if (kmu > 0) {
+        pi1 <- params[(kx+1):(kx+kmu)]
+        mu1 <- params[(kx+kmu+1):(kx+kmu+kmu)]
+        pi <- c(pi1, 1-sum(pi1))
+        mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
+    } else {
+        pi <- 1
+        mu <- 0
+    }
+
+    sig <- params[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
+    ## u is a list with as many elements as the length of tau
+    ## each element contains an nx1 vector containing y - x'beta(tau)
+    u <- lapply(bet, function(b) {
+        b <- as.matrix(b)
+        y - x%*%b
+    }) 
+    ## 
+
+    ## fu contains the density of u (the measurement error) evaluated
+    ## at (y - x'beta(tau)) / sig, and given the values of the parameters
+    ## for the mixture model
+    ## this will contain a matrix with n rows and ktau columns
+    ## fu <- sapply(u, function(uu) {
+    ##     apply(sapply(1:ksig, function(i) {
+    ##         pi[i]/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+    ##     }), 1, sum)
+    ## })
+    f.me <- function(uu) {
+        apply(sapply(1:ksig, function(i) {
+            pi[i]/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+        }), 1, sum)
+    }
+
+    fu <- sapply(u, f.me)
+        
+
+    ## ifu contains the integrated values (over 0 to 1) of fu
+    ## this object is useful throughout and is an nx1 vector
+    ifu <- apply(fu, 1, sum)/length(tau) ## this is integration step
+
+    ## the gradient with respect to pi
+    ## this should contain a vector of length ksig x 1
+    gr.pi <- function() {
+        p1 <- 1/ifu
+
+        p2a <- simplify2array(lapply(u, function(uu) {
+            sapply(1:ksig, function(i) {
+                1/sig[i] * dnorm( (uu - mu[i]) / sig[i] )
+            })
+         }))
+        
+        p2 <- apply(p2a, c(1,2), sum)/length(tau) ## integration step, should be nxksig
+
+        as.numeric(apply(p2*p1, 2, sum))
+    }
+
+    gr.mu <- function() {
+        p1 <- 1/ifu
+
+        p2a <- simplify2array(lapply(u, function(uu) {
+            sapply(1:ksig, function(i) {
+                pi[i]/sig[i] * (uu - mu[i] / sig[i]^2) * dnorm( (uu - mu[i]) / sig[i] )
+            })
+        }))
+        p2 <- apply(p2a, c(1,2), sum) /length(tau) ## integration step, should be nxksig
+
+        as.numeric(apply(p2*p1, 2, sum))
+    }
+
+    gr.sig <- function() {
+        p1 <- 1/ifu
+
+        p2a <- simplify2array(lapply(u, function(uu) {
+            sapply(1:ksig, function(i) {
+                -pi[i]/sig[i]^2 * dnorm( (uu - mu[i]) / sig[i] )
+            })
+        }))
+
+        p2b <- simplify2array(lapply(u, function(uu) {
+            sapply(1:ksig, function(i) {
+                pi[i]/sig[i] * (uu - mu[i])^2 / sig[i]^3 * dnorm( (uu - mu[i]) / sig[i] )
+            })
+        }))
+
+        p2 <- apply(p2a+p2b, c(1,2), sum) / length(tau) ## integration step, should be nxksig
+        
+        as.numeric(apply(p2*p1, 2, sum))
+    }
+
+    cgr.pi <- function() {
+        (gr.pi() - gr.pi()[ksig] - (mu*(1-sum(pi[-ksig]))+sum( (mu*pi)[-ksig]))*gr.mu()[ksig]/(1-sum(pi[-ksig]))^2)[-ksig]
+    }
+
+    cgr.mu <- function() {
+        (gr.mu() - pi*gr.mu()[ksig]/(sum(pi[-ksig])))[-ksig]
+    }
+    
+    gr.bet <- function() {
+        dt <- diff(tau)[1] ## TODO: check that they are all equal
+
+        ## part 1, nx1 vector
+        p1 <- 1/ifu
+
+        ## part 2, nxk matrix
+        p2 <- -dt*x
+
+        ## part 3, list with length of tau, in each list an nx1 vector
+        p3 <- lapply(bet, function(b) {
+            apply(sapply(1:ksig, function(i) {
+                pi[i]/sig[i]^2 * dnorm( (y - x%*%b - mu[i]) / sig[i]) * (-(y - x%*%b - mu[i])/sig[i])
+            }), 1, sum)
+        })
+
+        ## an array with length of tau, in each list an nx3 matrix
+        out <- simplify2array(lapply(p3, function(pp) {
+            pp*p1*p2
+        }))
+
+        ## sum the above matrix, will be ksig x length(tau) matrix
+        out <- apply(out, c(2,3), sum) 
+
+        as.numeric(out) ## return it as a vector
+    }
+
+    ## return(grad(llme, x=params, otherparams=NULL, y=y, X=x,
+    ##        tau=tau, ksig=nmix, method="simple"))
+    
+    if (is.null(otherparams)) {
+        return(c(-gr.bet(), -cgr.pi(), -cgr.mu(), -gr.sig()))
+    } else {
+        return(c(-gr.bet()))
+    }
+}
 
 #' @title qrme
 #'
 #' @description Quantile Regression with measurement error in the dependent
-#'  variable using an EM-algorithm
+#'  variable using the approach in Hausman, Liu, Luo, and Palmer (2016)
 #'
 #' @param formla y ~ x
 #' @param tau vector for which quantiles to compute quantile regression
@@ -107,7 +335,8 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
         ## this defaults the start values of the beta_0 to be
         ## the observed quantiles of the outcome and the other
         ## betas to be equal to 0
-        betvals <- t(coef(rq(formla, tau=tau, data=data)))
+        ## betvals <- unlist(lapply(1:length(tau), function(i) c(quantile(y, probs=tau[i], type=1), rep(0, (k-1)))))
+        betvals <- c(rq(formla, tau=tau, data=data)$coefficients)
         
     } else {
         betvals <- startbet
@@ -127,10 +356,71 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
     } else {
         pivals <- startpi
     }
-    qrparams <- list(bet=betvals, m=m, pi=pivals, mu=muvals, sig=sigvals)
+    qrparams <- c(betvals, pivals, muvals, sigvals)
 
 
-    ## TODO: fill in details for estimting this using EM
+    ## implement constraints that variance is positive and weights are postive
+    
+    cst <- NULL
+    ust <- NULL
+    if (nmix > 1) {
+        cst <- c(rep(.01, length(pivals)),
+                 -.99, ## thisone is so that 1-pi1-pi2>= .01
+                 rep(.01, length(sigvals)))
+
+        u1 <- rep(0, length(qrparams))
+
+        ust <- t(simplify2array(c(lapply(1:length(pivals), function(i) {
+            u2 <- u1
+            u2[length(betvals)+i] <- 1
+            u2
+        }), lapply(length(pivals), function(l) {
+            u2 <- u1
+            for (i in 1:l) {
+                u2[length(betvals)+i] <- -1
+            }
+            u2
+        }), lapply(1:length(sigvals), function(i) {
+            u2 <- u1
+            u2[length(betvals) + length(pivals) + length(muvals) + i] <- 1
+            u2
+        }))))
+    }
+    
+             
+    
+    ## bounds for l-bfgs-b, didn't quite work
+    ## lb <- c(rep(-Inf, length(betvals)), rep(.01, length(pivals)),
+    ##         rep(-Inf, length(muvals)), rep(.01, length(sigvals)))
+    ## ub <- c(rep(Inf, length(betvals)), rep(1, length(pivals)),
+    ##         rep(Inf, length(muvals)), rep(Inf, length(sigvals)))
+
+    ## problem looks like it is in gradient for the mu, pi, or sigma...
+    otherparams=NULL
+    if (betOnly) { ## this is for simulations if distribution of error
+        ## term is fully known
+        otherparams <- qrparams[(length(betvals)+1):length(qrparams)]
+        qrparams <- qrparams[1:length(betvals)]
+        ust <- t(as.matrix(rep(0,length(qrparams))))
+        cst <- -1
+    }
+    
+    if (nmix == 1) {
+        res <- optim(qrparams, llme, otherparams=otherparams, gr=llme.gr, method="BFGS",
+                     y=y, X=x, tau=tau, ksig=m,
+                     control=list(maxit=maxit, trace=6))
+    } else {
+        res <- constrOptim(qrparams, llme, ui=ust, ci=cst, method="BFGS", grad=llme.gr,
+                           y=y, X=x, tau=tau, ksig=m, otherparams=otherparams, 
+                           control=list(maxit=20000, trace=6, reltol=1e-30))
+    }
+
+
+    if (betOnly) {
+        params <- getParams(c(res$par, otherparams), formla, data, tau, nmix)
+    } else {
+        params <- getParams(res, formla, data, tau, nmix)
+    }
     
     out <- makeRQS(params, formla, data)
 
@@ -154,219 +444,6 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
 
     out
 }
-
-
-#' @title em.algo
-#'
-#' @description A pseudo EM algorithm for quantile regression with measurement error.  The measurement error here follows a mixture of normals.
-#' @param betmatguess Initial values for the beta parameters.  This should be
-#'  an LxK matrix where L is the number of quantiles and K is the dimension
-#'  of the covariates
-#' @param k The number of components of the mixture distribution for the
-#'  measurement error
-#' @param piguess Starting value for the probabilities of each mixture distribution (should have length equal to k)
-#' @param muguess Starting value for the mean of each mixture component (should
-#'  have length equal to k)
-#' @param sigguess Starting value for the standard deviation of each mixture
-#'  component (should have length equal to k)
-#' @param tol This is the convergence criteria.  When the change in the
-#'  Euclidean distance between the new parameters (at each iteration) and
-#'  the old parameters (from the previous iteration) is smaller than tol,
-#'  the algorithm concludes.  In general, larger values for tol will result
-#'  in a fewer number of iterations and smaller values will result in more
-#'  accurate estimates.
-#' @return QRME object
-#'
-#' @keywords internal
-#' @export
-em.algo <- function(betmatguess, k=1, piguess=1, muguess=0, sigguess=1, tol=.01) {
-  
-  stopIters <- 100
-  counter <- 1
-  
-  while (counter <= stopIters) {
-    newone <- em.algo.inner(betmatguess, k, piguess, muguess, sigguess)
-    newbet <- newone$bet
-    newpi <- newone$pi
-    newmu <- newone$mu
-    newsig <- newone$sig
-    
-    cat("\n\n\nIteration: ", counter, "\n bet: ", newbet, "\n pi: ", newpi, "\n mu: ", newmu, "\n sig: ", newsig, "\n\n")
-    criteria <- sqrt(sum(c(newbet-betmatguess,newsig-sigguess,newpi-piguess,newmu-muguess)^2))
-    cat(" convergence criteria: ", criteria, "\n\n")
-    if ( criteria <= tol) { ## Euclidean norm
-      cat("\n algorithm converged\n") 
-      return(newone)
-    }
-    counter <- counter+1
-    betmatguess <- newbet
-    sigguess <- newsig
-    muguess <- newmu
-    piguess <- newpi
-  }
-  cat("\n algorithm failed to converge\n")
-  return(newone)
-}
-
-em.algo.inner <- function(betmat, k=1, pi=1, mu=0, sig=1) {
-  
-  cat("\nSimulating measurement error...")
-  newdta <- pbapply::pblapply(1:n, function(i) {
-    e <- mh_mcmc(betmat=bmat, k=k, pi=pi, mu=mu, sig=sig, y=YY[i], x=XX[i,], u.seq=tau, iters=1000, burnin=500)
-    cbind(YY[i]-e, matrix(XX[i,], nrow=length(e), ncol=ncol(XX), byrow=TRUE),e=e)
-  }, cl=10)
-  
-  ## Note: this currently just works for one X; will need to update
-  
-  cat("\nEstimating QR including simulated measurement error...")
-  newdta1 <- do.call(rbind.data.frame, newdta)
-  colnames(newdta1) <- c("Y", "int", "X", "e")
-  out <- rq(Y ~ X, tau=tau, data=newdta1, method="pfn")
-  
-  ## this is part I am not sure about, once you have a new beta then estimate a new sigma??
-  ## also should probably restrict overall mean of error term to be equal to 0
-  cat("\nEstimating finite mixture model...")
-  if (k == 1) {
-    nm <- list(k=1, lambda=1, mu=0, sigma=sd(newdta1$e))
-  } else {
-    nm <- normalmixEM(newdta1$e, k=k)
-  }
-  
-  return(list(bet=t(coef(out)), k=k, pi=nm$lambda, mu=nm$mu, sig=nm$sigma))
-}
-
-
-
-##
-## betmat should be an L x K matrix where
-## L is the number of tau
-## K is the dimension of X
-## should return a function that can be called on any element from 0 to 1
-betfun <- function(betmat, u.seq) {
-  betmat <- as.matrix(betmat)
-  betfun.list <- lapply(1:ncol(betmat), function(j) {
-    if (j==1) { ##then we are on the constant
-      betfun.inner(betmat[,j], u.seq, isconst=TRUE)
-    } else {
-      betfun.inner(betmat[,j], u.seq)
-    }
-  })
-  bet <- function(u) {
-    unlist(lapply(betfun.list, function(b) b(u)))
-  }
-  return(bet)
-}
-
-## this is going to return a function that takes in 
-## a value for tau and returns the value of beta
-## based on linear interpolation; 
-## betfun.inner does this element by element
-## handle tails slightly differently for constant term
-betfun.inner <- function(betvec, u.seq, isconst=FALSE) {
-  bet <- function(u) {
-    ul.pos <- tail(which(u.seq <= u),1) ## position of ul (in text)
-    uu.pos <- which(u.seq >= u)[1] ## position of uu (in text)
-    ul <- u.seq[ul.pos]
-    uu <- u.seq[uu.pos]
-    lam1 <- 1 - min(u.seq)
-    lam2 <- max(u.seq)
-    isconst <- 1*isconst
-    if (u >= 0 & u < min(u.seq)){  ## this is case with u between 0 and smallest element of u.seq
-      return(betvec[uu.pos] + isconst*log(u/min(u.seq))/lam1)
-    }
-    if (u <= 1 & u > max(u.seq)) { ## case with u < 1 but bigger than greatest element in u.seq
-      return(betvec[ul.pos] + isconst*log((1-u)/(1-max(u.seq)))/lam2)  
-    }
-    if (is.na(uu) | is.na(ul)) {
-      stop("uu or ul not set, likely tried some value of u that is not between the minimum and maximum values in u.seq")
-    }
-    if (uu == ul) {
-      betvec[ul.pos]
-    } else {
-      betvec[ul.pos] + (u-ul)*(betvec[uu.pos] - betvec[ul.pos])/(uu-ul) ## this is linear interpolation from the text
-    }
-  }
-  return(bet)
-}
-
-## X should be n x k
-## the density of y conditional on x
-fy.x <- function(y, betmat, X, u.seq) {
-  X <- as.matrix(X)
-  
-  fout <- apply(X, 1, FUN = function(x) {
-    ## take a particular row of X
-    x <- as.matrix(x)
-    
-    ## the index for the "X" part
-    xtb <- t(x) %*% t(betmat)
-    
-    ## figure out if we are in an "inner case" (i.e. standard case)
-    ## or in one of the tails
-    ul.pos <- tail(which(xtb-y <= 0),1) ## position of ul (in text)
-    uu.pos <- head(which(xtb-y > 0),1) ## position of uu (in text)
-    
-    ## code to handle tails uniquely
-    lam1 <- 1 - min(u.seq)
-    lam2 <- max(u.seq)
-    if (length(uu.pos) > 0) { ## add extra check for some missing cases; don't
-      ## need for other side because of the ordering
-      if (uu.pos == 1) { ##we are way on left tail
-        return(min(u.seq) * lam1 * exp(lam1*(y - t(x) %*%betmat[1,])))
-      }
-    }
-    if (ul.pos == length(u.seq)) { ## we are way on the right tail
-      return( (1-max(u.seq)) * lam2 * exp(-lam2 * (y - t(x)%*%betmat[length(u.seq), ])))  
-    }
-    ## standard case ("inner case")
-    (u.seq[uu.pos] - u.seq[ul.pos]) / t(x)%*%(betmat[uu.pos,] - betmat[ul.pos,])
-  })
-  fout
-}
-
-fv.yx <- function(v, betmat, k, pi, mu, sig, Y, X, u.seq) {
-  fy.xvals <- sapply(1:length(Y), function(i) {
-    fy.x(y = (Y[i] - v), X=t(X[i,]), betmat=betmat, u.seq=u.seq)
-  })
-  fy.xvals * fv(v,k,pi,mu,sig)
-}
-
-fv <- function(v,ksig=1,pi=1,mu=0,sig=1) {
-  ## when just normal distribution
-  ##dnorm(v, sd=sig)
-  
-  ## mixture of normals
-  sum(sapply(1:ksig, function(i) {
-    pi[i]/sig[i] * dnorm( (v-mu[i])/ sig[i] )
-  }))
-}
-
-
-## metropolis-hastings algorithm
-## this may not be "fast" at the moment
-mh_mcmc <- function(startval=0, iters=500, burnin=100, betmat, k, pi, mu, sig, y, x, u.seq) {
-  x <- t(x)
-  out <- rep(NA, iters)
-  out[1] <- startval
-  for (i in 2:iters) {
-    trialval <- out[i-1] + rnorm(1, sd=sqrt(4))
-    fvold <- fv.yx(out[i-1], betmat, k, pi, mu, sig, y, x, u.seq)
-    fvnew <- fv.yx(trialval, betmat, k, pi, mu, sig, y, x, u.seq)
-    if ( fvnew > fvold ) {
-      out[i] <- trialval
-    } else {
-      if ( (fvnew / fvold) >= runif(1)) {
-        out[i] <- trialval
-      } else {
-        out[i] <- out[i-1]
-      }
-    }
-  }
-  return(tail(out, iters-burnin))
-}
-
-
-
 
 #' @title getParams
 #'

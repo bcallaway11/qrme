@@ -18,5 +18,5 @@ a vector of copula parameters
 }
 \description{
 convert parameters from optimization routine into copula
- parameters
+ parameters, parameters are between 0 and 1
 }
