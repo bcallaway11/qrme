@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>getParams — getParams • qrme</title>
+<title>betfun.inner — betfun.inner • qrme</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -30,10 +30,11 @@
 
 
 
-<meta property="og:title" content="getParams — getParams" />
+<meta property="og:title" content="betfun.inner — betfun.inner" />
 
-<meta property="og:description" content="Helper function to take the result of the optimization routine
-and converts back to parameters" />
+<meta property="og:description" content="Does the heavy lifting for betfun.  Basically, betfun is just
+ a wrapper for this that can handle a matrix of values of parameters.
+ This function does the work, but only for a single vector of betas." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,36 +94,41 @@ and converts back to parameters" />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>getParams</h1>
+    <h1>betfun.inner</h1>
     
-    <div class="hidden name"><code>getParams.Rd</code></div>
+    <div class="hidden name"><code>betfun.inner.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Helper function to take the result of the optimization routine
-and converts back to parameters</p>
+    <p>Does the heavy lifting for betfun.  Basically, betfun is just
+ a wrapper for this that can handle a matrix of values of parameters.
+ This function does the work, but only for a single vector of betas.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>getParams</span>(<span class='no'>optout</span>, <span class='no'>formla</span>, <span class='no'>data</span>, <span class='no'>tau</span>, <span class='no'>nmix</span>)</pre>
+    <pre class="usage"><span class='fu'>betfun.inner</span>(<span class='no'>betvec</span>, <span class='no'>tau</span>, <span class='kw'>isconst</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>optout</th>
-      <td><p>results of call to optim</p></td>
+      <th>betvec</th>
+      <td><p>vector of parameter values</p></td>
     </tr>
     <tr>
-      <th>ksig</th>
-      <td><p>the dimension of the mixture model for the measurement error</p></td>
+      <th>tau</th>
+      <td><p>corresponding vector of quantiles where beta was estimated</p></td>
+    </tr>
+    <tr>
+      <th>isconst</th>
+      <td><p>?? -- what is this doing?</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>list of parameters</p>
+    <p>function that takes argument from (0,1)</p>
     
 
   </div>

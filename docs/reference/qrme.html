@@ -33,8 +33,6 @@
 <meta property="og:title" content="qrme — qrme" />
 
 <meta property="og:description" content="Quantile Regression with measurement error in the dependent
- variable using the approach in Hausman, Liu, Luo, and Palmer (2016)
-Quantile Regression with measurement error in the dependent
  variable using an EM-algorithm" />
 <meta name="twitter:card" content="summary" />
 
@@ -103,31 +101,17 @@ Quantile Regression with measurement error in the dependent
     <div class="ref-description">
     
     <p>Quantile Regression with measurement error in the dependent
- variable using the approach in Hausman, Liu, Luo, and Palmer (2016)</p>
-<p>Quantile Regression with measurement error in the dependent
  variable using an EM-algorithm</p>
     
     </div>
 
     <pre class="usage"><span class='fu'>qrme</span>(<span class='no'>formla</span>, <span class='kw'>tau</span> <span class='kw'>=</span> <span class='fl'>0.5</span>, <span class='no'>data</span>, <span class='kw'>nmix</span> <span class='kw'>=</span> <span class='fl'>3</span>, <span class='kw'>startbet</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>startmu</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>startsig</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>startpi</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>method</span> <span class='kw'>=</span> <span class='st'>"BFGS"</span>,
-  <span class='kw'>maxit</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>betOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
-
-<span class='fu'>qrme</span>(<span class='no'>formla</span>, <span class='kw'>tau</span> <span class='kw'>=</span> <span class='fl'>0.5</span>, <span class='no'>data</span>, <span class='kw'>nmix</span> <span class='kw'>=</span> <span class='fl'>3</span>, <span class='kw'>startbet</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>startmu</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>startsig</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>startpi</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>method</span> <span class='kw'>=</span> <span class='st'>"BFGS"</span>,
   <span class='kw'>maxit</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>betOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
-    <tr>
-      <th>formla</th>
-      <td><p>y ~ x</p></td>
-    </tr>
-    <tr>
-      <th>tau</th>
-      <td><p>vector for which quantiles to compute quantile regression</p></td>
-    </tr>
     <tr>
       <th>formla</th>
       <td><p>y ~ x</p></td>

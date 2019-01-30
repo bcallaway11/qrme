@@ -237,18 +237,29 @@ em.algo.inner <- function(betmat, k=1, pi=1, mu=0, sig=1) {
 
 
 
-##
-## betmat should be an L x K matrix where
-## L is the number of tau
-## K is the dimension of X
-## should return a function that can be called on any element from 0 to 1
-betfun <- function(betmat, u.seq) {
+#' @title betfun
+#'
+#' @description Turns matrices of QR parameter values into functions.
+#'  The returned function will be a map from (0,1) to a vector of dimension
+#'  K where K is the number of elements in X (also it is the number of columns
+#'  in the passed in matrix of QR parameter values).  It works by linear
+#'  interpolation of parameter values (for interior values of tau) and
+#'  based on some assumptions to handle values in the tails.
+#' @param betmat An L x K matrix of parameter values where 
+#'  L is the number of tau and 
+#'  K is the dimension of X
+#' @param tau The particular quantiles that the parameters were estimated at.
+#'  It should be an L-dimensional vector.
+#' @return A function that can be called on any element from 0 to 1 and
+#'  returns a vector of parameter values
+#' @export
+betfun <- function(betmat, tau) {
   betmat <- as.matrix(betmat)
   betfun.list <- lapply(1:ncol(betmat), function(j) {
     if (j==1) { ##then we are on the constant
-      betfun.inner(betmat[,j], u.seq, isconst=TRUE)
+      betfun.inner(betmat[,j], tau, isconst=TRUE)
     } else {
-      betfun.inner(betmat[,j], u.seq)
+      betfun.inner(betmat[,j], tau)
     }
   })
   bet <- function(u) {
@@ -257,28 +268,34 @@ betfun <- function(betmat, u.seq) {
   return(bet)
 }
 
-## this is going to return a function that takes in 
-## a value for tau and returns the value of beta
-## based on linear interpolation; 
-## betfun.inner does this element by element
-## handle tails slightly differently for constant term
-betfun.inner <- function(betvec, u.seq, isconst=FALSE) {
+#' @title betfun.inner
+#'
+#' @description Does the heavy lifting for betfun.  Basically, betfun is just
+#'  a wrapper for this that can handle a matrix of values of parameters.
+#'  This function does the work, but only for a single vector of betas.
+#' @param betvec vector of parameter values
+#' @param tau corresponding vector of quantiles where beta was estimated
+#' @param isconst ?? -- what is this doing?
+#' @return function that takes argument from (0,1)
+#' @keywords internal
+#' @export
+betfun.inner <- function(betvec, tau, isconst=FALSE) {
   bet <- function(u) {
-    ul.pos <- tail(which(u.seq <= u),1) ## position of ul (in text)
-    uu.pos <- which(u.seq >= u)[1] ## position of uu (in text)
-    ul <- u.seq[ul.pos]
-    uu <- u.seq[uu.pos]
-    lam1 <- 1 - min(u.seq)
-    lam2 <- max(u.seq)
+    ul.pos <- tail(which(tau <= u),1) ## position of ul (in text)
+    uu.pos <- which(tau >= u)[1] ## position of uu (in text)
+    ul <- tau[ul.pos]
+    uu <- tau[uu.pos]
+    lam1 <- 1 - min(tau)
+    lam2 <- max(tau)
     isconst <- 1*isconst
-    if (u >= 0 & u < min(u.seq)){  ## this is case with u between 0 and smallest element of u.seq
-      return(betvec[uu.pos] + isconst*log(u/min(u.seq))/lam1)
+    if (u >= 0 & u < min(tau)){  ## this is case with u between 0 and smallest element of tau
+      return(betvec[uu.pos] + isconst*log(u/min(tau))/lam1)
     }
-    if (u <= 1 & u > max(u.seq)) { ## case with u < 1 but bigger than greatest element in u.seq
-      return(betvec[ul.pos] + isconst*log((1-u)/(1-max(u.seq)))/lam2)  
+    if (u <= 1 & u > max(tau)) { ## case with u < 1 but bigger than greatest element in tau
+      return(betvec[ul.pos] + isconst*log((1-u)/(1-max(tau)))/lam2)  
     }
     if (is.na(uu) | is.na(ul)) {
-      stop("uu or ul not set, likely tried some value of u that is not between the minimum and maximum values in u.seq")
+      stop("uu or ul not set, likely tried some value of u that is not between the minimum and maximum values in tau")
     }
     if (uu == ul) {
       betvec[ul.pos]
@@ -291,7 +308,7 @@ betfun.inner <- function(betvec, u.seq, isconst=FALSE) {
 
 ## X should be n x k
 ## the density of y conditional on x
-fy.x <- function(y, betmat, X, u.seq) {
+fy.x <- function(y, betmat, X, tau) {
   X <- as.matrix(X)
   
   fout <- apply(X, 1, FUN = function(x) {
@@ -307,26 +324,26 @@ fy.x <- function(y, betmat, X, u.seq) {
     uu.pos <- head(which(xtb-y > 0),1) ## position of uu (in text)
     
     ## code to handle tails uniquely
-    lam1 <- 1 - min(u.seq)
-    lam2 <- max(u.seq)
+    lam1 <- 1 - min(tau)
+    lam2 <- max(tau)
     if (length(uu.pos) > 0) { ## add extra check for some missing cases; don't
       ## need for other side because of the ordering
       if (uu.pos == 1) { ##we are way on left tail
-        return(min(u.seq) * lam1 * exp(lam1*(y - t(x) %*%betmat[1,])))
+        return(min(tau) * lam1 * exp(lam1*(y - t(x) %*%betmat[1,])))
       }
     }
-    if (ul.pos == length(u.seq)) { ## we are way on the right tail
-      return( (1-max(u.seq)) * lam2 * exp(-lam2 * (y - t(x)%*%betmat[length(u.seq), ])))  
+    if (ul.pos == length(tau)) { ## we are way on the right tail
+      return( (1-max(tau)) * lam2 * exp(-lam2 * (y - t(x)%*%betmat[length(tau), ])))  
     }
     ## standard case ("inner case")
-    (u.seq[uu.pos] - u.seq[ul.pos]) / t(x)%*%(betmat[uu.pos,] - betmat[ul.pos,])
+    (tau[uu.pos] - tau[ul.pos]) / t(x)%*%(betmat[uu.pos,] - betmat[ul.pos,])
   })
   fout
 }
 
-fv.yx <- function(v, betmat, k, pi, mu, sig, Y, X, u.seq) {
+fv.yx <- function(v, betmat, k, pi, mu, sig, Y, X, tau) {
   fy.xvals <- sapply(1:length(Y), function(i) {
-    fy.x(y = (Y[i] - v), X=t(X[i,]), betmat=betmat, u.seq=u.seq)
+    fy.x(y = (Y[i] - v), X=t(X[i,]), betmat=betmat, tau=tau)
   })
   fy.xvals * fv(v,k,pi,mu,sig)
 }
@@ -344,14 +361,14 @@ fv <- function(v,ksig=1,pi=1,mu=0,sig=1) {
 
 ## metropolis-hastings algorithm
 ## this may not be "fast" at the moment
-mh_mcmc <- function(startval=0, iters=500, burnin=100, betmat, k, pi, mu, sig, y, x, u.seq) {
+mh_mcmc <- function(startval=0, iters=500, burnin=100, betmat, k, pi, mu, sig, y, x, tau) {
   x <- t(x)
   out <- rep(NA, iters)
   out[1] <- startval
   for (i in 2:iters) {
     trialval <- out[i-1] + rnorm(1, sd=sqrt(4))
-    fvold <- fv.yx(out[i-1], betmat, k, pi, mu, sig, y, x, u.seq)
-    fvnew <- fv.yx(trialval, betmat, k, pi, mu, sig, y, x, u.seq)
+    fvold <- fv.yx(out[i-1], betmat, k, pi, mu, sig, y, x, tau)
+    fvnew <- fv.yx(trialval, betmat, k, pi, mu, sig, y, x, tau)
     if ( fvnew > fvold ) {
       out[i] <- trialval
     } else {

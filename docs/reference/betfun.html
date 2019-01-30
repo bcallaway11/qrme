@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>getParams — getParams • qrme</title>
+<title>betfun — betfun • qrme</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -30,10 +30,14 @@
 
 
 
-<meta property="og:title" content="getParams — getParams" />
+<meta property="og:title" content="betfun — betfun" />
 
-<meta property="og:description" content="Helper function to take the result of the optimization routine
-and converts back to parameters" />
+<meta property="og:description" content="Turns matrices of QR parameter values into functions.
+ The returned function will be a map from (0,1) to a vector of dimension
+ K where K is the number of elements in X (also it is the number of columns
+ in the passed in matrix of QR parameter values).  It works by linear
+ interpolation of parameter values (for interior values of tau) and
+ based on some assumptions to handle values in the tails." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,36 +97,44 @@ and converts back to parameters" />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>getParams</h1>
+    <h1>betfun</h1>
     
-    <div class="hidden name"><code>getParams.Rd</code></div>
+    <div class="hidden name"><code>betfun.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Helper function to take the result of the optimization routine
-and converts back to parameters</p>
+    <p>Turns matrices of QR parameter values into functions.
+ The returned function will be a map from (0,1) to a vector of dimension
+ K where K is the number of elements in X (also it is the number of columns
+ in the passed in matrix of QR parameter values).  It works by linear
+ interpolation of parameter values (for interior values of tau) and
+ based on some assumptions to handle values in the tails.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>getParams</span>(<span class='no'>optout</span>, <span class='no'>formla</span>, <span class='no'>data</span>, <span class='no'>tau</span>, <span class='no'>nmix</span>)</pre>
+    <pre class="usage"><span class='fu'>betfun</span>(<span class='no'>betmat</span>, <span class='no'>tau</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>optout</th>
-      <td><p>results of call to optim</p></td>
+      <th>betmat</th>
+      <td><p>An L x K matrix of parameter values where 
+L is the number of tau and 
+K is the dimension of X</p></td>
     </tr>
     <tr>
-      <th>ksig</th>
-      <td><p>the dimension of the mixture model for the measurement error</p></td>
+      <th>tau</th>
+      <td><p>The particular quantiles that the parameters were estimated at.
+It should be an L-dimensional vector.</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>list of parameters</p>
+    <p>A function that can be called on any element from 0 to 1 and
+ returns a vector of parameter values</p>
     
 
   </div>
