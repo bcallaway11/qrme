@@ -4,15 +4,17 @@
 \alias{em.algo}
 \title{em.algo}
 \usage{
-em.algo(betmatguess, k = 1, piguess = 1, muguess = 0, sigguess = 1,
-  tol = 0.01)
+em.algo(formla, data, betmatguess, tau, m = 1, piguess = 1,
+  muguess = 0, sigguess = 1, tol = 0.01, cl = 1)
 }
 \arguments{
 \item{betmatguess}{Initial values for the beta parameters.  This should be
 an LxK matrix where L is the number of quantiles and K is the dimension
 of the covariates}
 
-\item{k}{The number of components of the mixture distribution for the
+\item{tau}{An L-vector indicating which quantiles have been estimated}
+
+\item{m}{The number of components of the mixture distribution for the
 measurement error}
 
 \item{piguess}{Starting value for the probabilities of each mixture distribution (should have length equal to k)}

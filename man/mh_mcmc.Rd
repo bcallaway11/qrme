@@ -19,11 +19,22 @@ mh_mcmc(startval = 0, iters = 500, burnin = 100, drawsd = sqrt(4),
 \item{betmat}{LxK matrix of parameter values with L the number of quantiles
 and K the dimension of the covariates}
 
+\item{m}{The dimension of the measurement error}
+
+\item{pi}{The probability of each mixture component (should have length
+equal to m)}
+
+\item{mu}{The mean of each mixture component (should have length equal
+to m)}
+
+\item{sig}{The standard deviation of each mixture component (should have
+length equal to m)}
+
 \item{y}{particular value of y}
 
 \item{x}{particular value of x}
 
-\item{tau}{an L-vector containing the quantile at which Q(Y|X) was estimated}
+\item{tau}{an L-vector of all the quantiles where betas were estimated}
 }
 \value{
 vector of draws of measurement error

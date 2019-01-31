@@ -2,9 +2,10 @@ Package: qrme
 Title: Quantile Regression with Measurement Error
 Version: 1.0.0
 Authors@R: c(person("Callaway", "Brantly", email = "brantly.callaway@temple.edu", role = c("aut", "cre")), person("Li", "Tong", email="tong.li@vanderbilt.edu", role="aut"), person("Murtazashvili", "Irina", email="im99@drexel.edu", role="aut"))
-Description: What the package does (one paragraph).
-Depends: R (>= 3.4.4)
-License: What license is it under?
+Description: Code for estimating quantile regressions with measurement error.  The first main set of functions estimates quantile regression with measurement error in the dependent variable using an EM-type-algorithm.  The second set of functions estimates quantile regressions with measurement error in the outcome and in a continuous "treatment" variable.  All functions allow for an arbitrary number of other covariates that are assumed not to be measured with error.
+Depends: R (>= 2.1.0)
+License: GPL-2
+Imports: BMisc, copula, ggplot2, mixtools, pbapply, quantreg, tidyr
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1

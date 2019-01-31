@@ -26,19 +26,11 @@ ll(params, y, t, x, copula = "gumbel", Fyx, Ftx, fyx, ftx, Us, Vs,
 
 \item{ftx}{function that contains the pdf of t conditional on x}
 
-\item{ndraws}{the number of draws of U and V to make}
+\item{Us}{draws for the measurement error in the outcome equation (these
+are made in the function that calls the likelihood function)}
 
-\item{Upi}{vector of probabilities for measurement error mixture model for Y}
-
-\item{Umu}{vector of means for measurement error mixture model for Y}
-
-\item{Usig}{vector of std. deviations for measurement error mixture model for Y}
-
-\item{Vpi}{vector of probabilities for  measurement error mixture model for T}
-
-\item{Vmu}{vector of means for measurement error mixture model for T}
-
-\item{Vsig}{vector of std. deviations for measurement error mixture model for T}
+\item{Vs}{draws for the measurement error in the treatment equation (these
+are made in the function that calls the likelihood function)}
 }
 \value{
 scalar negative value of log likelihood function
@@ -46,3 +38,4 @@ scalar negative value of log likelihood function
 \description{
 this is the likelihood function for estimating the copula parameter
 }
+\keyword{internal}

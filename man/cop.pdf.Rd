@@ -14,6 +14,8 @@ cop.pdf(u, v, type = "gumbel", delt, eps = 1e-300)
 \item{type}{one of c("gumbel","frank")}
 
 \item{delt}{the copula paramter}
+
+\item{eps}{A small positive number to trim out zeros}
 }
 \value{
 vector of copula pdf values

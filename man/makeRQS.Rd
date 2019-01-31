@@ -4,10 +4,18 @@
 \alias{makeRQS}
 \title{makeRQS}
 \usage{
-makeRQS(params, formla, data)
+makeRQS(params, formla, data, tau)
 }
 \arguments{
-\item{optout}{results of call to optim}
+\item{params}{an LxK matrix of QR parameters where L is the number of
+quantiles that parameters have been estimated at and K is the dimension
+of the covariates.}
+
+\item{formla}{y ~ x, a formula for the outcome on the regressors}
+
+\item{data}{a data.frame containing y and x}
+
+\item{tau}{the vector of quantiles where QR was estimated}
 }
 \value{
 rqs object

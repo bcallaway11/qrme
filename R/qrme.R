@@ -7,6 +7,7 @@
 #' @param v second copula argument
 #' @param type one of c("gumbel","frank")
 #' @param delt the copula paramter
+#' @param eps A small positive number to trim out zeros
 #'
 #' @return vector of copula pdf values
 #'
@@ -45,18 +46,18 @@ cop.pdf <- function(u,v,type="gumbel",delt,eps=1e-300) {
 #' @param Ftx function that contains the cdf of t conditional on x
 #' @param fyx function that contains the pdf of y conditional on x
 #' @param ftx function that contains the pdf of t conditional on x
-#' @param Upi vector of probabilities for measurement error mixture model for Y
-#' @param Umu vector of means for measurement error mixture model for Y
-#' @param Usig vector of std. deviations for measurement error mixture model for Y
-#' @param Vpi vector of probabilities for  measurement error mixture model for T
-#' @param Vmu vector of means for measurement error mixture model for T
-#' @param Vsig vector of std. deviations for measurement error mixture model for T
-#' @param ndraws the number of draws of U and V to make
+#' @param Us draws for the measurement error in the outcome equation (these
+#'  are made in the function that calls the likelihood function)
+#' @param Vs draws for the measurement error in the treatment equation (these
+#'  are made in the function that calls the likelihood function)
+#' 
+#' @return scalar negative value of log likelihood function 
 #'
-#' @return scalar negative value of log likelihood function
-#'
+#' @keywords internal
+#' 
 #' @export
-ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx, Us, Vs, ndraws=100, eps=1e-300) {
+ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx,
+               Us, Vs, ndraws=100, eps=1e-300) {
     k <- length(params)
     params <- as.matrix(params)
     x <- as.matrix(x)
@@ -91,11 +92,44 @@ ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx, Us, Vs, ndr
 #' @title qrme
 #'
 #' @description Quantile Regression with measurement error in the dependent
-#'  variable using an EM-algorithm
+#'  variable using an EM-algorithm.  In practice, this function assumes
+#'  that the measurement error distribution is a mixture of normal
+#'  distributions.
 #'
 #' @param formla y ~ x
 #' @param tau vector for which quantiles to compute quantile regression
-qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, startsig=NULL, startpi=NULL, tol=1) {
+#' @param data a data.frame that contains y and x
+#' @param nmix The number of mixture components of the measurement error
+#' @param startbet an LxK matrix of starting values for beta where
+#'  L is the dimension of tau and K is the number of covariates (default is
+#'  NULL and in this case, the starting values are set to be the QR
+#'  coefficients coming from QR that ignores measurment error)
+#' @param startmu A vector of length nmix of starting values for the mean
+#'  of the mixture of normals distribution for the measurment error (default
+#'  is NULL and in this case, the starting values are basically set to be
+#'  equally spaced from -nmix to nmix but forced to have mean 0)
+#' @param startsig A vector of length nmix of starting values for the
+#'  standard deviation of the mixture of normals distribution for the
+#'  measurement error (default is NULL and in this case, the starting values
+#'  are all set to be 1)
+#' @param startpi A vector of length nmix of starting values for the fraction
+#'  of observations in each component of the mimxture of normals distribution
+#'  for the measurement error (default is NULL and in this case, the starting
+#'  values are all set to be 1/nmix)
+#' @param tol This is the convergence criteria.  When the change in the
+#'  Euclidean distance between the new parameters (at each iteration) and
+#'  the old parameters (from the previous iteration) is smaller than tol,
+#'  the algorithm concludes.  In general, larger values for tol will result
+#'  in a fewer number of iterations and smaller values will result in more
+#'  accurate estimates.
+#' @param cl The numbe of clusters to use for parallel computation (default
+#'  is 1 so that computation is not done in parallel)
+#' 
+#' @return an object of class "merr"
+#'
+#' @export
+qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
+                 startsig=NULL, startpi=NULL, tol=1, cl=1) {
     xformla <- formla
     xformla[[2]] <- NULL ## drop y variable
     x <- model.matrix(xformla, data)
@@ -107,7 +141,7 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
         ## this defaults the start values of the beta_0 to be
         ## the observed quantiles of the outcome and the other
         ## betas to be equal to 0
-        betvals <- t(coef(rq(formla, tau=tau, data=data)))
+        betvals <- t(coef(quantreg::rq(formla, tau=tau, data=data)))
         
     } else {
         betvals <- startbet
@@ -131,33 +165,22 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
     qrparams <- list(bet=betvals, m=m, pi=pivals, mu=muvals, sig=sigvals)
 
 
-    ## TODO: fill in details for estimting this using EM
-
+    ## Estimate QR model with measurement error using EM algorithm
     res <- em.algo(formla, data,
-                   betmatguess=betvals, m=m, piguess=pivals, muguess=muvals,
-                   sigguess=sigvals, tol=tol)
+                   betmatguess=betvals, tau=tau,
+                   m=m, piguess=pivals, muguess=muvals,
+                   sigguess=sigvals, tol=tol, cl=cl)
 
 
-    browser()
-    out <- makeRQS(params, formla, data)
+    out <- makeRQS(res, formla, data, tau=tau)
 
     class(out) <- c("merr", class(out))
-    
-    out$params <- res$par
-    ## idx <- length(betvals)+1
-    ## nidx <- length(betvals)+length(pivals)
-    ## pi1 <- res$par[idx:nidx]
-    ## out$pi <- c(pi1, 1-sum(pi1))
-    ## idx <- nidx+1
-    ## nidx <- nidx+length(muvals)
-    ## mu1 <- res$par[idx:nidx]
-    ## out$mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
-    ## idx <- nidx+1
-    ## nidx <- nidx+length(sigvals)
-    ## out$sig <- res$par[idx:nidx]
-    out$pi <- params$pi
-    out$mu <- params$mu
-    out$sig <- params$sig
+
+    ## set final parameters for measurement error class
+    out$bet <- res$bet
+    out$pi <- res$pi
+    out$mu <- res$mu
+    out$sig <- res$sig
 
     out
 }
@@ -169,6 +192,7 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
 #' @param betmatguess Initial values for the beta parameters.  This should be
 #'  an LxK matrix where L is the number of quantiles and K is the dimension
 #'  of the covariates
+#' @param tau An L-vector indicating which quantiles have been estimated
 #' @param m The number of components of the mixture distribution for the
 #'  measurement error
 #' @param piguess Starting value for the probabilities of each mixture distribution (should have length equal to k)
@@ -187,39 +211,39 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL, sta
 #' @keywords internal
 #' @export
 em.algo <- function(formla, data,
-                    betmatguess, m=1, piguess=1, muguess=0,
-                    sigguess=1, tol=.01) {
-  
-  stopIters <- 100
-  counter <- 1
-  
-  while (counter <= stopIters) {
-      newone <- em.algo.inner(formla, data,
-                              betmatguess, m, piguess, muguess, sigguess)
-    newbet <- newone$bet
-    newpi <- newone$pi
-    newmu <- newone$mu
-    newsig <- newone$sig
+                    betmatguess, tau, m=1, piguess=1, muguess=0,
+                    sigguess=1, tol=.01, cl=1) {
     
-    cat("\n\n\nIteration: ", counter, "\n bet: ", newbet, "\n pi: ", newpi, "\n mu: ", newmu, "\n sig: ", newsig, "\n\n")
-    criteria <- sqrt(sum(c(newbet-betmatguess,newsig-sigguess,newpi-piguess,newmu-muguess)^2))
-    cat(" convergence criteria: ", criteria, "\n\n")
-    if ( criteria <= tol) { ## Euclidean norm
-      cat("\n algorithm converged\n") 
-      return(newone)
+    stopIters <- 100
+    counter <- 1
+    
+    while (counter <= stopIters) {
+        newone <- em.algo.inner(formla, data,
+                                betmatguess, tau, m, piguess, muguess, sigguess, cl=cl)
+        newbet <- newone$bet
+        newpi <- newone$pi
+        newmu <- newone$mu
+        newsig <- newone$sig
+        
+        cat("\n\n\nIteration: ", counter, "\n bet: ", newbet, "\n pi: ", newpi, "\n mu: ", newmu, "\n sig: ", newsig, "\n\n")
+        criteria <- sqrt(sum(c(newbet-betmatguess,newsig-sigguess,newpi-piguess,newmu-muguess)^2))
+        cat(" convergence criteria: ", criteria, "\n\n")
+        if ( criteria <= tol) { ## Euclidean norm
+            cat("\n algorithm converged\n") 
+            return(newone)
+        }
+        counter <- counter+1
+        betmatguess <- newbet
+        sigguess <- newsig
+        muguess <- newmu
+        piguess <- newpi
     }
-    counter <- counter+1
-    betmatguess <- newbet
-    sigguess <- newsig
-    muguess <- newmu
-    piguess <- newpi
-  }
-  cat("\n algorithm failed to converge\n")
-  return(newone)
+    cat("\n algorithm failed to converge\n")
+    return(newone)
 }
 
 em.algo.inner <- function(formla, data,
-                          betmat, m=1, pi=1, mu=0, sig=1, cl=1) {
+                          betmat, tau, m=1, pi=1, mu=0, sig=1, cl=1) {
 
 
     xformla <- formla
@@ -241,7 +265,7 @@ em.algo.inner <- function(formla, data,
     cat("\nEstimating QR including simulated measurement error...")
     newdta1 <- do.call(rbind.data.frame, newdta)
     colnames(newdta1) <- c(yname, colnames(X), "e")
-    out <- rq(formla, tau=tau, data=newdta1, method="pfn")
+    out <- quantreg::rq(formla, tau=tau, data=newdta1, method="pfn")
     
     ## this is part I am not sure about, once you have a new beta then estimate a new sigma??
     ## also should probably restrict overall mean of error term to be equal to 0
@@ -431,7 +455,7 @@ fv <- function(v,m=1,pi=1,mu=0,sig=1) {
 #' @param iters The total number of measurement error draws to make
 #' @param burnin The number of draws to drop
 #' @param drawsd Trial values are drawn from N(0, sd=drawsd), default is 4
-#' @inheritParams fy.x
+#' @inheritParams fv.yx
 #' @param y particular value of y
 #' @param x particular value of x
 #' @return vector of draws of measurement error
@@ -459,49 +483,49 @@ mh_mcmc <- function(startval=0, iters=500, burnin=100, drawsd=sqrt(4), betmat, m
 
 
 
-
-#' @title getParams
-#'
-#' @description Helper function to take the result of the optimization routine
-#' and converts back to parameters
-#'
-#' @param optout results of call to optim
-#' @param ksig the dimension of the mixture model for the measurement error
-#'
-#' @return list of parameters
-#'
-#' @export
-getParams <- function(optout, formla, data, tau, nmix) {
-    xformla <- formla
-    xformla[[2]] <- NULL ## drop y variable
-    x <- model.matrix(xformla, data)
-    kx <- ncol(x)*length(tau)
-    if (class(optout) == "numeric") {
-        par <- optout
-    } else { ## output of optim
-        par <- optout$par
-    }
-    bet <- par[1:kx]
-    k <- kx/length(tau)
-    n <- nrow(x)
-    ktau <- length(tau)
-    bet <- split(bet,ceiling(seq_along(bet)/k))
-    kmu <- nmix-1
-    if (nmix > 1) {
-        pi1 <- par[(kx+1):(kx+kmu)]
-        mu1 <- par[(kx+kmu+1):(kx+kmu+kmu)]
-        pi <- c(pi1, 1-sum(pi1))
-        mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
-    } else {
-        pi <- 1
-        mu <- 0
-    }
-    ksig <- nmix
-    sig <- par[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
-    out <- list(bet=bet, pi=pi, mu=mu, sig=sig)
-    class(out) <- "PARAM"
-    out
-}
+## seems to be unused since we switched to EM algorithm
+## #' @title getParams
+## #'
+## #' @description Helper function to take the result of the optimization routine
+## #' and converts back to parameters
+## #'
+## #' @param optout results of call to optim
+## #' @param ksig the dimension of the mixture model for the measurement error
+## #'
+## #' @return list of parameters
+## #'
+## #' @export
+## getParams <- function(optout, formla, data, tau, nmix) {
+##     xformla <- formla
+##     xformla[[2]] <- NULL ## drop y variable
+##     x <- model.matrix(xformla, data)
+##     kx <- ncol(x)*length(tau)
+##     if (class(optout) == "numeric") {
+##         par <- optout
+##     } else { ## output of optim
+##         par <- optout$par
+##     }
+##     bet <- par[1:kx]
+##     k <- kx/length(tau)
+##     n <- nrow(x)
+##     ktau <- length(tau)
+##     bet <- split(bet,ceiling(seq_along(bet)/k))
+##     kmu <- nmix-1
+##     if (nmix > 1) {
+##         pi1 <- par[(kx+1):(kx+kmu)]
+##         mu1 <- par[(kx+kmu+1):(kx+kmu+kmu)]
+##         pi <- c(pi1, 1-sum(pi1))
+##         mu <- c(mu1, -sum(mu1*pi1)/(1-sum(pi1)))
+##     } else {
+##         pi <- 1
+##         mu <- 0
+##     }
+##     ksig <- nmix
+##     sig <- par[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
+##     out <- list(bet=bet, pi=pi, mu=mu, sig=sig)
+##     class(out) <- "PARAM"
+##     out
+## }
 
 #' @title makeRQS
 #'
@@ -516,12 +540,17 @@ getParams <- function(optout, formla, data, tau, nmix) {
 #'  necessarily be increasing in tau.  However, we can separately rearrange
 #'  those as needed.  But this gives a way to report the QR parameters.
 #'
-#' @param optout results of call to optim
+#' @param params an LxK matrix of QR parameters where L is the number of
+#'  quantiles that parameters have been estimated at and K is the dimension
+#'  of the covariates.
+#' @param formla y ~ x, a formula for the outcome on the regressors
+#' @param data a data.frame containing y and x
+#' @param tau the vector of quantiles where QR was estimated
 #'
 #' @return rqs object
 #'
 #' @export
-makeRQS <- function(params, formla, data) {
+makeRQS <- function(params, formla, data, tau) {
     xformla <- formla
     xformla[[2]] <- NULL ## drop y variable
     x <- model.matrix(xformla, data)
@@ -530,17 +559,20 @@ makeRQS <- function(params, formla, data) {
     optout$terms <- terms(formla)
     optout$formula <- formla
     bet <- params$bet
+    #################
+    ## OLD: this is for if you use ML as in HLLP
     ##bet <- split(bet1,ceiling(seq_along(bet1)/k))
     ## rearrangement (as in HLLP though double check)
-    barx <- apply(x, 2, mean)
-    betorder <- order(sapply(bet, function(b) sum(b*barx)))
-    bet <- simplify2array(bet)
-    if (class(bet)=="numeric") { ## i.e. there is just one element in bet
-        bet <- as.matrix(bet)
-    } else {
-        bet <- t(bet)
-    }
-    bet <- as.matrix(bet[betorder,])
+    ## barx <- apply(x, 2, mean)
+    ## betorder <- order(sapply(bet, function(b) sum(b*barx)))
+    ## bet <- simplify2array(bet)
+    ## if (class(bet)=="numeric") { ## i.e. there is just one element in bet
+    ##     bet <- as.matrix(bet)
+    ## } else {
+    ##     bet <- t(bet)
+    ## }
+    ##bet <- as.matrix(bet[betorder,])
+    ####################
     optout$coefficients <- t(bet)
     optout$tau <- tau
     optout
@@ -616,8 +648,8 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     Fyx <- predict(Qyx, newdata=as.data.frame(x), type="Fhat", stepfun=TRUE)
     Ftx <- predict(Qtx, newdata=as.data.frame(x), type="Fhat", stepfun=TRUE)
 
-    Fyx <- lapply(Fyx, rearrange)
-    Ftx <- lapply(Ftx, rearrange)
+    Fyx <- lapply(Fyx, quantreg::rearrange)
+    Ftx <- lapply(Ftx, quantreg::rearrange)
 
     fyx <- predict(Qyx, newdata=as.data.frame(x), type="fhat")
     ftx <- predict(Qyx, newdata=as.data.frame(x), type="fhat")
@@ -739,9 +771,12 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     return(out)
 }
 
+## check if this works, I think it is for putting back together an
+## unconditional distribution from a list of them, but need to step through
+## it
 avgDist <- function(Fytxlist, yvals) {
     
-    Fyt <- lapply(Fytx, function(FFytx) {
+    Fyt <- lapply(Fytxlist, function(FFytx) {
         combineDfs(yvals, FFytx)
     })
 
@@ -826,7 +861,7 @@ addplot <- function(obj, p, whichone=1, tau=c(.1,.5,.9)) {
                    function(FF) quantile(FF, probs=tau)))
     cmat <- cbind.data.frame(tvals, qq)
     colnames(cmat) <- c("tvals", paste0("c",tau*100))
-    cmat <- gather(cmat, quantile, value, -tvals)
+    cmat <- tidyr::gather(cmat, quantile, value, -tvals)
     p <- p + geom_line(data=cmat, mapping=aes(x=tvals, y=value, group=quantile,
                                               color=quantile),
                        linetype="dashed")
