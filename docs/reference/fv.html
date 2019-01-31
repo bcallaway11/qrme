@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • qrme</title>
+<title>fv — fv • qrme</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -30,7 +30,11 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="fv — fv" />
+
+<meta property="og:description" content="The distribution of the measurement error using a mixture of
+ normal distributions" />
+<meta name="twitter:card" content="summary" />
 
 
 
@@ -46,7 +50,7 @@
   </head>
 
   <body>
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -87,84 +91,64 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>fv</h1>
+    
+    <div class="hidden name"><code>fv.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    
+    <p>The distribution of the measurement error using a mixture of
+ normal distributions</p>
+    
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
-
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      <tr>
-        
-        <td>
-          <p><code><a href="betfun.html">betfun()</a></code> </p>
-        </td>
-        <td><p>betfun</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="cop.pdf.html">cop.pdf()</a></code> </p>
-        </td>
-        <td><p>cop.pdf</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getParams.html">getParams()</a></code> </p>
-        </td>
-        <td><p>getParams</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="ll.html">ll()</a></code> </p>
-        </td>
-        <td><p>ll</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="makeRQS.html">makeRQS()</a></code> </p>
-        </td>
-        <td><p>makeRQS</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="mh_mcmc.html">mh_mcmc()</a></code> </p>
-        </td>
-        <td><p>mh_mcmc</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="parms2coppar.html">parms2coppar()</a></code> </p>
-        </td>
-        <td><p>parms2coppar</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="qrme.html">qrme()</a></code> </p>
-        </td>
-        <td><p>qrme</p></td>
-      </tr>
-    </tbody>
+    <pre class="usage"><span class='fu'>fv</span>(<span class='no'>v</span>, <span class='kw'>m</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>pi</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>mu</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>sig</span> <span class='kw'>=</span> <span class='fl'>1</span>)</pre>
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>v</th>
+      <td><p>A particular value of the measurement error to estimate f(v|y,x)</p></td>
+    </tr>
+    <tr>
+      <th>m</th>
+      <td><p>The dimension of the measurement error</p></td>
+    </tr>
+    <tr>
+      <th>pi</th>
+      <td><p>The probability of each mixture component (should have length
+equal to m)</p></td>
+    </tr>
+    <tr>
+      <th>mu</th>
+      <td><p>The mean of each mixture component (should have length equal
+to m)</p></td>
+    </tr>
+    <tr>
+      <th>sig</th>
+      <td><p>The standard deviation of each mixture component (should have
+length equal to m)</p></td>
+    </tr>
     </table>
-  </div>
+    
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>scalar f(v)</p>
+    
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-all-functions">All functions</a></li>
-    </ul>
+      <li><a href="#arguments">Arguments</a></li>
+      
+      <li><a href="#value">Value</a></li>
+          </ul>
+
   </div>
 </div>
 
