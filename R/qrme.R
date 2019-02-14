@@ -287,7 +287,7 @@ em.algo.inner <- function(formla, data,
     if (m == 1) {
         nm <- list(m=1, lambda=1, mu=0, sigma=sd(newdta1$e))
     } else {
-        nm <- mixtools::normalmixEM(newdta1$e, k=m)
+        nm <- mixtools::normalmixEM(newdta1$e, k=m, epsilon=1e-03)
     }
     
     return(list(bet=t(coef(out)), m=m, pi=nm$lambda, mu=nm$mu, sig=nm$sigma))
