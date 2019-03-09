@@ -131,7 +131,8 @@ ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx,
 #'
 #' @export
 qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
-                 startsig=NULL, startpi=NULL, tol=1, cl=1) {
+                 startsig=NULL, startpi=NULL, tol=1, iters=400,
+                 burnin=200, drawsd=4, cl=1) {
     xformla <- formla
     xformla[[2]] <- NULL ## drop y variable
     x <- model.matrix(xformla, data)
@@ -171,7 +172,8 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
     res <- em.algo(formla, data,
                    betmatguess=betvals, tau=tau,
                    m=m, piguess=pivals, muguess=muvals,
-                   sigguess=sigvals, tol=tol, cl=cl)
+                   sigguess=sigvals, tol=tol,
+                   iters=iters, burnin=burnin, drawsd=drawsd, cl=cl)
 
 
     out <- makeRQS(res, formla, data, tau=tau)
@@ -183,6 +185,7 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
     out$pi <- res$pi
     out$mu <- res$mu
     out$sig <- res$sig
+    out$Ystar <- res$Ystar
 
     out
 }
@@ -214,20 +217,21 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
 #' @export
 em.algo <- function(formla, data,
                     betmatguess, tau, m=1, piguess=1, muguess=0,
-                    sigguess=1, tol=.01, cl=1) {
+                    sigguess=1, tol=.01,
+                    iters=400, burnin=200, drawsd=4, cl=1) {
     
     stopIters <- 100
     counter <- 1
     
     while (counter <= stopIters) {
         newone <- em.algo.inner(formla, data,
-                                betmatguess, tau, m, piguess, muguess, sigguess, cl=cl)
+                                betmatguess, tau, m, piguess, muguess, sigguess, iters=iters, burnin=burnin, drawsd=drawsd, cl=cl)
         newbet <- newone$bet
         newpi <- newone$pi
         newmu <- newone$mu
         newsig <- newone$sig
         
-        cat("\n\n\nIteration: ", counter, "\n bet: ", newbet, "\n pi: ", newpi, "\n mu: ", newmu, "\n sig: ", newsig, "\n\n")
+        cat("\n\n\nIteration: ", counter, "\n pi: ", newpi, "\n mu: ", newmu, "\n sig: ", newsig, "\n\n")
         criteria <- sqrt(sum(c(newbet-betmatguess,newsig-sigguess,newpi-piguess,newmu-muguess)^2))
         cat(" convergence criteria: ", criteria, "\n\n")
         if ( criteria <= tol) { ## Euclidean norm
@@ -256,8 +260,9 @@ em.algo <- function(formla, data,
 #' @return A list of QR parameters and parameters for mixture of normals for
 #'  the measurement error term
 #' @export
-em.algo.inner <- function(formla, data,
-                          betmat, tau, m=1, pi=1, mu=0, sig=1, cl=1) {
+em.algo.inner <- function(formla, data, 
+                          betmat, tau, m=1, pi=1, mu=0, sig=1,
+                          iters=400, burnin=200, drawsd=4, cl=1) {
 
 
     xformla <- formla
@@ -269,15 +274,28 @@ em.algo.inner <- function(formla, data,
     n <- length(Y)
     cat("\nSimulating measurement error...")
 
-    newdta <- pbapply::pblapply(1:n, function(i) {
-        e <- mh_mcmc(betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=Y[i], x=X[i,], tau=tau, iters=1000, burnin=500)
-        cbind.data.frame(Y[i]-e, matrix(X[i,], nrow=length(e), ncol=ncol(X), byrow=TRUE),e=e)
-    }, cl=cl)
+    
+    ## newdta <- pbapply::pblapply(1:n, function(i) {
+    ##     ## old call to R code
+    ##     ##e <- mh_mcmc(betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=Y[i], x=X[i,], tau=tau, iters=1000, burnin=500)
+    ##     ## new call to C++ code
+    ##     e <- mh_mcmc_innerC(startval=0, iters=400, burnin=200, drawsd=4, betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=Y[i], x=as.matrix(X[i,]), tau=tau)
+    ##     cbind.data.frame(Y[i]-e, matrix(X[i,], nrow=length(e), ncol=ncol(X), byrow=TRUE),e=e)
+    ## }, cl=cl)
+
+    startval <- 0
+    edraws <- mh_mcmcC(Y, X, startval=startval, iters=iters, burnin=burnin,
+                       drawsd=drawsd, betmat=betmat, m=m,
+                       pi=pi, mu=mu, sig=sig, tau=tau)
+
+    newids <- unlist(lapply(1:n, function(i) rep(i, (iters-burnin)))) ## just replicates Y and X over and over
+
+    newdta1 <- as.data.frame(cbind(Y=(Y[newids]-edraws), X=X[newids,], e=edraws))
 
     ## Note: this currently just works for one X; will need to update
-    
+
     cat("\nEstimating QR including simulated measurement error...")
-    newdta1 <- do.call(rbind.data.frame, newdta)
+    ##newdta1 <- do.call(rbind.data.frame, newdta)
     colnames(newdta1) <- c(yname, colnames(X), "e")
     out <- quantreg::rq(formla, tau=tau, data=newdta1, method="pfn")
     
@@ -290,7 +308,7 @@ em.algo.inner <- function(formla, data,
         nm <- mixtools::normalmixEM(newdta1$e, k=m, epsilon=1e-03)
     }
     
-    return(list(bet=t(coef(out)), m=m, pi=nm$lambda, mu=nm$mu, sig=nm$sigma))
+    return(list(bet=t(coef(out)), m=m, pi=nm$lambda, mu=nm$mu, sig=nm$sigma, Ystar=newdta1[,yname]))
 }
 
 
@@ -656,8 +674,7 @@ getCBounds <- function(copula) {
 #' @param data a data.frame containing the data used for estimation
 qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
                   copula="gumbel", Qyx, Qtx, 
-                  startparams=NULL, method="BFGS", maxit=1000, ndraws=100,
-                  cl=1) {
+                  startparams=NULL, method="BFGS", maxit=1000, ndraws=100) {
 
     cat("\nqr2me method...\n")
     cat("----------------------")
@@ -665,6 +682,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     cat("----------------------")
     cat("\n")
     x <- model.matrix(xformla, data)
+    n <-  nrow(data)
     if (is.null(startparams)) {
         ##startparams <- rep(0, ncol(x)) ## do this if want params to be function of X
         startparams <- 0.5
@@ -688,10 +706,12 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     ## ftx <- predict(Qyx, newdata=as.data.frame(x), type="fhat")
 
     cat("Step 1 of 3: Converting QR to conditional density estimates...\n\n")
-    fyx1 <- pbsapply(unique(data[,yname]), fy.x, betmat=t(coef(Qyx)), XX=x, tau=tau)
+    ##fyx1 <- pbsapply(unique(data[,yname]), fy.x, betmat=t(coef(Qyx)), XX=x, tau=tau)
+    fyx1 <- fYXmatC(Y=unique(data[,yname]), betmat=t(coef(Qyx)), X=x, tau=tau)
     eps <- 1e-300 ##.Machine$double.eps
     fyx <- apply(fyx1, 1, FUN=function(y) approxfun(x=unique(data[,yname]), y=y, yleft=eps, yright=eps))
-    ftx1 <- pbsapply(unique(data[,tname]), fy.x, betmat=t(coef(Qtx)), XX=x, tau=tau)
+    ##ftx1 <- pbsapply(unique(data[,tname]), fy.x, betmat=t(coef(Qtx)), XX=x, tau=tau)
+    ftx1 <- fYXmatC(Y=unique(data[,tname]), betmat=t(coef(Qtx)), X=x, tau=tau)
     ftx <- apply(ftx1, 1, FUN=function(y) approxfun(x=unique(data[,tname]), y=y, yleft=eps, yright=eps))
 
     
@@ -713,9 +733,40 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     cat("\nStep 2 of 3: Estimating copula parameter...\n")
     ################################################################
 
-    ## TODO: there are some problems here when there is measurement error;
-    ## perhaps in ll function...need to dig deeper
+    ## this is not right, but perhaps can make draws (e.g. similar to mcmc algorithm above)
+    ## to get the draws right and then estimate this way.
+    ## create a new dataset with the measurement error draws in order
+    ## to estimate the copula parameter
+    ## newids <- unlist(lapply(1:n, function(i) rep(i, ndraws))) ## just replicates Y and X over and over
+    ## Yvals <- data[,yname]
+    ## Tvals <- data[,tname]
+    ## newdta1 <- cbind(Y=(Yvals[newids]-rep(Us,n)), T=(Tvals[newids]-rep(Vs,n)))
 
+    if (copula=="frank") {
+        cop <- copula::frankCopula()
+    } else if (copula=="gumbel") {
+        cop <- copula::gumbelCopula()
+    } else if (copula=="clayton") {
+        cop <- copula::claytonCopula()
+    } else if (copula=="gaussian") {
+        cop <- copula::normalCopula()
+    } else {
+        stop(paste0("copula type:", copula, " is not supported"))
+    }
+
+    ##this is not right, but perhaps can make draws (e.g. similar to mcmc algorithm above)
+    ##to get the draws right and then estimate this way.
+    newdta1 <- data.frame(Y=Qyx$Ystar, T=Qtx$Ystar)
+    ranks1 <- pobs(newdta1)
+    cop <- copula::fitCopula(cop, ranks1, method="irho") ## irho inverts spearman's rho; it
+    ##is very fast though (I think) not all copulas (exception=(I think)Gumbel) have 1-1 relationship
+    ##with Spearman's rho, but in practice they seem very similar.
+
+
+    browser()
+    delt <- rep(attributes(cop)$estimate, nrow(x))
+
+    ##estimation with maximum likelihood as in the original version of the paper
     res <- optimize(ll, c(0,1), maximum=TRUE, 
                  y=data[,yname], t=data[,tname], x=x, copula=copula,
                  Fyx=Fyx, Ftx=Ftx, fyx=fyx, ftx=ftx,
@@ -726,10 +777,12 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     
     if (!is.null(tvals)) {
 
+        cat("\nStep 3 of 3: Building conditional distributions...\n")
         ## If you don't set particular values of X to compute,
         ## just set it equal to the average values of X in the dataset
         if (is.null(xdf)) xdf <- as.data.frame(t(apply(x,2,mean))) ##x, for all data
- 
+
+        
         ##xtdf <- cbind(tvals, xdf)
         ## todo, this gives the copula, now convert to conditional distribution
          ##delt <- parms2coppar(res$par, copula, xdf)
@@ -739,12 +792,17 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
         QQyx <- predict( Qyx, newdata=as.data.frame(rbind(xdf,x[1,])), stepfun=TRUE)  ## super hack:  but predict.rqs is throwing an error that I think it shouldn't, and this gets around it.
         QQyx <- QQyx[-length(QQyx)]
         QQyx <- lapply(QQyx, rearrange)
+        QQyx2  <- predict(Qyx, newdata=as.data.frame(xdf))
+        FFyx2  <- t(sapply(Fyx, function(fyx) fyx(yvals)))
         Ftx <- predict(Qtx, newdata=as.data.frame(rbind(xdf, x[1,])),
                         type="Fhat", stepfun=TRUE)
         Ftx <- Ftx[-length(Ftx)]
         Ftx <- lapply(Ftx, rearrange)
+        FFtx <- t(sapply(Ftx, function(ftx) ftx(tvals)))
 
         U <- seq(0,1,length.out=ndraws)
+        U <- tau
+
         if (copula=="frank") {
             cop <- copula::frankCopula(as.numeric(delt[1])) ## all delts restricted to be the same so just choose first one
         } else if (copula=="gumbel") {
@@ -757,53 +815,74 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
             stop(paste0("copula type:", copula, " is not supported"))
         }
 
-        cat("\nStep 3 of 3: Building conditional distributions...\n")
-        Fytx <- pblapply(1:length(QQyx), function(i) {
-            qfun <- QQyx[[i]]
-            ffun <- Ftx[[i]]
-            lapply(tvals, function(tt) {
-                BMisc::makeDist(yvals, sapply(yvals, function(yy) {
-                    mean(1*(qfun(U)<=yy)*dCopula(cbind(U, ffun(tt)), cop))
-                }))
-            }) ## might want to make this a function with makeRQS (modified) or makeDist eventually
-        }, cl=cl)
-        ##Qytx <- lapply(Fytx, function(FF) quantile(FF, tau, type=1))
+        ## call C++ function to return matrix with distribution of Fytx
+        FytXmat <- computeFytXC(yvals, tvals, QQyx2, FFtx, tau, "gumbel", delt[1])
 
-        ## next we want to reverse the list
-        reverseListIndex <- function(l) {
-            outlist <- list()
-            length(outlist) <- length(l[[1]])
-            outlist <- lapply(outlist, function(f) {
-                g <- list()
-                length(g) <- length(l)
-                g
-            })
         
-            for (i in 1:length(l)) {
-                for (j in 1:length(l[[1]])) {
-                    outlist[[j]][[i]] <- l[[i]][[j]]
-                }
-            }
-            outlist
+        ## internal function for reordering arguments of BMisc::makeDist
+        makeDist1 <- function(Fx, x, sorted = FALSE, rearrange=FALSE) {
+            BMisc::makeDist(x, Fx, sorted, rearrange)
         }
 
-        Fytx <- reverseListIndex(Fytx)
+        ## converts 3-dimensional matrix of Fytx into 2-dimensional matrix of distributio
+        ## functions
+        Fytx  <- apply(FytXmat, c(1,3), makeDist1, x=yvals)
+
+        ## FytX contains a distribution function for every value of t and x
+        ## this step averages over all the x's
+        Fyt <- lapply(1:length(tvals), function(i) {
+            BMisc::combineDfs(yvals, Fytx[,i])
+        })
+        
+
+        ## old way, replaced this with calls to C++ functions
+        ## Fytx <- pblapply(1:length(QQyx), function(i) {
+        ##     qfun <- QQyx[[i]]
+        ##     ffun <- Ftx[[i]]
+        ##     lapply(tvals, function(tt) {
+        ##         BMisc::makeDist(yvals, sapply(yvals, function(yy) {
+        ##             mean(1*(qfun(U)<=yy)*dCopula(cbind(U, ffun(tt)), cop))
+        ##         }))
+        ##     }) ## might want to make this a function with makeRQS (modified) or makeDist eventually
+        ## }, cl=cl)
+        ## ##Qytx <- lapply(Fytx, function(FF) quantile(FF, tau, type=1))
+
+        ## ## next we want to reverse the list
+        ## reverseListIndex <- function(l) {
+        ##     outlist <- list()
+        ##     length(outlist) <- length(l[[1]])
+        ##     outlist <- lapply(outlist, function(f) {
+        ##         g <- list()
+        ##         length(g) <- length(l)
+        ##         g
+        ##     })
+        
+        ##     for (i in 1:length(l)) {
+        ##         for (j in 1:length(l[[1]])) {
+        ##             outlist[[j]][[i]] <- l[[i]][[j]]
+        ##         }
+        ##     }
+        ##     outlist
+        ## }
+
+        ## Fytx <- reverseListIndex(Fytx)
             
 
         ##Fyt <- lapply(Fytx, function(FFytx) {
         ##    combineDfs(yvals, FFytx)
         ##})
 
-        out <- list(cop.param=parms2coppar(res$maximum, copula=copula, x=1),
-                    copula=copula, Fytxlist=Fytx, tvals=tvals, x=xdf)
+        ## out <- list(cop.param=parms2coppar(res$maximum, copula=copula, x=1),
+        ##             copula=copula, Fytxlist=Fytx, Fyt=Fyt, tvals=tvals, x=xdf)
         
-        ##QytxOut <- list(Qytx=Qytx, x=xdf, t=tvals, tau=tau, delt=delt)
+        out <- list(cop.param=delt[1], copula=copula, Fytxlist=Fytx, Fyt=Fyt, tvals=tvals, x=xdf)
 
     ### only do above if you want the results for a particular value of t and x;
     ### otherwise can just return all results 
     } else {
-        out <- list(cop.param=parms2coppar(res$maximum, copula=copula, x=x),
-                    copula=copula)
+        ## out <- list(cop.param=parms2coppar(res$maximum, copula=copula, x=x),
+        ##             copula=copula)
+        out <- list(cop.param=delt[1], copula=copula)
     }
 
     out$Qyx <- Qyx
@@ -872,8 +951,9 @@ getListElement <- function(listolists, whichone=1) {
 
 plot.qr2meobj <- function(obj, whichone=1, tau=c(.1,.5,.9), ylim=NULL,
                           ylab=NULL, xlab=NULL) {
-    qq <- t(sapply(getListElement(obj$Fytxlist, whichone),
-                   function(FF) quantile(FF, probs=tau)))
+    ##qq <- t(sapply(getListElement(obj$Fyt, whichone),
+    ##               function(FF) quantile(FF, probs=tau)))
+    qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
     tvals <- obj$tvals
     
     cmat <- cbind.data.frame(tvals, qq)
@@ -900,8 +980,11 @@ plot.qr2meobj <- function(obj, whichone=1, tau=c(.1,.5,.9), ylim=NULL,
 }
 
 addplot <- function(obj, p, whichone=1, tau=c(.1,.5,.9)) {
-    qq <- t(sapply(getListElement(obj$Fytxlist, 1),
-                   function(FF) quantile(FF, probs=tau)))
+
+    ## qq <- t(sapply(getListElement(obj$Fytxlist, 1),
+    ##                function(FF) quantile(FF, probs=tau)))
+    qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
+
     cmat <- cbind.data.frame(tvals, qq)
     colnames(cmat) <- c("tvals", paste0("c",tau*100))
     cmat <- tidyr::gather(cmat, quantile, value, -tvals)
