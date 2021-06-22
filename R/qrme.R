@@ -2,7 +2,10 @@
 #' @description does the heavy lifting on computing quantile regression with
 #'  left hand side measurement error
 #'
+#' @param compute.qrme
+#'
 #' @keywords internal
+#' @export
 compute.qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
                          startsig=NULL, startpi=NULL, simstep="MH", tol=1, iters=400,
                          burnin=200, drawsd=4, cl=1, messages=FALSE) {
@@ -168,12 +171,6 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
 
   res
 }
-
-
-
-
-
-
 
 
 

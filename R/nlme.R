@@ -1,13 +1,25 @@
-## does the heavy lifting for computing nonlinear models with measurement error
-compute.nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gumbel", ndraws=250,
-                         reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE, reportPov=TRUE,
+#-----------------------------------------------------------------------------
+# functions for nonlinear models with measurement error
+#-----------------------------------------------------------------------------
+
+#' @title compute.nlme
+#' @description does the heavy lifting for computing nonlinear models with measurement error
+#'
+#' @inheritParams nlme
+#'
+#' @keywords internal
+#' @export
+compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
+                         copType="gaussian", ndraws=250,
+                         reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
+                         reportPov=TRUE,
                          povline=log(20000), reportQ=c(.1,.5,.9),
                          Ynmix=1, Tnmix=1, tol=1, drawsd=1, messages=FALSE) {
     
     yname <- lhs.vars(Yformla)
     tname <- lhs.vars(Tformla)
     Qyx <- qrme(Yformla, data=data, tau=tau, nmix=Ynmix,
-                tol=tol, drawsd=drawsd, messages=messages, se=FALSE) ## don't bootstrap these
+                tol=tol, drawsd=drawsd, messages=messages, se=FALSE) # don't bootstrap these
     Qtx  <- qrme(Tformla, data=data, tau=tau, nmix=Tnmix,
                  tol=tol, drawsd=drawsd, messages=messages, se=FALSE)
 
@@ -27,18 +39,18 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gumbel", n
     }
 
     
-    ## drop simulated draws as these take up a lot of memory and are no longer needed
+    # drop simulated draws as these take up a lot of memory and are no longer needed
     Qyx$Ystar <- NULL
     Qtx$Ystar <- NULL
 
-    ## now get joint distribution
+    # now get joint distribution
     meres <- qr2me(yname, tname, Yformla, tau=tau, data=data,
                    tvals=tvals,
                    method="Nelder-Mead", copula=copType, Qyx=Qyx, Qtx=Qtx, ndraws=ndraws, retFytxlist=FALSE,
                    messages=FALSE)
 
 
-    ## get results without measurement error
+    # get results without measurement error
     rqyx <- rq(Yformla, tau=tau, data=data)
     rqtx <- rq(Tformla, tau=tau, data=data)
     class(rqyx) <- c("merr", "rqs")
@@ -54,7 +66,7 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gumbel", n
 
     browser()
 
-    ## results just using quantile regression
+    # results just using quantile regression
     qrformla <- toformula(yname, c(tname, rhs.vars(Yformla)))
     qrytx <- rq(qrformla, tau=tau, data=data)
     qrytx$Fyt <- lapply(1:length(tvals), function(i) {
@@ -91,7 +103,41 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gumbel", n
 
 
 
-## function to compute nonlinear models with two sided measurement error
+#' @title nlme
+#' @description function to compute nonlinear models with two sided measurement error
+#' 
+#' @param data data.frame
+#' @param Yformla formula for outcome model
+#' @param Tformla formula for treatment model
+#' @param tau values of tau to estimate first step quantile regressions for
+#' @param tvals values of the treatment to compute conditional distribution-type
+#'  parameters for
+#' @param copType what type of copula to use in second step.  Options are
+#'  "gaussian" (the default), "clayton", or "gumbel"
+#' @param ndraws number of draws to use in MH algorithm to estimate first
+#'  step quantile regressions (default 250)
+#' @param reportTmat whether or not to report a transition matrix
+#' @param reportSP whether or not to report Spearman's rho (rank-rank correlation)
+#' @param reportUM whether or not to report upward mobility parameters
+#' @param reportPov whether or not to report fraction of population below
+#'  the poverty line as a function of parents' income
+#' @param povline value of the poverty line (default log(20000))
+#' @param reportQ quantiles of child's income as a function of parents' income
+#'  to report (default is .1,.5,.9)
+#' @param Ynmix number of mixture components for outcome measurement error
+#'  model
+#' @param Tnmix number of mixture components for treatment measurement error
+#'  model
+#' @param tol tolerance for first step quantile regression model to converge
+#'  (default is 1).  Note that convergence  will be sensitive to \code{length(tau)}
+#'  and the number of mixture components included in the model
+#' @param drawsd starting value of standard deviations of mixture components
+#' @param messages whether or not to report details of computation as they
+#'  occur (default is \code{FALSE})
+#'
+#' @return list of nonlinear measures of intergenerational income mobility
+#'  adjusted for measurement error
+#' @export
 nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gumbel", ndraws=250,
                  reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE, reportPov=TRUE, povline=log(20000),
                  Ynmix=1, Tnmix=1, tol=1, drawsd=1, messages=FALSE,
@@ -142,50 +188,50 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gumbel", ndraws=25
                                     messages=messages)
                 out
             }, error=function(cond) {
-                return(-99) ## use this as code for error on that bootstrap iteration
-                ##return(cond)
+                return(-99) # use this as code for error on that bootstrap iteration
+                #return(cond)
             })
         }, cl=cl)
 
         #browser()
-        ## drop list elements where bootstrap failed
+        # drop list elements where bootstrap failed
         eachIter <- eachIter[!sapply(eachIter, is.null)]
 
-        ## first step estimators
-        ## outcome
+        # first step estimators
+        # outcome
         res$meQyx$sig.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$sig)), 2, sd)
         res$meQyx$mu.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$mu)), 2, sd)
         res$meQyx$pi.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$pi)), 2, sd)
         res$meQyx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) e$meQyx$bet)), 1:2, sd)
-        ## treatment
+        # treatment
         res$meQtx$sig.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$sig)), 2, sd)
         res$meQtx$mu.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$mu)), 2, sd)
         res$meQtx$pi.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$pi)), 2, sd)
         res$meQtx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) e$meQtx$bet)), 1:2, sd)
-        ## qr
+        # qr
         res$qrytx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) coef(e$qrytx))), 1:2, sd)
-        ## nome
+        # nome
         res$rqyx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$rqyx)))), 1:2, sd)
         res$rqtx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$rqtx)))), 1:2, sd)
         
-        ## transition matrix
+        # transition matrix
         res$meTmat.se <- apply(simplify2array(lapply(eachIter, function(e) e$meTmat)), 1:2, sd)
         res$nomeTmat.se <- apply(simplify2array(lapply(eachIter, function(e) e$nomeTmat)), 1:2, sd)
 
-        ## spearmans rho
+        # spearmans rho
         res$mePs.se <- sd(sapply(eachIter, function(e) e$mePs))
         res$nomePs.se <- sd(sapply(eachIter, function(e) e$nomePs))
 
-        ## upward mobility
+        # upward mobility
         res$meUm.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meUm)), 2, sd)
         res$nomeUm.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$nomeUm)), 2, sd)
 
-        ## poverty rate
+        # poverty rate
         res$mePovrate.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$mePovrate)), 2, sd)
         res$nomePovrate.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$nomePovrate)), 2, sd)
         res$qrPovrate.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$qrPovrate)), 2, sd)
 
-        ## quantiles
+        # quantiles
         res$meresQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$meresQ)), 1:2, sd)
         res$nomeresQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$nomeresQ)), 1:2, sd)
         res$qrytxQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$qrytxQ)), 1:2, sd)
