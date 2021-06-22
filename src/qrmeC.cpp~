@@ -31,6 +31,14 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
     }
   }
 
+  // some debugging
+  // Rcout << "uupos : " << uupos << "\n";
+  // Rcout << "ulpos : " << ulpos << "\n";
+  // Rcout << "xtb[uupos] : " << xtb[uupos] << "\n";
+  // Rcout << "xtb[ulpos] : " << xtb[ulpos] << "\n";
+  // Rcout << "tau[uupos] : " << tau[uupos] << "\n";
+  // Rcout << "tau[ulpos] : " << tau[ulpos] << "\n";
+
   //separate code for handling tails
   double lam1 = 1 - tau[0]; 
   double lam2 = tau[tau.size()-1];
@@ -67,6 +75,7 @@ double fvyxC(double v, arma::mat betmat, int m, NumericVector pi, NumericVector 
 }
 
 
+
 // [[Rcpp::export]]
 NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
 		       double drawsd, arma::mat betmat,
@@ -82,20 +91,51 @@ NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
   for (int i = 1; i < iters; i++) {
     double trialval = out[i-1] + rnorm(1,0,drawsd)[0];
     double fvold = fvyxC(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu,
-			 sig=sig, y=y, x=x, tau=tau);//Rcpp::as<double>(fvyx(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau));
+    			 sig=sig, y=y, x=x, tau=tau);//Rcpp::as<double>(fvyx(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau));
     double fvnew = fvyxC(trialval, betmat=betmat, m=m, pi=pi, mu=mu,
-			 sig=sig, y=y, x=x, tau=tau);//Rcpp::as<double>(fvyx(trialval, betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau));
+    			 sig=sig, y=y, x=x, tau=tau);
     if (fvnew > fvold) {
       out[i] = trialval;
     } else {
       if ( (fvnew / fvold) >= runif(1)[0]) {
-	out[i] = trialval;
+      	out[i] = trialval;
       } else {
-	out[i] = out[i-1];
+      	out[i] = out[i-1];
       }
     }
   }
-  return out[Rcpp::Range((burnin+1), out.size())];
+  return out[Rcpp::Range((burnin), (out.size()-1))];
+}
+
+// [[Rcpp::export]]
+// return a vector of weights to be used in importance sampling
+// note that, unlike mh_mcmcC, here the measurement error vector
+// has already been drawn and all we need to do is compute weights
+NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double iters, double drawsd, arma::mat betmat, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
+  int n = Y.size(); // n includes measurement error so is greater than true number of observations
+  double y;
+  double v;
+  double w1;
+  double w2;
+  arma::mat x;
+  NumericVector weights(n);
+
+  // go ahead and compute denominator of weights
+  NumericVector denW = dnorm(V, 0, drawsd);
+
+  // last, compute overall weights as ration of densities
+  for (int i = 0; i < n; i++) {
+   y = Y[i];
+   v = V[i];
+   x = X.rows(i,i); // this gets the i-th row
+   x = x.t();
+   w1 = fvyxC(v, betmat=betmat, m=m, pi=pi, mu=mu,
+    			 sig=sig, y=y, x=x, tau=tau);
+   w2 = denW[i];
+   weights[i] = w1/w2;
+  }
+
+  return weights;
 }
 
 // [[Rcpp::export]]
@@ -289,7 +329,7 @@ arma::cube computeFytXC(NumericVector yvals, NumericVector tvals,
     x1 = Qyxpreds.rows(i,i);
     //x1 = x1.t();
     x2 = wrap(x1);
-    x3 = x2(_,0);
+    x3 = x2(0,_);
     x = as< std::vector<double> >(x3);
 
     for (int j = 0; j < numy; j++) {
@@ -314,22 +354,22 @@ arma::cube computeFytXC(NumericVector yvals, NumericVector tvals,
 	copPart = cop.dCopula(tau, Ftx, copParam);
 
 	// some debugging
-	if (i==0 & j==0 & k==0) {
-	  for (int q = 0; q < Ftx.size(); q++) {
-	    Rcpp::Rcout << "Ftx" << std::endl;
-	    Rcpp::Rcout << Ftx[q] << std::endl;
-	    Rcpp::Rcout << "U" << std::endl;
-	    Rcpp::Rcout << tau[q] << std::endl;
-	    Rcpp::Rcout << "copula" << std::endl;
-	    Rcpp::Rcout << copPart[q] << std::endl;
-	    Rcpp::Rcout << "Qyx" << std::endl;
-	    Rcpp::Rcout << x[q] << std::endl;
-	    Rcpp::Rcout << "interpolate" << std::endl;
-	    Rcpp::Rcout << interpolateC(tau, x, U[q], FALSE) << std::endl;  
-	  }
-	  Rcpp::Rcout << "y" << std::endl;
-	  Rcpp::Rcout << y << std::endl;
-	}
+	// if (i==0 & j==0 & k==0) {
+	//   for (int q = 0; q < Ftx.size(); q++) {
+	//     Rcpp::Rcout << "Ftx" << std::endl;
+	//     Rcpp::Rcout << Ftx[q] << std::endl;
+	//     Rcpp::Rcout << "U" << std::endl;
+	//     Rcpp::Rcout << tau[q] << std::endl;
+	//     Rcpp::Rcout << "copula" << std::endl;
+	//     Rcpp::Rcout << copPart[q] << std::endl;
+	//     Rcpp::Rcout << "Qyx" << std::endl;
+	//     Rcpp::Rcout << x[q] << std::endl;
+	//     Rcpp::Rcout << "interpolate" << std::endl;
+	//     Rcpp::Rcout << interpolateC(tau, x, U[q], FALSE) << std::endl;  
+	//   }
+	//   Rcpp::Rcout << "y" << std::endl;
+	//   Rcpp::Rcout << y << std::endl;
+	// }
 
 	for (int l=0; l<U.size(); l++) {
 	  //copPart = cop.dCopula(U, 

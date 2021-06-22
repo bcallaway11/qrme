@@ -31,6 +31,14 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
     }
   }
 
+  // some debugging
+  // Rcout << "uupos : " << uupos << "\n";
+  // Rcout << "ulpos : " << ulpos << "\n";
+  // Rcout << "xtb[uupos] : " << xtb[uupos] << "\n";
+  // Rcout << "xtb[ulpos] : " << xtb[ulpos] << "\n";
+  // Rcout << "tau[uupos] : " << tau[uupos] << "\n";
+  // Rcout << "tau[ulpos] : " << tau[ulpos] << "\n";
+
   //separate code for handling tails
   double lam1 = 1 - tau[0]; 
   double lam2 = tau[tau.size()-1];
@@ -43,7 +51,12 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
     return (1-tau[tau.size()-1]) * lam2 * exp(-lam2 * (-(xtby[tau.size()-1])));
   }
 
-  return (tau[uupos] - tau[ulpos]) / (xtb[uupos] - xtb[ulpos]);
+  if ( (tau[uupos] - tau[ulpos]) / (xtb[uupos] - xtb[ulpos]) > 1) {
+    return 1; // this is sort of hack, but in a very few number of cases we can get essentially divide by 0s here that
+    // result in the same draw over and over...there might be better way to do this though.
+  } else {
+    return (tau[uupos] - tau[ulpos]) / (xtb[uupos] - xtb[ulpos]);
+  }
 }
 
 
@@ -67,6 +80,7 @@ double fvyxC(double v, arma::mat betmat, int m, NumericVector pi, NumericVector 
 }
 
 
+
 // [[Rcpp::export]]
 NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
 		       double drawsd, arma::mat betmat,
@@ -82,20 +96,51 @@ NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
   for (int i = 1; i < iters; i++) {
     double trialval = out[i-1] + rnorm(1,0,drawsd)[0];
     double fvold = fvyxC(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu,
-			 sig=sig, y=y, x=x, tau=tau);//Rcpp::as<double>(fvyx(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau));
+    			 sig=sig, y=y, x=x, tau=tau);//Rcpp::as<double>(fvyx(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau));
     double fvnew = fvyxC(trialval, betmat=betmat, m=m, pi=pi, mu=mu,
-			 sig=sig, y=y, x=x, tau=tau);//Rcpp::as<double>(fvyx(trialval, betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau));
+    			 sig=sig, y=y, x=x, tau=tau);
     if (fvnew > fvold) {
       out[i] = trialval;
     } else {
       if ( (fvnew / fvold) >= runif(1)[0]) {
-	out[i] = trialval;
+      	out[i] = trialval;
       } else {
-	out[i] = out[i-1];
+      	out[i] = out[i-1];
       }
     }
   }
-  return out[Rcpp::Range((burnin+1), out.size())];
+  return out[Rcpp::Range((burnin), (out.size()-1))];
+}
+
+// [[Rcpp::export]]
+// return a vector of weights to be used in importance sampling
+// note that, unlike mh_mcmcC, here the measurement error vector
+// has already been drawn and all we need to do is compute weights
+NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double iters, double drawsd, arma::mat betmat, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
+  int n = Y.size(); // n includes measurement error so is greater than true number of observations
+  double y;
+  double v;
+  double w1;
+  double w2;
+  arma::mat x;
+  NumericVector weights(n);
+
+  // go ahead and compute denominator of weights
+  NumericVector denW = dnorm(V, 0, drawsd);
+
+  // last, compute overall weights as ration of densities
+  for (int i = 0; i < n; i++) {
+   y = Y[i];
+   v = V[i];
+   x = X.rows(i,i); // this gets the i-th row
+   x = x.t();
+   w1 = fvyxC(v, betmat=betmat, m=m, pi=pi, mu=mu,
+    			 sig=sig, y=y, x=x, tau=tau);
+   w2 = denW[i];
+   weights[i] = w1/w2;
+  }
+
+  return weights;
 }
 
 // [[Rcpp::export]]
@@ -204,6 +249,46 @@ public:
 };
 
 
+// // [[Rcpp::export]]
+// class normalCopula: public Copula {
+// private:
+//   double rho;
+// public:
+//   normalCopula(double a) {
+//     rho = a;
+//   }
+  
+//   std::vector<double> dCopula(std::vector<double> u, std::vector<double> v, double alpha) {
+
+//     std::vector<double> out;
+//     int usize = u.size();
+//     out.reserve(usize);
+//     double u1, u2;
+//     NumericVector otherout(usize);
+    
+//     for (int i=0; i<usize; i++) {
+//       u1 = u[i];
+//       u2 = v[i];
+//       otherout[i] = exp(-pow(pow(-log(u1),alpha) + pow(-log(u2),alpha),(1/alpha))) *  (pow(pow(-log(u1),alpha) + 
+// 										       pow(-log(u2),alpha),((1/alpha) - 1)) * ((1/alpha) * (pow(-log(u2),(alpha - 
+// 										 									  1)) * (alpha * (1/u2)))))
+// 	 * (pow(pow(-log(u1),alpha) + pow(-log(u2),alpha),((1/alpha) - 
+// 																						    					      1)) * ((1/alpha) * (pow(-log(u1),(alpha - 1)) * (alpha * (1/u1)))))
+// 	 - 
+// 	 exp(-pow(pow(-log(u1),alpha) + pow(-log(u2),alpha),(1/alpha))) * (pow(pow(-log(u1),alpha) + 
+// 	 								    pow(-log(u2),alpha),(((1/alpha) - 1) - 1)) * (((1/alpha) - 
+// 	 														   1) * (pow(-log(u2),(alpha - 1)) * (alpha * (1/u2)))) * ((1/alpha) * 
+// 	 																					   (pow(-log(u1),(alpha - 1)) * (alpha * (1/u1)))));
+//     }
+
+//     return(as< std::vector<double> >(otherout));
+//   }
+
+//   double getAlpha() {
+//     return alpha;
+//   }
+// };
+
 
 // Returns interpolated value at x from parallel arrays ( xData, yData )
 //   Assumes that xData has at least two elements, is sorted and is strictly monotonic increasing
@@ -269,6 +354,15 @@ arma::cube computeFytXC(NumericVector yvals, NumericVector tvals,
 			   std::vector<double> tau, CharacterVector copula,
 			   double copParam) {
 
+  // if (copula=="frank") {
+  //   frankCopula cop = frankCopula(copParam);
+  // } else if (copula=="gumbel") {
+  //   gumbelCopula cop = gumbelCopula(copParam);
+  // } else if (copula=="clayton") {
+  //   claytonCopula cop = claytonCopula(copParam);
+  // } else if (copula=="gaussian") {
+  //   normalCopula cop = normalCopula(copParam);
+  // }
   gumbelCopula cop = gumbelCopula(copParam);
 
   int n = Qyxpreds.n_rows;

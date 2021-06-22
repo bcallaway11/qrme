@@ -1,0 +1,29 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-"
+)
+```
+
+This is code for Callaway, Li, and Murtazashvili (2021) ``Nonlinear Approaches to Intergenerational Mobility Allowing for Measurement Error.''  The code mainly contains our implementations of 
+
+* *Quantile Regression with Measurement Error* --- This builds upon the work of Hausman, Liu, Luo, and Palmer (2021) who study quantile regression with measurement error in the outcome variable.  We implement an alternative approach to quantile regression with measurement error that involves an iterative procedure (EM algorithm) to estimate the QR model in the presence of measurement error
+
+* *Quantile Regression with Two-Sided Measurement Error* --- We additionally implement the approach suggested in our paper to 
+
+* *Estimating Joint Distributions in the Presence of Measurement Error in both Variables* --- 
+
+* A variety of nonlinear measures of intergenerational income mobility parameters
+
+I only lightly support this code, and it is more like a demonstration of the type of code that can work in this case as well as a replication package for our work.
+
+# References
+
+* Hausman, J., Liu, H., Luo, Y. and Palmer, C., 2021. Errors in the dependent variable of quantile regression models. Econometrica, 89(2), pp.849-873.
