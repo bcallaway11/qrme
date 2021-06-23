@@ -26,6 +26,7 @@
 #'  the algorithm concludes.  In general, larger values for tol will result
 #'  in a fewer number of iterations and smaller values will result in more
 #'  accurate estimates.
+#' @inheritParams qrme
 #' @return QRME object
 #'
 #' @export
@@ -137,7 +138,7 @@ em.algo.inner <- function(formla, data,
         }
         nmorder <- order(nm$mu)# reorder results by mean of each component
 
-        return(list(bet=t(coef(out)), m=m, pi=nm$lambda[nmorder], mu=nm$mu[nmorder], sig=nm$sigma[nmorder], Ystar=newdta1[,yname]))
+        return(list(bet=t(coef(out)), m=m, pi=nm$lambda[nmorder], mu=nm$mu[nmorder], sig=nm$sigma[nmorder]))#, Ystar=newdta1[,yname]))
         
     } else if (simstep=="ImpSamp") {
         # importance sampling
@@ -148,11 +149,11 @@ em.algo.inner <- function(formla, data,
         newdta1 <- as.data.frame(cbind(Y=(Y[newids]-edraws), X=X[newids,], e=edraws))  # prepopulate some fields in dataset
 
         # compute weights using importance sampling
-        newdta1$w<- imp_sampC(Y=Y[newids], X=X[newids,], V=edraws, iters=iters, drawsd=drawsd,
+        newdta1$w <- imp_sampC(Y=Y[newids], X=X[newids,], V=edraws, iters=iters, drawsd=drawsd,
                               betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, tau=tau) # but use original versions of the data (not adjusted for measurement errors) to compute weights
         newdta1$w  <- sapply(1:length(edraws), function(i) max(1e-05,newdta1$w[i])) # drop negative weights (not many of these...)
         # run weighted quantile regression
-        out <- quantreg::rq(formla, tau=tau, data=newdta1, method="fn", weights=w)
+        out <- quantreg::rq(formla, tau=tau, data=newdta1, method="fn", weights=newdta1$w)
         if (messages) {
             cat("\nEstimating finite mixture model...")
         }
@@ -173,7 +174,7 @@ em.algo.inner <- function(formla, data,
             nm <- mixtools::normalmixEM(U, k=m, epsilon=1e-03)
         }
         nmorder <- order(nm$mu)# reorder results by mean of each component
-        return(list(bet=t(coef(out)), m=m, pi=nm$lambda[nmorder], mu=nm$mu[nmorder], sig=nm$sigma[nmorder], Ystar=Ystar))
+        return(list(bet=t(coef(out)), m=m, pi=nm$lambda[nmorder], mu=nm$mu[nmorder], sig=nm$sigma[nmorder]))#, Ystar=Ystar))
     } else {
         stop("provided simstep not supported")
     }

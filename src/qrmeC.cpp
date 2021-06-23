@@ -4,6 +4,16 @@ using namespace Rcpp;
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
+
+//' fyxC
+//' Converts quantile regression estimates into density estimates
+//'
+//' @param y vector of outcomes
+//' @param betamat matrix of quantile regression coefficients
+//' @param X vector of covariates (should be same dimension as betamat)
+//' @param tau vector of values where QR were estimated
+//
+//' @return value of density at y and X given QR estimates
 // [[Rcpp::export]]
 double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
 
@@ -59,19 +69,42 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
   }
 }
 
-
+//' fvC
+//'
+//' Computes the density of the measurement error term given it follows
+//'  a mixture of normals distribution
+//'
+//' @param v value to estimate the density at
+//' @param m number of mixture components
+//' @param pi vector of mixture probabilities
+//' @param mu vector of mixture means
+//' @param sig vector of mixture standard deviations
+//'
+//' @return estimated density of measurement error at v
 // [[Rcpp::export]]
 double fvC(double v, int m, NumericVector pi, NumericVector mu, NumericVector sig) {
 
   double out = 0;
 
-  for (int i; i < m; i++) {
-    out += pi[i]/sig[i] * dnorm(NumericVector::create((v-mu[i])/sig[i]))[0]; // * Rcpp::as<double>(dnorm( (v-mu[i])/sig[i] );
+  for (int i=0; i < m; i++) {
+    out += pi[i]/sig[i] * dnorm(NumericVector::create((v-mu[i])/sig[i]))[0]; 
   }
 
   return out;
 }
 
+//' fvyxC
+//'
+//' Computes density of measurement error conditional on y and x given
+//' QR estimates and distribution of measurement error
+//'
+//' @param y a particular value of y
+//' @param x a vector of x's
+//' @inheritParams fvC
+//' @inheritParams fyxC
+//' @inheritParams mh_mcmcC
+//'
+//' @return estimate of density of measurement error conditional on y and x
 // [[Rcpp::export]]
 double fvyxC(double v, arma::mat betmat, int m, NumericVector pi, NumericVector mu, NumericVector sig,
 	     double y, arma::colvec x, NumericVector tau) {
@@ -80,23 +113,28 @@ double fvyxC(double v, arma::mat betmat, int m, NumericVector pi, NumericVector 
 }
 
 
-
+//' mh_mcmc_innerC
+//'
+//' Inner part of MCMC algorithm
+//'
+//' @param y outcome value (for particular observation)
+//' @param x vector of covariates (for particular observation)
+//' @inheritParams mh_mcmcC
+//'
+//' @return vector of MCMC draws of measurement error
 // [[Rcpp::export]]
 NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
 		       double drawsd, arma::mat betmat,
 		       int m, NumericVector pi, NumericVector mu,
 		       NumericVector sig, double y, arma::mat x,
 		       NumericVector tau) {
-  //NumericMatrix xx = Rcpp::as<NumericMatrix>(x);
-  //Environment env = Environment::global_env(); // this will need to be updated
-  //Function fv = env["ff.f"];
-  //Function fvyx = env["fv.yx"];
+
   NumericVector out(iters);
   out[0] = startval;
   for (int i = 1; i < iters; i++) {
     double trialval = out[i-1] + rnorm(1,0,drawsd)[0];
     double fvold = fvyxC(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu,
-    			 sig=sig, y=y, x=x, tau=tau);//Rcpp::as<double>(fvyx(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau));
+    			 sig=sig, y=y, x=x, tau=tau);
     double fvnew = fvyxC(trialval, betmat=betmat, m=m, pi=pi, mu=mu,
     			 sig=sig, y=y, x=x, tau=tau);
     if (fvnew > fvold) {
@@ -112,10 +150,18 @@ NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
   return out[Rcpp::Range((burnin), (out.size()-1))];
 }
 
+
+//' imp_sampC
+//'
+//' return a vector of weights to be used in importance sampling
+//' note that, unlike mh_mcmcC, here the measurement error vector
+//' has already been drawn and all we need to do is compute weights
+//'
+//' @param V vector of measurement errors
+//' @inheritParams mh_mcmcC
+//'
+//' @return vector of weights to be used in importance sampling
 // [[Rcpp::export]]
-// return a vector of weights to be used in importance sampling
-// note that, unlike mh_mcmcC, here the measurement error vector
-// has already been drawn and all we need to do is compute weights
 NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double iters, double drawsd, arma::mat betmat, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
   int n = Y.size(); // n includes measurement error so is greater than true number of observations
   double y;
@@ -143,6 +189,21 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double it
   return weights;
 }
 
+//' mh_mcmcC
+//'
+//' @param Y vector of outcomes
+//' @param X matrix of covariates
+//' @param startval starting value for the markov chain
+//' @param iters number of Monte Carlo iterations
+//' @param burnin number of first MC iteration to drop
+//' @param drawsd the standard deviation for the standard normal draws in the
+//'  MH algorithm
+//' @param betmat matrix of QR parameters
+//' @param m number of mixture components for measurement error
+//' @param pi mixture probabilities
+//' @param mu means of mixture components
+//' @param sig standard deviations of mixture components
+//' @param tau which values QR's have been estimated for
 // [[Rcpp::export]]
 std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int iters,
 		   int burnin, double drawsd, arma::mat betmat,
@@ -174,8 +235,12 @@ std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int 
   // return out;
 }
 
-/* This is going to take n observations of X and a vector of Y's and return
-   an n x Y.size() matrix of fyx evaluated at those points */
+//' fYXmatC
+//'
+//' Takes n observations of X and a vector of Y's and return
+//'   an n x Y.size() matrix of fyx evaluated at those points
+//' @inheritParams mh_mcmcC
+//' @return matrix of conditional density estimates
 // [[Rcpp::export]]
 arma::mat fYXmatC(NumericVector Y, arma::mat betmat, arma::mat X, NumericVector tau) {
   int n = X.n_rows;
@@ -207,7 +272,9 @@ class Copula {
 
 };
 
-
+//' gumbelCopula
+//'
+//' Gumbel copula class
 // [[Rcpp::export]]
 class gumbelCopula: public Copula {
 private:
@@ -249,51 +316,20 @@ public:
 };
 
 
-// // [[Rcpp::export]]
-// class normalCopula: public Copula {
-// private:
-//   double rho;
-// public:
-//   normalCopula(double a) {
-//     rho = a;
-//   }
-  
-//   std::vector<double> dCopula(std::vector<double> u, std::vector<double> v, double alpha) {
 
-//     std::vector<double> out;
-//     int usize = u.size();
-//     out.reserve(usize);
-//     double u1, u2;
-//     NumericVector otherout(usize);
-    
-//     for (int i=0; i<usize; i++) {
-//       u1 = u[i];
-//       u2 = v[i];
-//       otherout[i] = exp(-pow(pow(-log(u1),alpha) + pow(-log(u2),alpha),(1/alpha))) *  (pow(pow(-log(u1),alpha) + 
-// 										       pow(-log(u2),alpha),((1/alpha) - 1)) * ((1/alpha) * (pow(-log(u2),(alpha - 
-// 										 									  1)) * (alpha * (1/u2)))))
-// 	 * (pow(pow(-log(u1),alpha) + pow(-log(u2),alpha),((1/alpha) - 
-// 																						    					      1)) * ((1/alpha) * (pow(-log(u1),(alpha - 1)) * (alpha * (1/u1)))))
-// 	 - 
-// 	 exp(-pow(pow(-log(u1),alpha) + pow(-log(u2),alpha),(1/alpha))) * (pow(pow(-log(u1),alpha) + 
-// 	 								    pow(-log(u2),alpha),(((1/alpha) - 1) - 1)) * (((1/alpha) - 
-// 	 														   1) * (pow(-log(u2),(alpha - 1)) * (alpha * (1/u2)))) * ((1/alpha) * 
-// 	 																					   (pow(-log(u1),(alpha - 1)) * (alpha * (1/u1)))));
-//     }
-
-//     return(as< std::vector<double> >(otherout));
-//   }
-
-//   double getAlpha() {
-//     return alpha;
-//   }
-// };
-
-
-// Returns interpolated value at x from parallel arrays ( xData, yData )
-//   Assumes that xData has at least two elements, is sorted and is strictly monotonic increasing
-//   boolean argument extrapolate determines behaviour beyond ends of array (if needed)
-
+//' interpolateC
+//'
+//' Returns interpolated value at x from parallel arrays ( xData, yData )
+//'  Assumes that xData has at least two elements, is sorted and
+//' is strictly monotonic increasing
+//'
+//' @param x vector of x's
+//' @param y vector of y's
+//' @param xval a particular value to interpolate for
+//' @param extrapolate whether or not to linearly extrapolate beyond endpoints
+//'  of x
+//'
+//' @return interpolated value
 // [[Rcpp::export]]
 double interpolateC(std::vector<double> x, std::vector<double> y, double xval, bool extrapolate) {
    int size = x.size();
@@ -325,6 +361,16 @@ double interpolateC(std::vector<double> x, std::vector<double> y, double xval, b
    return yL + dydx * ( xval - xL );                                              // linear interpolation
 }
 
+//' interpolateMatC
+//'
+//' vectorized version of interpolateC
+//'
+//' @param x vector of x's
+//' @param ymat matrix of y's
+//' @param xval particular value of x to interpolate for
+//' @param extrapolate whether or not to extrapolate beyond endpoints of x
+//'
+//' @return vector of extrapolations
 // [[Rcpp::export]]
 NumericVector interpolateMatC(std::vector<double> x, arma::mat ymat,
 				    double xval, bool extrapolate) {
@@ -348,6 +394,8 @@ NumericVector interpolateMatC(std::vector<double> x, arma::mat ymat,
   return wrap(out);
 }
 
+// this is not currently used
+// leave it here, but not documented
 // [[Rcpp::export]]
 arma::cube computeFytXC(NumericVector yvals, NumericVector tvals,
 			   arma::mat Qyxpreds, arma::mat Ftxpreds,
@@ -439,7 +487,8 @@ arma::cube computeFytXC(NumericVector yvals, NumericVector tvals,
   return(out);
 }
 
-
+// extra functions for testing copula code
+// not used
 // [[Rcpp::export]]
 NumericVector testCopula(std::vector<double> u, std::vector<double> v, double copParam) {
   gumbelCopula cop = gumbelCopula(copParam);

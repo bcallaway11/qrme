@@ -61,7 +61,7 @@ compute.qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=N
   out$pi <- res$pi
   out$mu <- res$mu
   out$sig <- res$sig
-  out$Ystar <- res$Ystar
+  #out$Ystar <- res$Ystar
 
   out
 }
@@ -94,18 +94,29 @@ compute.qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=N
 #'  of observations in each component of the mimxture of normals distribution
 #'  for the measurement error (default is NULL and in this case, the starting
 #'  values are all set to be 1/nmix)
+#' @param simstep The type of simulation step to use in the EM algorithm.
+#'  The default is "MH" for Metropolis-Hasting.  The alternative is
+#'  "ImpSamp" for importance sampling. 
 #' @param tol This is the convergence criteria.  When the change in the
 #'  Euclidean distance between the new parameters (at each iteration) and
 #'  the old parameters (from the previous iteration) is smaller than tol,
 #'  the algorithm concludes.  In general, larger values for tol will result
 #'  in a fewer number of iterations and smaller values will result in more
 #'  accurate estimates.
+#' @param iters How many iterations to use in the simulation step (default is
+#'  400)
+#' @param burnin How many iterations to drop in the simulation step (default
+#'  is 200)
+#' @param drawsd The starting standard deviation for the measurement error
+#'  term.
 #' @param cl The numbe of clusters to use for parallel computation (default
 #'  is 1 so that computation is not done in parallel)
 #' @param se Whether or not to compute standard errors using the bootstrap
 #'  (default is FALSE)
 #' @param biters Number of bootstrap iterations to use.  Only is considered
 #'  in the case where computing standard errors (default is 100)
+#' @param messages Whether or not to report details of estimation procedure
+#'  (default is FALSE)
 #' 
 #' @return an object of class "merr"
 #'
@@ -189,12 +200,20 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
 #' @param data a data.frame containing the data used for estimation
 #' @param xdf If you want conditional distributions to be returned, pass in the value of the distribution here;
 #'  otherwise the default behavior is to return a single distribution that averages over all values of X in the dataset
-#' @param retFytxlist whether or not to return the conditional distribution for every value of x in xdf
+#' @param copula which type of copula to use (default is "gaussian")
+#' @param Qyx quantile regression estimates (can be adjusted for measurement
+#'  error) of Y on X
+#' @param Qtx quantile regression estimates (can be adjusted for measurement
+#'  error) of T on X
+#' @param retFytxlist whether or not to return the conditional distribution
+#'  for every value of x in xdf
 #'  (default is FALSE because this can take up a lot of room in memory)
+#' @inheritParams nlme
+#' @inheritParams qrme
 qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
-                  copula="gumbel", Qyx, Qtx, retFytxlist=FALSE,
-                  startparams=NULL, method="BFGS", maxit=1000, ndraws=100,
-                  messages=TRUE) {
+                  copula="gaussian",
+                  Qyx, Qtx, retFytxlist=FALSE,
+                  ndraws=100, messages=TRUE) {
 
   if (messages) {
     cat("\nqr2me method...\n")
@@ -206,11 +225,6 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   
   x <- model.matrix(xformla, data)
   n <-  nrow(data)
-  if (is.null(startparams)) {
-    ##startparams <- rep(0, ncol(x)) ## do this if want params to be function of X
-    startparams <- 0.5
-  }
-
 
   tau_grid <- seq(0,1,length.out=100)
   Qyx_interpolated <- lapply(1:nrow(x), function(i) {
@@ -299,8 +313,8 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
   ##this is not right, but perhaps can make draws (e.g. similar to mcmc algorithm above)
   ##to get the draws right and then estimate this way.
-  newdta1 <- data.frame(Y=Qyx$Ystar, T=Qtx$Ystar)
-  ranks1 <- pobs(newdta1)
+  #newdta1 <- data.frame(Y=Qyx$Ystar, T=Qtx$Ystar)
+  #ranks1 <- copula::pobs(newdta1)
   ##cop <- copula::fitCopula(cop, ranks1, method="irho") ## irho inverts spearman's rho; it
   ##is very fast though (I think) not all copulas (exception=(I think)Gumbel) have 1-1 relationship
   ##with Spearman's rho, but in practice they seem very similar.
@@ -309,7 +323,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   
   ##delt <- rep(attributes(cop)$estimate, nrow(x))
 
-  ##estimation with maximum likelihood as in the original version of the paper
+  # estimation with maximum likelihood 
   res <- optimize(ll, c(0,1), maximum=TRUE, 
                   y=data[,yname], t=data[,tname], x=x, copula=copula,
                   Fyx=Fyx, Ftx=Ftx, fyx=fyx, ftx=ftx,
@@ -317,10 +331,33 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
   delt <- rep(parms2coppar(res$maximum, copula=copula, x=1), nrow(x))
 
-  browser()
 
+  # estimate copula-type parameters
+  cop <- copula::setTheta(cop, delt[1])
+  Ystar_Tstar_inner <- lapply(1:nrow(x), function(i) {
+    cop_draws <- copula::rCopula(100, cop)
+    eY <- cop_draws[,1]
+    eT <- cop_draws[,2]
+    Y_xb <- as.numeric(t(as.matrix(x[i,]))%*%as.matrix(coef(Qyx)))
+    T_xb <- as.numeric(t(as.matrix(x[i,]))%*%as.matrix(coef(Qtx)))
+    Ystar <- sapply(eY, function(ey_draw) {
+      interpolateC(tau, Y_xb, ey_draw, TRUE)
+    })
+    Tstar <- sapply(eT, function(et_draw) {
+      interpolateC(tau, T_xb, et_draw, TRUE)
+    })
+    cbind(Ystar,Tstar)
+  })
+
+  Ystar_Tstar <- do.call("rbind", Ystar_Tstar_inner)
+  Ystar <- Ystar_Tstar[,1]
+  Tstar <- Ystar_Tstar[,2]
+
+  t_mat <- tmat(Ystar, Tstar)
+  Ps <- cor(Ystar, Tstar, method="spearman")
+  up_mob <- upMob(Ystar, Tstar)
   
-  
+  # compute conditional distributions if values of the treatment are specified
   if (!is.null(tvals)) {
     
     if (messages) cat("\nStep 3 of 3: Building conditional distributions...\n")
@@ -384,42 +421,45 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
       }
     }
 
-    browser()
-    
-    ##xtdf <- cbind(tvals, xdf)
-    ## todo, this gives the copula, now convert to conditional distribution
-    ##delt <- parms2coppar(res$par, copula, xdf)
-    ##tvals <- quantile(data[,tname], tau, type=1)
-    yvals <- quantile(data[,yname], seq(.01,.99,.01)) ## could also take all unique yvals or let user pass them all in
-    yvals <- yvals[order(yvals)]
-    QQyx <- predict( Qyx, newdata=as.data.frame(rbind(xdf,x[1,])), stepfun=TRUE)  ## super hack:  but predict.rqs is throwing an error that I think it shouldn't, and this gets around it.
-    QQyx <- QQyx[-length(QQyx)]
-    QQyx <- lapply(QQyx, rearrange)
-    QQyx2  <- predict(Qyx, newdata=as.data.frame(xdf))
-    FFyx2  <- t(sapply(Fyx, function(fyx) fyx(yvals)))
-    Ftx <- predict(Qtx, newdata=as.data.frame(rbind(xdf, x[1,])),
-                   type="Fhat", stepfun=TRUE)
-    Ftx <- Ftx[-length(Ftx)]
-    Ftx <- lapply(Ftx, rearrange)
-    FFtx <- t(sapply(Ftx, function(ftx) ftx(tvals)))
+    #-----------------------------------------------------------------------------
+    # this is old way of computing conditional distributions given copula estimate
+    # but now we just directly compute them instead of doing it numerically
+    #-----------------------------------------------------------------------------
+   
+    ## ##xtdf <- cbind(tvals, xdf)
+    ## ## todo, this gives the copula, now convert to conditional distribution
+    ## ##delt <- parms2coppar(res$par, copula, xdf)
+    ## ##tvals <- quantile(data[,tname], tau, type=1)
+    ## yvals <- quantile(data[,yname], seq(.01,.99,.01)) ## could also take all unique yvals or let user pass them all in
+    ## yvals <- yvals[order(yvals)]
+    ## QQyx <- predict( Qyx, newdata=as.data.frame(rbind(xdf,x[1,])), stepfun=TRUE)  ## super hack:  but predict.rqs is throwing an error that I think it shouldn't, and this gets around it.
+    ## QQyx <- QQyx[-length(QQyx)]
+    ## QQyx <- lapply(QQyx, rearrange)
+    ## QQyx2  <- predict(Qyx, newdata=as.data.frame(xdf))
+    ## FFyx2  <- t(sapply(Fyx, function(fyx) fyx(yvals)))
+    ## Ftx <- predict(Qtx, newdata=as.data.frame(rbind(xdf, x[1,])),
+    ##                type="Fhat", stepfun=TRUE)
+    ## Ftx <- Ftx[-length(Ftx)]
+    ## Ftx <- lapply(Ftx, rearrange)
+    ## FFtx <- t(sapply(Ftx, function(ftx) ftx(tvals)))
 
-    U <- seq(0,1,length.out=ndraws)
-    U <- tau
+    ## U <- seq(0,1,length.out=ndraws)
+    ## U <- tau
 
-    if (copula=="frank") {
-      cop <- copula::frankCopula(as.numeric(delt[1])) ## all delts restricted to be the same so just choose first one
-    } else if (copula=="gumbel") {
-      cop <- copula::gumbelCopula(as.numeric(delt[1]))
-    } else if (copula=="clayton") {
-      cop <- copula::claytonCopula(as.numeric(delt[1]))
-    } else if (copula=="gaussian") {
-      cop <- copula::normalCopula(as.numeric(delt[1]))
-    } else {
-      stop(paste0("copula type:", copula, " is not supported"))
-    }
+    ## if (copula=="frank") {
+    ##   cop <- copula::frankCopula(as.numeric(delt[1])) ## all delts restricted to be the same so just choose first one
+    ## } else if (copula=="gumbel") {
+    ##   cop <- copula::gumbelCopula(as.numeric(delt[1]))
+    ## } else if (copula=="clayton") {
+    ##   cop <- copula::claytonCopula(as.numeric(delt[1]))
+    ## } else if (copula=="gaussian") {
+    ##   cop <- copula::normalCopula(as.numeric(delt[1]))
+    ## } else {
+    ##   stop(paste0("copula type:", copula, " is not supported"))
+    ## }
 
-    ## call C++ function to return matrix with distribution of Fytx
-    FytXmat <- computeFytXC(yvals, tvals, QQyx2, FFtx, tau, "gumbel", delt[1])
+    ## ## call C++ function to return matrix with distribution of Fytx
+    ## FytXmat <- computeFytXC(yvals, tvals, QQyx2, FFtx, tau, "gumbel", delt[1])
 
     
     ## internal function for reordering arguments of BMisc::makeDist
@@ -427,6 +467,8 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
       BMisc::makeDist(x, Fx, sorted, rearrange)
     }
 
+    # note to self: can run into common support issues if not careful in simulations here.
+   
     ## converts 3-dimensional matrix of Fytx into 2-dimensional matrix of distributio
     ## functions
     Fytx  <- apply(FytXmat, c(1,3), makeDist1, x=yvals)
@@ -481,14 +523,15 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     if (!retFytxlist) { ## often want to drop this because it is huge
       Fytxlist <- NULL
     }
-    out <- list(cop.param=delt[1], copula=copula, Fytxlist=Fytx, Fyt=Fyt, tvals=tvals, x=xdf)
+    out <- list(cop.param=delt[1], copula=copula, Fytxlist=Fytx, Fyt=Fyt, tvals=tvals, x=xdf,
+                t_mat=t_mat, Ps=Ps, up_mob=up_mob)
 
     ### only do above if you want the results for a particular value of t and x;
     ### otherwise can just return all results 
   } else {
     ## out <- list(cop.param=parms2coppar(res$maximum, copula=copula, x=x),
     ##             copula=copula)
-    out <- list(cop.param=delt[1], copula=copula)
+    out <- list(cop.param=delt[1], copula=copula, t_mat=t_mat, Ps=Ps, up_mob=up_mob)
   }
 
   out$Qyx <- Qyx
@@ -509,16 +552,28 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 ## check if this works, I think it is for putting back together an
 ## unconditional distribution from a list of them, but need to step through
 ## it
-avgDist <- function(Fytxlist, yvals) {
+## avgDist <- function(Fytxlist, yvals) {
   
-  Fyt <- lapply(Fytxlist, function(FFytx) {
-    combineDfs(yvals, FFytx)
-  })
+##   Fyt <- lapply(Fytxlist, function(FFytx) {
+##     combineDfs(yvals, FFytx)
+##   })
 
-  Fyt
-}
+##   Fyt
+## }
 
 
+#' qr2meobj
+#'
+#' class for qr2meobj
+#'
+#' @param cop.param copula parameter
+#' @param copula type of copula
+#' @param tvals values of the treatment that conditional distributions were
+#'  estimated for
+#' @param x matrix of covariates
+#' @param Fytxlist list of conditional distributions
+#' @param Qyx estimates of quantiles of Y conditional on X
+#' @param Qtx estimates of quantiles of T conditional on X
 qr2meobj <- function(cop.param, copula, tvals, x, Fytxlist, Qyx, Qtx) {
   out <- list()
   out$cop.param <- cop.param
@@ -532,6 +587,11 @@ qr2meobj <- function(cop.param, copula, tvals, x, Fytxlist, Qyx, Qtx) {
   class(out) <- "qr2meobj"
 }
 
+#' print.qr2meobj
+#'
+#' print a qr2meobj
+#'
+#' @param obj a qr2meobj
 print.qr2meobj <- function(obj) {
   print(obj$Qyx)
   print(obj$Qtx)
@@ -544,6 +604,11 @@ print.qr2meobj <- function(obj) {
   cat("\n\n")
 }
 
+#' print.merr
+#'
+#' print an merr object
+#'
+#' @param obj a merr object to be printed
 print.merr <- function(obj) {
   coef <- round(t(as.matrix(obj$coefficients)),4)
   rownames(coef) <- obj$tau
@@ -558,14 +623,21 @@ print.merr <- function(obj) {
   print(U)    
 }
 
-getListElement <- function(listolists, whichone=1) {
-  lapply(listolists, function(l) l[[whichone]])
-}
+## getListElement <- function(listolists, whichone=1) {
+##   lapply(listolists, function(l) l[[whichone]])
+## }
 
-plot.qr2meobj <- function(obj, whichone=1, tau=c(.1,.5,.9), ylim=NULL,
+#' plot.qre2meobj
+#'
+#' plot a qr2meobj
+#'
+#' @param obj a qr2meobj
+#' @param tau which quantiles to plot
+#' @param ylim limits of y-axis
+#' @param ylab label for y-axis
+#' @param xlab label for x-axis
+plot.qr2meobj <- function(obj, tau=c(.1,.5,.9), ylim=NULL,
                           ylab=NULL, xlab=NULL) {
-  ##qq <- t(sapply(getListElement(obj$Fyt, whichone),
-  ##               function(FF) quantile(FF, probs=tau)))
   qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
   tvals <- obj$tvals
   
@@ -592,10 +664,13 @@ plot.qr2meobj <- function(obj, whichone=1, tau=c(.1,.5,.9), ylim=NULL,
   p
 }
 
-addplot <- function(obj, p, whichone=1, tau=c(.1,.5,.9)) {
+#' addplot
+#'
+#' @param obj new object to plot
+#' @param p existing plot
+#' @param tau which quantiles to plot
+addplot <- function(obj, p, tau=c(.1,.5,.9)) {
 
-  ## qq <- t(sapply(getListElement(obj$Fytxlist, 1),
-  ##                function(FF) quantile(FF, probs=tau)))
   qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
 
   cmat <- cbind.data.frame(tvals, qq)

@@ -4,9 +4,21 @@
 \alias{qr2me}
 \title{QR with 2-sided measurement error}
 \usage{
-qr2me(yname, tname, xformla, tau, data, xdf = NULL, tvals = NULL,
-  copula = "gumbel", Qyx, Qtx, startparams = NULL, method = "BFGS",
-  maxit = 1000, ndraws = 100, cl = 1)
+qr2me(
+  yname,
+  tname,
+  xformla,
+  tau,
+  data,
+  xdf = NULL,
+  tvals = NULL,
+  copula = "gaussian",
+  Qyx,
+  Qtx,
+  retFytxlist = FALSE,
+  ndraws = 100,
+  messages = TRUE
+)
 }
 \arguments{
 \item{yname}{name of the outcome in the passed in data}
@@ -19,6 +31,30 @@ not to be measured with error)}
 \item{tau}{a vector containing particular quantiles that have been estimated ??}
 
 \item{data}{a data.frame containing the data used for estimation}
+
+\item{xdf}{If you want conditional distributions to be returned, pass in the value of the distribution here;
+otherwise the default behavior is to return a single distribution that averages over all values of X in the dataset}
+
+\item{tvals}{values of the treatment to compute conditional distribution-type
+parameters for}
+
+\item{copula}{which type of copula to use (default is "gaussian")}
+
+\item{Qyx}{quantile regression estimates (can be adjusted for measurement
+error) of Y on X}
+
+\item{Qtx}{quantile regression estimates (can be adjusted for measurement
+error) of T on X}
+
+\item{retFytxlist}{whether or not to return the conditional distribution
+for every value of x in xdf
+(default is FALSE because this can take up a lot of room in memory)}
+
+\item{ndraws}{number of draws to use in MH algorithm to estimate first
+step quantile regressions (default 250)}
+
+\item{messages}{whether or not to report details of computation as they
+occur (default is \code{FALSE})}
 }
 \description{
 Estimates QR parameters in the case with measurement error

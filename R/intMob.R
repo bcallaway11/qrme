@@ -17,7 +17,7 @@ tmat <- function(Y,T, qcutoffs=c(.25,.5,.75)) {
     ucutoffs <- c(qcutoffs,1)
     lcutoffs <- c(0,qcutoffs)
 
-    gc <- copula::empCopula(pobs(cbind(Y,T)))
+    gc <- copula::empCopula(copula::pobs(cbind(Y,T)))
     
     ucutoffs <- c(qcutoffs,1)
     lcutoffs <- c(0,qcutoffs)

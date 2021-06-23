@@ -5,8 +5,8 @@ Authors@R: c(person("Callaway", "Brantly", email = "brantly.callaway@temple.edu"
 Description: Code for estimating quantile regressions with measurement error.  The first main set of functions estimates quantile regression with measurement error in the dependent variable using an EM-type-algorithm.  The second set of functions estimates quantile regressions with measurement error in the outcome and in a continuous "treatment" variable.  All functions allow for an arbitrary number of other covariates that are assumed not to be measured with error.
 Depends: R (>= 2.1.0)
 License: GPL-2
-Imports: BMisc, copula, ggplot2, mixtools, pbapply, quantreg, tidyr, Rcpp, RcppArmadillo
-LinkingTo: Rcpp
+Imports: BMisc, copula, ggplot2, mixtools, pbapply, quantreg, tidyr, gumbel, Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1

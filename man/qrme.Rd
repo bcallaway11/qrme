@@ -3,12 +3,27 @@
 \docType{package}
 \name{qrme}
 \alias{qrme}
-\alias{qrme-package}
 \title{qrme: Quantile regression with measurement error}
 \usage{
-qrme(formla, tau = 0.5, data, nmix = 3, startbet = NULL,
-  startmu = NULL, startsig = NULL, startpi = NULL, tol = 1,
-  cl = 1)
+qrme(
+  formla,
+  tau = 0.5,
+  data,
+  nmix = 3,
+  startbet = NULL,
+  startmu = NULL,
+  startsig = NULL,
+  startpi = NULL,
+  simstep = "MH",
+  tol = 1,
+  iters = 400,
+  burnin = 200,
+  drawsd = 4,
+  cl = 1,
+  se = FALSE,
+  biters = 100,
+  messages = FALSE
+)
 }
 \arguments{
 \item{formla}{y ~ x}
@@ -39,6 +54,10 @@ of observations in each component of the mimxture of normals distribution
 for the measurement error (default is NULL and in this case, the starting
 values are all set to be 1/nmix)}
 
+\item{simstep}{The type of simulation step to use in the EM algorithm.
+The default is "MH" for Metropolis-Hasting.  The alternative is
+"ImpSamp" for importance sampling.}
+
 \item{tol}{This is the convergence criteria.  When the change in the
 Euclidean distance between the new parameters (at each iteration) and
 the old parameters (from the previous iteration) is smaller than tol,
@@ -46,8 +65,26 @@ the algorithm concludes.  In general, larger values for tol will result
 in a fewer number of iterations and smaller values will result in more
 accurate estimates.}
 
+\item{iters}{How many iterations to use in the simulation step (default is
+400)}
+
+\item{burnin}{How many iterations to drop in the simulation step (default
+is 200)}
+
+\item{drawsd}{The starting standard deviation for the measurement error
+term.}
+
 \item{cl}{The numbe of clusters to use for parallel computation (default
 is 1 so that computation is not done in parallel)}
+
+\item{se}{Whether or not to compute standard errors using the bootstrap
+(default is FALSE)}
+
+\item{biters}{Number of bootstrap iterations to use.  Only is considered
+in the case where computing standard errors (default is 100)}
+
+\item{messages}{Whether or not to report details of estimation procedure
+(default is FALSE)}
 }
 \value{
 an object of class "merr"

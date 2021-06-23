@@ -2,3 +2,6 @@
 ^\.Rproj\.user$
 ^docs$
 ^R/qrme-old\.R$
+^README\.Rmd$
+^_pkgdown\.yml$
+^pkgdown$
