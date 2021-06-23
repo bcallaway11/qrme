@@ -9,7 +9,7 @@ fvyxC(v, betmat, m, pi, mu, sig, y, x, tau)
 \arguments{
 \item{v}{value to estimate the density at}
 
-\item{betmat}{matrix of QR parameters}
+\item{betmat}{matrix of quantile regression coefficients}
 
 \item{m}{number of mixture components}
 
@@ -23,7 +23,7 @@ fvyxC(v, betmat, m, pi, mu, sig, y, x, tau)
 
 \item{x}{a vector of x's}
 
-\item{tau}{which values QR's have been estimated for}
+\item{tau}{vector of values where QR were estimated}
 }
 \value{
 estimate of density of measurement error conditional on y and x

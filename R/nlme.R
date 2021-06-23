@@ -14,12 +14,14 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
                          reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                          reportPov=TRUE,
                          povline=log(20000), reportQ=c(.1,.5,.9),
-                         Ynmix=1, Tnmix=1, tol=1, drawsd=1, messages=FALSE) {
+                         Ynmix=1, Tnmix=1, tol=1, iters=400,
+                         burnin=200, drawsd=4, messages=FALSE) {
   
   yname <- lhs.vars(Yformla)
   tname <- lhs.vars(Tformla)
   Qyx <- qrme(Yformla, data=data, tau=tau, nmix=Ynmix, simstep=simstep, 
-              tol=tol, drawsd=drawsd, messages=messages, se=FALSE) # don't bootstrap these
+              tol=tol, iters=iters, burnin=burnin, drawsd=drawsd,
+              messages=messages, se=FALSE) # don't bootstrap these
   Qtx  <- qrme(Tformla, data=data, tau=tau, nmix=Tnmix, simstep=simstep,
                tol=tol, drawsd=drawsd, messages=messages, se=FALSE)
 
@@ -29,9 +31,17 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
   Qtx$Ystar <- NULL
 
   # now get joint distribution
-  meres <- qr2me(yname, tname, Yformla, tau=tau, data=data,
+  meres <- qr2me(yname=yname,
+                 tname=tname,
+                 xformla=Yformla,
+                 tau=tau,
+                 data=data,
                  tvals=tvals,
-                 copula=copType, Qyx=Qyx, Qtx=Qtx, ndraws=ndraws, retFytxlist=FALSE,
+                 copula=copType,
+                 Qyx=Qyx,
+                 Qtx=Qtx,
+                 ndraws=ndraws,
+                 retFytxlist=FALSE,
                  messages=FALSE)
   
   if (reportTmat) {
@@ -116,6 +126,8 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
 #'  parameters for
 #' @param copType what type of copula to use in second step.  Options are
 #'  "gaussian" (the default), "clayton", or "gumbel"
+#' @param simstep whether to use an MH algorithm ("MH") or an importance
+#'  sampling algorithm ("ImpSamp")
 #' @param ndraws number of draws to use in MH algorithm to estimate first
 #'  step quantile regressions (default 250)
 #' @param reportTmat whether or not to report a transition matrix
@@ -133,6 +145,8 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
 #' @param tol tolerance for first step quantile regression model to converge
 #'  (default is 1).  Note that convergence  will be sensitive to \code{length(tau)}
 #'  and the number of mixture components included in the model
+#' @param iters the number of MCMC iterations (default is 400)
+#' @param burnin the number of MCMC iterations to drop (default is 200)
 #' @param drawsd starting value of standard deviations of mixture components
 #' @param messages whether or not to report details of computation as they
 #'  occur (default is \code{FALSE})
@@ -146,10 +160,12 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
 #' @return list of nonlinear measures of intergenerational income mobility
 #'  adjusted for measurement error
 #' @export
-nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gumbel", simstep="MH", ndraws=250,
+nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gaussian",
+                 simstep="MH", ndraws=250,
                  reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                  reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
-                 Ynmix=1, Tnmix=1, tol=1, drawsd=1, messages=FALSE,
+                 Ynmix=1, Tnmix=1, tol=1, iters=400, burnin=200,
+                 drawsd=4, messages=FALSE,
                  se=FALSE, biters=100, cl=1) {
 
   res <- compute.nlme(data=data,
@@ -169,6 +185,8 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gumbel", simstep="
                       Ynmix=Ynmix,
                       Tnmix=Tnmix,
                       tol=tol,
+                      iters=iters,
+                      burnin=burnin,
                       drawsd=drawsd,
                       messages=messages)
   

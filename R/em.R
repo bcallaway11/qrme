@@ -200,14 +200,14 @@ em.algo.inner <- function(formla, data,
 #' @param y particular value of y to estimate f(y|x)
 #' @param betmat LxK matrix of parameter values with L the number of quantiles
 #'  and K the dimension of the covariates
-#' @param XX An nxK matrix with n the number of observations of X
+#' @param X An nxK matrix with n the number of observations of X
 #' @param tau an L-vector containing the quantile at which Q(Y|X) was estimated
 #'
 #' @return An nx1 vector that contains f(y|X)
 #'
 #' @export
-fy.x <- function(y, betmat, XX, tau) {
-  X <- as.matrix(XX)
+fy.x <- function(y, betmat, X, tau) {
+  X <- as.matrix(X)
   
   fout <- apply(X, 1, FUN = function(x) {
     ## take a particular row of X

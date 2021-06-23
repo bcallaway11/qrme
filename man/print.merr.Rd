@@ -4,11 +4,13 @@
 \alias{print.merr}
 \title{print.merr}
 \usage{
-\method{print}{merr}(obj)
+\method{print}{merr}(x, ...)
 }
 \arguments{
-\item{obj}{a merr object to be printed}
+\item{x}{an merr object}
+
+\item{...}{other arguments}
 }
 \description{
-print an merr object
+print.merr
 }

@@ -4,11 +4,13 @@
 \alias{print.qr2meobj}
 \title{print.qr2meobj}
 \usage{
-\method{print}{qr2meobj}(obj)
+\method{print}{qr2meobj}(x, ...)
 }
 \arguments{
-\item{obj}{a qr2meobj}
+\item{x}{a qr2meobj}
+
+\item{...}{other arguments}
 }
 \description{
-print a qr2meobj
+print.qr2meobj
 }

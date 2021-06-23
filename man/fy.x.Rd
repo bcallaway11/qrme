@@ -4,7 +4,7 @@
 \alias{fy.x}
 \title{fy.x}
 \usage{
-fy.x(y, betmat, XX, tau)
+fy.x(y, betmat, X, tau)
 }
 \arguments{
 \item{y}{particular value of y to estimate f(y|x)}
@@ -12,7 +12,7 @@ fy.x(y, betmat, XX, tau)
 \item{betmat}{LxK matrix of parameter values with L the number of quantiles
 and K the dimension of the covariates}
 
-\item{XX}{An nxK matrix with n the number of observations of X}
+\item{X}{An nxK matrix with n the number of observations of X}
 
 \item{tau}{an L-vector containing the quantile at which Q(Y|X) was estimated}
 }

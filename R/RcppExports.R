@@ -2,14 +2,14 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' fyxC
+#'
 #' Converts quantile regression estimates into density estimates
 #'
 #' @param y vector of outcomes
-#' @param betamat matrix of quantile regression coefficients
+#' @param betmat matrix of quantile regression coefficients
 #' @param X vector of covariates (should be same dimension as betamat)
 #' @param tau vector of values where QR were estimated
-NULL
-
+#'
 #' @return value of density at y and X given QR estimates
 fyxC <- function(y, betmat, X, tau) {
     .Call('_qrme_fyxC', PACKAGE = 'qrme', y, betmat, X, tau)
@@ -134,10 +134,40 @@ interpolateMatC <- function(x, ymat, xval, extrapolate) {
     .Call('_qrme_interpolateMatC', PACKAGE = 'qrme', x, ymat, xval, extrapolate)
 }
 
+#' computeFytXC
+#'
+#' convert first step quantile regression estimates and second step copula
+#' estimates into the distribution of Y conditional on T and X
+#' this is not currently used (we replaced this numerical approach with
+#' a direct calculation inside the R code).  This also only works currently
+#' for a Gumbel copula.
+#'
+#' @param yvals values to compute conditional distribution for
+#' @param tvals values of treatment to compute conditional distribution for
+#' @param Qyxpreds matrix of quantile regression predictions
+#' @param Ftxpreds matrix of conditional distribution (T conditional on X)
+#'  predictions
+#' @param tau values at which QR's were estimated
+#' @param copula which type of copula was estimated (currently ignored and
+#'  imposes that the copula is Gumbel
+#' @param copParam previously estimated copula parameter
+#'
+#' @return cube corresponding to conditional distribution as a function
+#'  of y, t, and each row of X in the data
 computeFytXC <- function(yvals, tvals, Qyxpreds, Ftxpreds, tau, copula, copParam) {
     .Call('_qrme_computeFytXC', PACKAGE = 'qrme', yvals, tvals, Qyxpreds, Ftxpreds, tau, copula, copParam)
 }
 
+#' testCopula
+#' 
+#' extra functions for testing copula code
+#' not used
+#'
+#' @param u first copula argument
+#' @param v second copula argument
+#' @param copParam copula paramter
+#'
+#' @keywords internal
 testCopula <- function(u, v, copParam) {
     .Call('_qrme_testCopula', PACKAGE = 'qrme', u, v, copParam)
 }

@@ -22,7 +22,9 @@ compute.nlme(
   Ynmix = 1,
   Tnmix = 1,
   tol = 1,
-  drawsd = 1,
+  iters = 400,
+  burnin = 200,
+  drawsd = 4,
   messages = FALSE
 )
 }
@@ -40,6 +42,9 @@ parameters for}
 
 \item{copType}{what type of copula to use in second step.  Options are
 "gaussian" (the default), "clayton", or "gumbel"}
+
+\item{simstep}{whether to use an MH algorithm ("MH") or an importance
+sampling algorithm ("ImpSamp")}
 
 \item{ndraws}{number of draws to use in MH algorithm to estimate first
 step quantile regressions (default 250)}
@@ -67,6 +72,10 @@ model}
 \item{tol}{tolerance for first step quantile regression model to converge
 (default is 1).  Note that convergence  will be sensitive to \code{length(tau)}
 and the number of mixture components included in the model}
+
+\item{iters}{the number of MCMC iterations (default is 400)}
+
+\item{burnin}{the number of MCMC iterations to drop (default is 200)}
 
 \item{drawsd}{starting value of standard deviations of mixture components}
 

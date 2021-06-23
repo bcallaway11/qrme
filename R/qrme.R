@@ -574,6 +574,8 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 #' @param Fytxlist list of conditional distributions
 #' @param Qyx estimates of quantiles of Y conditional on X
 #' @param Qtx estimates of quantiles of T conditional on X
+#'
+#' @export
 qr2meobj <- function(cop.param, copula, tvals, x, Fytxlist, Qyx, Qtx) {
   out <- list()
   out$cop.param <- cop.param
@@ -589,35 +591,37 @@ qr2meobj <- function(cop.param, copula, tvals, x, Fytxlist, Qyx, Qtx) {
 
 #' print.qr2meobj
 #'
-#' print a qr2meobj
-#'
-#' @param obj a qr2meobj
-print.qr2meobj <- function(obj) {
-  print(obj$Qyx)
-  print(obj$Qtx)
+#' @param x a qr2meobj
+#' @param ... other arguments
+#' 
+#' @export
+print.qr2meobj <- function(x, ...) {
+  print(x$Qyx)
+  print(x$Qtx)
   cat("\n\n")
   cat("Copula Type: ")
-  cat(obj$copula)
+  cat(x$copula)
   cat("\n")
   cat("Copula Paramter: ")
-  cat(obj$cop.param)
+  cat(x$cop.param)
   cat("\n\n")
 }
 
 #' print.merr
 #'
-#' print an merr object
-#'
-#' @param obj a merr object to be printed
-print.merr <- function(obj) {
-  coef <- round(t(as.matrix(obj$coefficients)),4)
-  rownames(coef) <- obj$tau
-  colnames(coef) <- c("Intercept", attr(obj$terms,"term.labels"))
+#' @param x an merr object
+#' @param ... other arguments
+#' 
+#' @export
+print.merr <- function(x,...) {
+  coef <- round(t(as.matrix(x$coefficients)),4)
+  rownames(coef) <- x$tau
+  colnames(coef) <- c("Intercept", attr(x$terms,"term.labels"))
   cat("Coefficients:\n")
   print(coef)
   cat("\n\n")
   cat("Measurement Error Distribution:\n")
-  U <- round(cbind(obj$pi, obj$mu, obj$sig^2),4)
+  U <- round(cbind(x$pi, x$mu, x$sig^2),4)
   rownames(U) <- sapply(1:nrow(U), function(i) paste0("Comp. ",i))
   colnames(U) <- c("Prob.", "Mean", "Variance")
   print(U)    
@@ -627,7 +631,7 @@ print.merr <- function(obj) {
 ##   lapply(listolists, function(l) l[[whichone]])
 ## }
 
-#' plot.qre2meobj
+#' gg_qr2meobj
 #'
 #' plot a qr2meobj
 #'
@@ -636,8 +640,12 @@ print.merr <- function(obj) {
 #' @param ylim limits of y-axis
 #' @param ylab label for y-axis
 #' @param xlab label for x-axis
-plot.qr2meobj <- function(obj, tau=c(.1,.5,.9), ylim=NULL,
+#'
+#' @export
+gg_qr2meobj <- function(obj, tau=c(.1,.5,.9), ylim=NULL,
                           ylab=NULL, xlab=NULL) {
+
+  if (is.null(tau)) tau <- c(.1,.5,.9)
   qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
   tvals <- obj$tvals
   
@@ -669,6 +677,8 @@ plot.qr2meobj <- function(obj, tau=c(.1,.5,.9), ylim=NULL,
 #' @param obj new object to plot
 #' @param p existing plot
 #' @param tau which quantiles to plot
+#'
+#' @export
 addplot <- function(obj, p, tau=c(.1,.5,.9)) {
 
   qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
