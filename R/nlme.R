@@ -9,7 +9,7 @@
 #'
 #' @keywords internal
 #' @export
-compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
+compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                          copType="gaussian", simstep="MH", ndraws=250,
                          reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                          reportPov=TRUE,
@@ -39,6 +39,7 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
                    tau=tau,
                    data=data,
                    tvals=tvals,
+                   xdf=xdf,
                    copula=copType,
                    Qyx=Qyx,
                    Qtx=Qtx,
@@ -59,7 +60,7 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
   rqyx$sig <- rqtx$sig <- 0
 
   nomeres <- qr2me(yname, tname, Yformla, tau=tau, data=data,
-                   tvals=tvals, ndraws=ndraws,
+                   tvals=tvals, xdf=xdf, ndraws=ndraws,
                    copula=copType, 
                    Qyx=rqyx, Qtx=rqtx, retFytxlist=FALSE,
                    messages=FALSE)
@@ -83,21 +84,26 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
     nomeUm <- nomeres$up_mob
     obsUm <- upMob(data[,yname], data[,tname])
   }
-  
+
+
   # results just using quantile regression
   tau <- seq(0,1,length.out=100)
   qrformla <- toformula(yname, c(tname, rhs.vars(Yformla)))
   qrytx <- rq(qrformla, tau=tau, data=data)
   qrytx$Fyt <- lapply(1:length(tvals), function(i) {
-    newdta <- data
+    if (is.null(xdf)) newdta <- data else newdta <- xdf
     newdta[,tname] <- tvals[i]
-    Fytx <- predict(qrytx, newdata=newdta, type="Fhat", stepfun=TRUE)
-    Fytx <- rearrange(Fytx)
-    combineDfs(seq(min(data[,yname]), max(data[,yname]), length.out=500), Fytx)
+    if (nrow(newdta) == 1) {
+      Qytx <- predict(qrytx, newdata=newdta)
+      Fytx <- BMisc::makeDist(Qytx[1,], tau, rearrange=TRUE, method="linear")
+      return(Fytx)
+    } else {
+      Fytx <- predict(qrytx, newdata=newdta, type="Fhat", stepfun=TRUE)
+      Fytx <- rearrange(Fytx)
+      combineDfs(seq(min(data[,yname]), max(data[,yname]), length.out=500), Fytx)
+    }
   })
   
-
-
   if (reportPov) {
     if (ignore_me) mePovrate <- NULL else mePovrate <- sapply(1:(length(meres$tvals)), function(i) meres$Fyt[[i]](povline))
     nomePovrate <- sapply(1:(length(nomeres$tvals)), function(i) nomeres$Fyt[[i]](povline))
@@ -113,10 +119,13 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
   
   out <- list(Yformla=Yformla, Tformla=Tformla, tau=tau, tvals=tvals, copType=copType,
               meCopParam=meCopParam, nomeCopParam=nomeCopParam, Ynmix=Ynmix, Tnmix=Tnmix, reportQ=reportQ,
-              meQyx=Qyx, meQtx=Qtx, meresQ=meresQ, nomeresQ=nomeresQ, qrytxQ=qrytxQ, meTmat=meTmat, nomeTmat=nomeTmat,
-              obsTmat=obsTmat, mePs=mePs, nomePs=nomePs, obsPs, meUm=meUm, nomeUm=nomeUm, obsUm,
-              rqyx=rqyx, rqtx=rqtx, #nomeres=nomeres,
-              qrytx=qrytx, mePovrate=mePovrate, nomePovrate=nomePovrate, qrPovrate=qrPovrate)
+              meQyx=Qyx, meQtx=Qtx, meresQ=meresQ, 
+              nomeQyx=rqyx, nomeQtx=rqtx, nomeresQ=nomeresQ, 
+              qrytxQ=qrytxQ, qrytx=qrytx,
+              meTmat=meTmat, nomeTmat=nomeTmat, obsTmat=obsTmat, 
+              mePs=mePs, nomePs=nomePs, obsPs=obsPs, 
+              meUm=meUm, nomeUm=nomeUm, obsUm=obsUm,
+              mePovrate=mePovrate, nomePovrate=nomePovrate, qrPovrate=qrPovrate)
 
   out
 
@@ -133,6 +142,11 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
 #' @param tau values of tau to estimate first step quantile regressions for
 #' @param tvals values of the treatment to compute conditional distribution-type
 #'  parameters for
+#' @param xdf matrix of values of covariates to average over for conditional
+#'  distribution-type parameters.   The default is NULL and in this case
+#'  all covariates in the data will be averaged over.  A main alternative
+#'  would be to pass in a single row with particular values of covariates
+#'  of interest.
 #' @param copType what type of copula to use in second step.  Options are
 #'  "gaussian" (the default), "clayton", or "gumbel"
 #' @param simstep whether to use an MH algorithm ("MH") or an importance
@@ -171,7 +185,7 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals,
 #' @return list of nonlinear measures of intergenerational income mobility
 #'  adjusted for measurement error
 #' @export
-nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gaussian",
+nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL, copType="gaussian",
                  simstep="MH", ndraws=250,
                  reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                  reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
@@ -184,6 +198,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gaussian",
                       Tformla=Tformla,
                       tau=tau,
                       tvals=tvals,
+                      xdf=xdf,
                       copType=copType,
                       simstep=simstep,
                       ndraws=ndraws,
@@ -215,6 +230,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gaussian",
                             Tformla=Tformla,
                             tau=tau,
                             tvals=tvals,
+                            xdf=xdf,
                             copType=copType,
                             ndraws=ndraws,
                             reportTmat=reportTmat,
@@ -229,12 +245,12 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gaussian",
                             messages=messages)
         out
       }, error=function(cond) {
-        return(-99) # use this as code for error on that bootstrap iteration
+        return(NULL) # use this as code for error on that bootstrap iteration
         #return(cond)
       })
     }, cl=cl)
 
-    #browser()
+    
     # drop list elements where bootstrap failed
     eachIter <- eachIter[!sapply(eachIter, is.null)]
 
@@ -252,8 +268,8 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, copType="gaussian",
     # qr
     res$qrytx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) coef(e$qrytx))), 1:2, sd)
     # nome
-    res$rqyx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$rqyx)))), 1:2, sd)
-    res$rqtx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$rqtx)))), 1:2, sd)
+    res$nomeQyt$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nomeQyx)))), 1:2, sd)
+    res$nomeQtx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nomeQtx)))), 1:2, sd)
     
     # transition matrix
     res$meTmat.se <- apply(simplify2array(lapply(eachIter, function(e) e$meTmat)), 1:2, sd)

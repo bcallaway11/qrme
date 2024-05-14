@@ -226,7 +226,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   x <- model.matrix(xformla, data)
   n <-  nrow(data)
 
-  tau_grid <- seq(0,1,length.out=100)
+  tau_grid <- seq(0,1,length.out=200)
   Qyx_interpolated <- lapply(1:nrow(x), function(i) {
     xb <- as.numeric(t(as.matrix(x[i,]))%*%as.matrix(coef(Qyx)))
     sapply(tau_grid, function(tt_grid_val) {
@@ -235,9 +235,6 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   })
   Fyx <- lapply(Qyx_interpolated, function(Qyx) BMisc::makeDist(Qyx, tau_grid, sorted=TRUE))
 
-
-  #Fyx1 <- predict(Qyx, newdata=as.data.frame(x)) ## this gives nxL matrix
-  #Fyx <- lapply(1:nrow(Fyx1), function(i) BMisc::makeDist(Fyx1[i,], Fx=tau, sorted=TRUE))
 
   Qtx_interpolated <- lapply(1:nrow(x), function(i) {
     xb <- as.numeric(t(as.matrix(x[i,]))%*%as.matrix(coef(Qtx)))
@@ -365,9 +362,30 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     ## just set it equal to the average values of X in the dataset
     ##if (is.null(xdf)) xdf <- as.data.frame(t(apply(x,2,mean))) ##x, for all data
 
-    yvals <- quantile(data[,yname], seq(.01,.99,.01)) ## could also take all unique yvals or let user pass them all in
-    yvals <- yvals[order(yvals)]
+    yvals <- unique(data[,yname])#quantile(data[,yname], seq(.01,.99,.005)) ## could also take all unique yvals or let user pass them all in
+    yvals <- unique(yvals[order(yvals)])
 
+
+    # only re-calculate if xdf is set
+    if (!is.null(xdf)) {
+      
+      Qyxdf_interpolated <- lapply(1:nrow(xdf), function(i) {
+        xb <- as.numeric(as.matrix(xdf[i,])%*%as.matrix(coef(Qyx)))
+        sapply(tau_grid, function(tt_grid_val) {
+          interpolateC(tau, xb, tt_grid_val, TRUE)
+        })
+      })
+      Fyx <- lapply(Qyxdf_interpolated, function(Qyx) BMisc::makeDist(Qyx, tau_grid, sorted=TRUE))
+
+
+      Qtxdf_interpolated <- lapply(1:nrow(xdf), function(i) {
+        xb <- as.numeric(as.matrix(xdf[i,])%*%as.matrix(coef(Qtx)))
+        sapply(tau_grid, function(tt_grid_val) {
+          interpolateC(tau, xb, tt_grid_val, TRUE)
+        })
+      })
+      Ftx <- lapply(Qtxdf_interpolated, function(Qtx) BMisc::makeDist(Qtx, tau_grid, sorted=TRUE))
+    }
     
     if (is.null(xdf)) xdf <- x
     

@@ -122,12 +122,20 @@ em.algo.inner <- function(formla, data,
         colnames(newdta1) <- c(yname, colnames(X), "e")
 
         #thetime <- Sys.time()
-        out  <- quantreg::rq(formla, tau=tau, data=newdta1, method="fn")
+        #out  <- quantreg::rq(formla, tau=tau, data=newdta1, method="fn")
         #Sys.time() - thetime
-        #out <- quantreg::rq(formla, tau=tau, data=newdta1, method="pfn")
-        
+        #out <- quantreg::rq(formla, tau=tau, data=newdta1, method="pfn", weights=rep(1,nrow(newdta1)))
+        #out <- rq.fit.pfnb(x=model.matrix(formla, data=data), 
+        #              y=model.response(model.frame(formla, data=data)), 
+        #              tau=tau
+        newdta1$w <- 1
+        out <- quantreg::rq(formula=formla, 
+                            tau=tau, 
+                            weights=w,
+                            data=newdta1, 
+                            method="pfn")
         # this is part I am not sure about, once you have a new beta then estimate a new sigma??
-        # also should probably restrict overall mean of error term to be equal to 0
+        # also should probably restrict overall mean of measurement error term to be equal to 0
         if (messages) {
             cat("\nEstimating finite mixture model...")
         }
