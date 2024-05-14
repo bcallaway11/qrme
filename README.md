@@ -3,7 +3,7 @@
 
 This is code for Callaway, Li, and Murtazashvili (2024) “Nonlinear
 Approaches to Intergenerational Mobility Allowing for Measurement
-Error.” The code mainly contains our implementations of
+Error.” The code mainly contains our implementations of the following:
 
 - **Quantile Regression with Measurement Error** — This builds upon the
   work of Hausman, Liu, Luo, and Palmer (2021) who study quantile

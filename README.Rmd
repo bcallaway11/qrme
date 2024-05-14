@@ -12,7 +12,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-This is code for Callaway, Li, and Murtazashvili (2024) "Nonlinear Approaches to Intergenerational Mobility Allowing for Measurement Error."  The code mainly contains our implementations of 
+This is code for Callaway, Li, and Murtazashvili (2024) "Nonlinear Approaches to Intergenerational Mobility Allowing for Measurement Error."  The code mainly contains our implementations of the following:
 
 * **Quantile Regression with Measurement Error** --- This builds upon the work of Hausman, Liu, Luo, and Palmer (2021) who study quantile regression with measurement error in the outcome variable.  We implement an alternative approach to quantile regression with measurement error that involves an iterative procedure (EM algorithm) to estimate the QR model in the presence of measurement error
 
