@@ -12,17 +12,17 @@ knitr::opts_chunk$set(
 )
 ```
 
-This is code for Callaway, Li, and Murtazashvili (2021) ``Nonlinear Approaches to Intergenerational Mobility Allowing for Measurement Error.''  The code mainly contains our implementations of 
+This is code for Callaway, Li, and Murtazashvili (2024) "Nonlinear Approaches to Intergenerational Mobility Allowing for Measurement Error."  The code mainly contains our implementations of 
 
-* *Quantile Regression with Measurement Error* --- This builds upon the work of Hausman, Liu, Luo, and Palmer (2021) who study quantile regression with measurement error in the outcome variable.  We implement an alternative approach to quantile regression with measurement error that involves an iterative procedure (EM algorithm) to estimate the QR model in the presence of measurement error
+* **Quantile Regression with Measurement Error** --- This builds upon the work of Hausman, Liu, Luo, and Palmer (2021) who study quantile regression with measurement error in the outcome variable.  We implement an alternative approach to quantile regression with measurement error that involves an iterative procedure (EM algorithm) to estimate the QR model in the presence of measurement error
 
-* *Quantile Regression with Two-Sided Measurement Error* --- We additionally implement the approach suggested in our paper to 
+* **Quantile Regression with Two-Sided Measurement Error** --- We additionally implement the approach suggested in our paper to 
 
-* *Estimating Joint Distributions in the Presence of Measurement Error in both Variables* --- 
+* **Estimating Joint Distributions in the Presence of Measurement Error in both Variables** --- 
 
 * A variety of nonlinear measures of intergenerational income mobility parameters
 
-I only lightly support this code, and it is more like a demonstration of the type of code that can work in this case as well as a replication package for our work.
+**Note:** I only lightly support this code, and it is more like a demonstration of the type of code that can work in this case as well as a replication package for our work.
 
 # References
 
