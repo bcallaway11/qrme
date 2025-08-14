@@ -4,12 +4,15 @@
 \alias{fvyxC}
 \title{fvyxC}
 \usage{
-fvyxC(v, betmat, m, pi, mu, sig, y, x, tau)
+fvyxC(v, betmat, me_dist, m, pi, mu, sig, y, x, tau)
 }
 \arguments{
 \item{v}{value to estimate the density at}
 
 \item{betmat}{matrix of quantile regression coefficients}
+
+\item{me_dist}{the distribution of the measurement error.  "gaussian" is the
+default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{number of mixture components}
 

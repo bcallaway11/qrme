@@ -4,7 +4,21 @@
 \alias{mh_mcmcC}
 \title{mh_mcmcC}
 \usage{
-mh_mcmcC(Y, X, startval, iters, burnin, drawsd, betmat, m, pi, mu, sig, tau)
+mh_mcmcC(
+  Y,
+  X,
+  startval,
+  iters,
+  burnin,
+  drawsd,
+  betmat,
+  me_dist,
+  m,
+  pi,
+  mu,
+  sig,
+  tau
+)
 }
 \arguments{
 \item{Y}{vector of outcomes}
@@ -21,6 +35,9 @@ mh_mcmcC(Y, X, startval, iters, burnin, drawsd, betmat, m, pi, mu, sig, tau)
 MH algorithm}
 
 \item{betmat}{matrix of QR parameters}
+
+\item{me_dist}{the distribution of the measurement error.  "gaussian" is the
+default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{number of mixture components for measurement error}
 

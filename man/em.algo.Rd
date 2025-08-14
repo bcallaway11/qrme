@@ -9,6 +9,7 @@ em.algo(
   data,
   betmatguess,
   tau,
+  me_dist = "gaussian",
   m = 1,
   piguess = 1,
   muguess = 0,
@@ -32,6 +33,9 @@ an LxK matrix where L is the number of quantiles and K is the dimension
 of the covariates}
 
 \item{tau}{An L-vector indicating which quantiles have been estimated}
+
+\item{me_dist}{The distribution of the measurement error.  "gaussian" is the 
+default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{The number of components of the mixture distribution for the
 measurement error}

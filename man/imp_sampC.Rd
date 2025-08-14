@@ -4,7 +4,7 @@
 \alias{imp_sampC}
 \title{imp_sampC}
 \usage{
-imp_sampC(Y, X, V, iters, drawsd, betmat, m, pi, mu, sig, tau)
+imp_sampC(Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, tau)
 }
 \arguments{
 \item{Y}{vector of outcomes}
@@ -19,6 +19,9 @@ imp_sampC(Y, X, V, iters, drawsd, betmat, m, pi, mu, sig, tau)
 MH algorithm}
 
 \item{betmat}{matrix of QR parameters}
+
+\item{me_dist}{the distribution of the measurement error.  "gaussian" is the
+default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{number of mixture components for measurement error}
 

@@ -10,7 +10,8 @@
 #' @keywords internal
 #' @export
 compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
-                         copType="gaussian", simstep="MH", ndraws=250,
+                         me_dist=me_dist, copType="gaussian", 
+                         simstep="MH", ndraws=250,
                          reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                          reportPov=TRUE,
                          povline=log(20000), reportQ=c(.1,.5,.9),
@@ -26,10 +27,10 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
   meres <- NULL
   
   if (!ignore_me) {
-    Qyx <- qrme(Yformla, data=data, tau=tau, nmix=Ynmix, simstep=simstep, 
+    Qyx <- qrme(Yformla, data=data, tau=tau, me_dist=me_dist, nmix=Ynmix, simstep=simstep, 
                 tol=tol, iters=iters, burnin=burnin, drawsd=drawsd,
                 messages=messages, se=FALSE) # don't bootstrap these
-    Qtx  <- qrme(Tformla, data=data, tau=tau, nmix=Tnmix, simstep=simstep,
+    Qtx  <- qrme(Tformla, data=data, tau=tau, me_dist=me_dist, nmix=Tnmix, simstep=simstep,
                  tol=tol, drawsd=drawsd, messages=messages, se=FALSE)
 
     # now get joint distribution
@@ -40,6 +41,7 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                    data=data,
                    tvals=tvals,
                    xdf=xdf,
+                   me_dist=me_dist,
                    copula=copType,
                    Qyx=Qyx,
                    Qtx=Qtx,
@@ -147,6 +149,8 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  all covariates in the data will be averaged over.  A main alternative
 #'  would be to pass in a single row with particular values of covariates
 #'  of interest.
+#' #' @param me_dist the distribution of the measurement error.  "gaussian" is the
+#'  default and supports a mixture of normals.  "laplace" is also supported
 #' @param copType what type of copula to use in second step.  Options are
 #'  "gaussian" (the default), "clayton", or "gumbel"
 #' @param simstep whether to use an MH algorithm ("MH") or an importance
@@ -185,7 +189,8 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #' @return list of nonlinear measures of intergenerational income mobility
 #'  adjusted for measurement error
 #' @export
-nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL, copType="gaussian",
+nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL, 
+                 me_dist="gaussian", copType="gaussian",
                  simstep="MH", ndraws=250,
                  reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                  reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
@@ -199,6 +204,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL, copType="gaussian
                       tau=tau,
                       tvals=tvals,
                       xdf=xdf,
+                      me_dist=me_dist,
                       copType=copType,
                       simstep=simstep,
                       ndraws=ndraws,
@@ -231,6 +237,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL, copType="gaussian
                             tau=tau,
                             tvals=tvals,
                             xdf=xdf,
+                            me_dist=me_dist,
                             copType=copType,
                             ndraws=ndraws,
                             reportTmat=reportTmat,

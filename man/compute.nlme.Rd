@@ -10,6 +10,8 @@ compute.nlme(
   Tformla,
   tau,
   tvals,
+  xdf = NULL,
+  me_dist = me_dist,
   copType = "gaussian",
   simstep = "MH",
   ndraws = 250,
@@ -25,6 +27,7 @@ compute.nlme(
   iters = 400,
   burnin = 200,
   drawsd = 4,
+  ignore_me = FALSE,
   messages = FALSE
 )
 }
@@ -39,6 +42,14 @@ compute.nlme(
 
 \item{tvals}{values of the treatment to compute conditional distribution-type
 parameters for}
+
+\item{xdf}{matrix of values of covariates to average over for conditional
+ distribution-type parameters.   The default is NULL and in this case
+ all covariates in the data will be averaged over.  A main alternative
+ would be to pass in a single row with particular values of covariates
+ of interest.
+#' @param me_dist the distribution of the measurement error.  "gaussian" is the
+ default and supports a mixture of normals.  "laplace" is also supported}
 
 \item{copType}{what type of copula to use in second step.  Options are
 "gaussian" (the default), "clayton", or "gumbel"}
@@ -78,6 +89,9 @@ and the number of mixture components included in the model}
 \item{burnin}{the number of MCMC iterations to drop (default is 200)}
 
 \item{drawsd}{starting value of standard deviations of mixture components}
+
+\item{ignore_me}{whether or not to ignore measurement error (this is primarily
+a way to get speedy calculations using copula-based approach)}
 
 \item{messages}{whether or not to report details of computation as they
 occur (default is \code{FALSE})}

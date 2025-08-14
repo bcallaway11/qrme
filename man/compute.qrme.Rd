@@ -8,6 +8,7 @@ compute.qrme(
   formla,
   tau = 0.5,
   data,
+  me_dist = "gaussian",
   nmix = 3,
   startbet = NULL,
   startmu = NULL,

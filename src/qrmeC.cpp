@@ -35,7 +35,7 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
   }
 
   // find position of one below
-  for (int i = xtby.size(); i > 0; i--) {
+  for (int i = xtby.size()-1; i >= 0; i--) {
     if (xtby[i] <= 0) {
       ulpos = i;
       break;
@@ -76,6 +76,8 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
 //'  a mixture of normals distribution
 //'
 //' @param v value to estimate the density at
+//' @param me_dist the distribution of the measurement error.  "gaussian" is the
+//'  default and supports a mixture of normals.  "laplace" is also supported.
 //' @param m number of mixture components
 //' @param pi vector of mixture probabilities
 //' @param mu vector of mixture means
@@ -83,12 +85,20 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
 //'
 //' @return estimated density of measurement error at v
 // [[Rcpp::export]]
-double fvC(double v, int m, NumericVector pi, NumericVector mu, NumericVector sig) {
+double fvC(double v, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig) {
 
   double out = 0;
 
-  for (int i=0; i < m; i++) {
-    out += pi[i]/sig[i] * dnorm(NumericVector::create((v-mu[i])/sig[i]))[0]; 
+  if (me_dist == "laplace") {
+    // Laplace distribution
+    double b = sig[0] / sqrt(2);
+    out = exp(-abs(v) / b) / (2 * b);
+    return out;
+  } else {
+    // Gaussian distribution
+    for (int i=0; i < m; i++) {
+      out += pi[i]/sig[i] * dnorm(NumericVector::create((v-mu[i])/sig[i]))[0];
+    }
   }
 
   return out;
@@ -107,10 +117,11 @@ double fvC(double v, int m, NumericVector pi, NumericVector mu, NumericVector si
 //'
 //' @return estimate of density of measurement error conditional on y and x
 // [[Rcpp::export]]
-double fvyxC(double v, arma::mat betmat, int m, NumericVector pi, NumericVector mu, NumericVector sig,
-	     double y, arma::colvec x, NumericVector tau) {
+double fvyxC(double v, arma::mat betmat, std::string me_dist,
+        int m, NumericVector pi, NumericVector mu, NumericVector sig,
+	      double y, arma::colvec x, NumericVector tau) {
 
-  return fyxC(y - v, betmat, x, tau) * fvC(v,m,pi,mu,sig);
+  return fyxC(y - v, betmat, x, tau) * fvC(v,me_dist,m,pi,mu,sig);
 }
 
 
@@ -126,6 +137,7 @@ double fvyxC(double v, arma::mat betmat, int m, NumericVector pi, NumericVector 
 // [[Rcpp::export]]
 NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
 		       double drawsd, arma::mat betmat,
+           std::string me_dist,
 		       int m, NumericVector pi, NumericVector mu,
 		       NumericVector sig, double y, arma::mat x,
 		       NumericVector tau) {
@@ -134,9 +146,9 @@ NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
   out[0] = startval;
   for (int i = 1; i < iters; i++) {
     double trialval = out[i-1] + rnorm(1,0,drawsd)[0];
-    double fvold = fvyxC(out[i-1], betmat=betmat, m=m, pi=pi, mu=mu,
+    double fvold = fvyxC(out[i-1], betmat=betmat, me_dist=me_dist, m=m, pi=pi, mu=mu,
     			 sig=sig, y=y, x=x, tau=tau);
-    double fvnew = fvyxC(trialval, betmat=betmat, m=m, pi=pi, mu=mu,
+    double fvnew = fvyxC(trialval, betmat=betmat, me_dist=me_dist, m=m, pi=pi, mu=mu,
     			 sig=sig, y=y, x=x, tau=tau);
     if (fvnew > fvold) {
       out[i] = trialval;
@@ -163,7 +175,7 @@ NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
 //'
 //' @return vector of weights to be used in importance sampling
 // [[Rcpp::export]]
-NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double iters, double drawsd, arma::mat betmat, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
+NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double iters, double drawsd, arma::mat betmat, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
   int n = Y.size(); // n includes measurement error so is greater than true number of observations
   double y;
   double v;
@@ -181,7 +193,7 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double it
    v = V[i];
    x = X.rows(i,i); // this gets the i-th row
    x = x.t();
-   w1 = fvyxC(v, betmat=betmat, m=m, pi=pi, mu=mu,
+   w1 = fvyxC(v, betmat=betmat, me_dist="gaussian", m=m, pi=pi, mu=mu,
     			 sig=sig, y=y, x=x, tau=tau);
    w2 = denW[i];
    weights[i] = w1/w2;
@@ -200,6 +212,8 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double it
 //' @param drawsd the standard deviation for the standard normal draws in the
 //'  MH algorithm
 //' @param betmat matrix of QR parameters
+//' @param me_dist the distribution of the measurement error.  "gaussian" is the
+//'  default and supports a mixture of normals.  "laplace" is also supported.
 //' @param m number of mixture components for measurement error
 //' @param pi mixture probabilities
 //' @param mu means of mixture components
@@ -208,6 +222,7 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double it
 // [[Rcpp::export]]
 std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int iters,
 		   int burnin, double drawsd, arma::mat betmat,
+       std::string me_dist,
 		   int m, NumericVector pi, NumericVector mu,
 		   NumericVector sig, NumericVector tau) {
 
@@ -225,15 +240,12 @@ std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int 
    x = x.t();
    e = mh_mcmc_innerC(startval=startval, iters=iters, burnin=burnin,
     		      drawsd=drawsd, betmat=betmat,
+              me_dist=me_dist,
     		      m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau);
    ee.insert(ee.end(), e.begin(), e.end());
   }
 
   return ee;
-  // e = NumericVector::create(y);
-  // DataFrame out = DataFrame::create(_["e"]=e);
-
-  // return out;
 }
 
 //' fYXmatC

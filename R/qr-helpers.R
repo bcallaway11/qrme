@@ -161,3 +161,18 @@ makeRQS <- function(params, formla, data, tau) {
     optout$tau <- tau
     optout
 }
+
+#' @title rlaplace
+#' @description Draw samples from the Laplace distribution.  Note that the 
+#'  function takes the standard deviation as an argument, but it converts it
+#'  to the scale of the Laplace distribution, which is the typical parameterization.
+#' @param n number of samples to draw
+#' @param mu location parameter (default is 0)
+#' @param sigma standard deviation, function will convert it to the scale
+#' @return vector of n samples from the Laplace distribution
+#' @export
+rlaplace <- function(n, mu = 0, sigma = 1) {
+  b <- sigma / sqrt(2)                 # Convert SD -> Laplace scale
+  u <- runif(n, -0.5, 0.5)              # Uniform(-0.5, 0.5)
+  mu - b * sign(u) * log(1 - 2 * abs(u))
+}

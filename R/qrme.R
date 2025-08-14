@@ -6,7 +6,7 @@
 #'
 #' @keywords internal
 #' @export
-compute.qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
+compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
                          startsig=NULL, startpi=NULL, simstep="MH", tol=1, iters=400,
                          burnin=200, drawsd=4, cl=1, messages=FALSE) {
   xformla <- formla
@@ -47,6 +47,7 @@ compute.qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=N
   ## Estimate QR model with measurement error using EM algorithm
   res <- em.algo(formla, data,
                  betmatguess=betvals, tau=tau,
+                 me_dist=me_dist,
                  m=m, piguess=pivals, muguess=muvals,
                  sigguess=sigvals, simstep=simstep, tol=tol,
                  iters=iters, burnin=burnin, drawsd=drawsd, cl=cl, messages=messages)
@@ -121,7 +122,7 @@ compute.qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=N
 #' @return an object of class "merr"
 #'
 #' @export
-qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
+qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
                  startsig=NULL, startpi=NULL, simstep="MH", tol=1, iters=400,
                  burnin=200, drawsd=4, cl=1, se=FALSE, biters=100, messages=FALSE) {
 
@@ -130,6 +131,7 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
   res <- compute.qrme(formla=formla,
                       tau=tau,
                       data=data,
+                      me_dist=me_dist,
                       nmix=nmix,
                       startbet=startbet,
                       startmu=startmu,
@@ -151,6 +153,7 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
         out <- compute.qrme(formla=formla,
                             tau=tau,
                             data=bdata,
+                            me_dist=me_dist,
                             nmix=nmix,
                             startbet=res$bet,
                             startmu=res$mu,
@@ -200,6 +203,10 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
 #' @param data a data.frame containing the data used for estimation
 #' @param xdf If you want conditional distributions to be returned, pass in the value of the distribution here;
 #'  otherwise the default behavior is to return a single distribution that averages over all values of X in the dataset
+#' @param tvals a vector of values of the treatment variable at which to compute the conditional distribution 
+#'  of Y given X and T
+#' @param me_dist which type of measurement error distribution to use (default is "gaussian"), 
+#'  "laplace" is also supported
 #' @param copula which type of copula to use (default is "gaussian")
 #' @param Qyx quantile regression estimates (can be adjusted for measurement
 #'  error) of Y on X
@@ -211,14 +218,14 @@ qrme <- function(formla, tau=0.5, data, nmix=3, startbet=NULL, startmu=NULL,
 #' @inheritParams nlme
 #' @inheritParams qrme
 qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
-                  copula="gaussian",
+                  me_dist="gaussian", copula="gaussian",
                   Qyx, Qtx, retFytxlist=FALSE,
                   ndraws=100, messages=TRUE) {
 
   if (messages) {
     cat("\nqr2me method...\n")
     cat("----------------------")
-    cat("\nCitation: Callaway, Brantly, Tong Li, and Irina Murtazashvili, Quantile Treatment Effects with Two-Sided Measurement Error, Working Paper, 2021....\n")
+    cat("\nCitation: Callaway, Brantly, Tong Li, Irina Murtazashvili, and Emmanuel Tsyawo, Distributional Effects with Two-Sided Measurement Error: An Application to Intergenerational Income Mobility, Working Paper, 2025....\n")
     cat("----------------------")
     cat("\n")
   }
@@ -269,32 +276,27 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   ftx <- apply(ftx1, 1, FUN=function(y) approxfun(x=unique(data[,tname]), y=y, yleft=eps, yright=eps))
 
   
-  ## make draws from the mixture distribution
-  Usig <- Qyx$sig
-  Upi <- Qyx$pi
-  Umu <- Qyx$mu
-  Vsig <- Qtx$sig
-  Vpi <- Qtx$pi
-  Vmu <- Qtx$mu
-  ksig <- length(Usig)
-  Ucomponents <- sample(1:length(Usig), ndraws, replace=TRUE, prob=Upi)
-  Us <- rnorm(ndraws, Umu[Ucomponents], Usig[Ucomponents])
-  Vcomponents <- sample(1:length(Vsig), ndraws, replace=TRUE, prob=Vpi)
-  Vs <- rnorm(ndraws, Vmu[Vcomponents], Vsig[Vcomponents])
-
+  ## make draws from the measurement error distribution
+  if (me_dist == "laplace") {
+    Us <- rlaplace(ndraws, mu=0, sigma=Qyx$sig)
+    Vs <- rlaplace(ndraws, mu=0, sigma=Qtx$sig)
+  } else { # gaussian
+    Usig <- Qyx$sig
+    Upi <- Qyx$pi
+    Umu <- Qyx$mu
+    Vsig <- Qtx$sig
+    Vpi <- Qtx$pi
+    Vmu <- Qtx$mu
+    ksig <- length(Usig)
+    Ucomponents <- sample(1:length(Usig), ndraws, replace=TRUE, prob=Upi)
+    Us <- rnorm(ndraws, Umu[Ucomponents], Usig[Ucomponents])
+    Vcomponents <- sample(1:length(Vsig), ndraws, replace=TRUE, prob=Vpi)
+    Vs <- rnorm(ndraws, Vmu[Vcomponents], Vsig[Vcomponents])
+  }
 
   ################################################################
   if (messages) cat("\nStep 2 of 3: Estimating copula parameter...\n")
   ################################################################
-
-  ## this is not right, but perhaps can make draws (e.g. similar to mcmc algorithm above)
-  ## to get the draws right and then estimate this way.
-  ## create a new dataset with the measurement error draws in order
-  ## to estimate the copula parameter
-  ## newids <- unlist(lapply(1:n, function(i) rep(i, ndraws))) ## just replicates Y and X over and over
-  ## Yvals <- data[,yname]
-  ## Tvals <- data[,tname]
-  ## newdta1 <- cbind(Y=(Yvals[newids]-rep(Us,n)), T=(Tvals[newids]-rep(Vs,n)))
 
   if (copula=="frank") {
     cop <- copula::frankCopula()
@@ -307,18 +309,6 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   } else {
     stop(paste0("copula type:", copula, " is not supported"))
   }
-
-  ##this is not right, but perhaps can make draws (e.g. similar to mcmc algorithm above)
-  ##to get the draws right and then estimate this way.
-  #newdta1 <- data.frame(Y=Qyx$Ystar, T=Qtx$Ystar)
-  #ranks1 <- copula::pobs(newdta1)
-  ##cop <- copula::fitCopula(cop, ranks1, method="irho") ## irho inverts spearman's rho; it
-  ##is very fast though (I think) not all copulas (exception=(I think)Gumbel) have 1-1 relationship
-  ##with Spearman's rho, but in practice they seem very similar.
-
-
-  
-  ##delt <- rep(attributes(cop)$estimate, nrow(x))
 
   # estimation with maximum likelihood 
   res <- optimize(ll, c(0,1), maximum=TRUE, 
@@ -438,47 +428,6 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
         FytXmat[,,j] <- do.call("rbind", this.Fytx)
       }
     }
-
-    #-----------------------------------------------------------------------------
-    # this is old way of computing conditional distributions given copula estimate
-    # but now we just directly compute them instead of doing it numerically
-    #-----------------------------------------------------------------------------
-   
-    ## ##xtdf <- cbind(tvals, xdf)
-    ## ## todo, this gives the copula, now convert to conditional distribution
-    ## ##delt <- parms2coppar(res$par, copula, xdf)
-    ## ##tvals <- quantile(data[,tname], tau, type=1)
-    ## yvals <- quantile(data[,yname], seq(.01,.99,.01)) ## could also take all unique yvals or let user pass them all in
-    ## yvals <- yvals[order(yvals)]
-    ## QQyx <- predict( Qyx, newdata=as.data.frame(rbind(xdf,x[1,])), stepfun=TRUE)  ## super hack:  but predict.rqs is throwing an error that I think it shouldn't, and this gets around it.
-    ## QQyx <- QQyx[-length(QQyx)]
-    ## QQyx <- lapply(QQyx, rearrange)
-    ## QQyx2  <- predict(Qyx, newdata=as.data.frame(xdf))
-    ## FFyx2  <- t(sapply(Fyx, function(fyx) fyx(yvals)))
-    ## Ftx <- predict(Qtx, newdata=as.data.frame(rbind(xdf, x[1,])),
-    ##                type="Fhat", stepfun=TRUE)
-    ## Ftx <- Ftx[-length(Ftx)]
-    ## Ftx <- lapply(Ftx, rearrange)
-    ## FFtx <- t(sapply(Ftx, function(ftx) ftx(tvals)))
-
-    ## U <- seq(0,1,length.out=ndraws)
-    ## U <- tau
-
-    ## if (copula=="frank") {
-    ##   cop <- copula::frankCopula(as.numeric(delt[1])) ## all delts restricted to be the same so just choose first one
-    ## } else if (copula=="gumbel") {
-    ##   cop <- copula::gumbelCopula(as.numeric(delt[1]))
-    ## } else if (copula=="clayton") {
-    ##   cop <- copula::claytonCopula(as.numeric(delt[1]))
-    ## } else if (copula=="gaussian") {
-    ##   cop <- copula::normalCopula(as.numeric(delt[1]))
-    ## } else {
-    ##   stop(paste0("copula type:", copula, " is not supported"))
-    ## }
-
-    ## ## call C++ function to return matrix with distribution of Fytx
-    ## FytXmat <- computeFytXC(yvals, tvals, QQyx2, FFtx, tau, "gumbel", delt[1])
-
     
     ## internal function for reordering arguments of BMisc::makeDist
     makeDist1 <- function(Fx, x, sorted = FALSE, rearrange=FALSE) {
@@ -497,46 +446,6 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
       BMisc::combineDfs(yvals, Fytx[,i], rearrange=TRUE)
     })
     
-
-    ## old way, replaced this with calls to C++ functions
-    ## Fytx <- pblapply(1:length(QQyx), function(i) {
-    ##     qfun <- QQyx[[i]]
-    ##     ffun <- Ftx[[i]]
-    ##     lapply(tvals, function(tt) {
-    ##         BMisc::makeDist(yvals, sapply(yvals, function(yy) {
-    ##             mean(1*(qfun(U)<=yy)*dCopula(cbind(U, ffun(tt)), cop))
-    ##         }))
-    ##     }) ## might want to make this a function with makeRQS (modified) or makeDist eventually
-    ## }, cl=cl)
-    ## ##Qytx <- lapply(Fytx, function(FF) quantile(FF, tau, type=1))
-
-    ## ## next we want to reverse the list
-    ## reverseListIndex <- function(l) {
-    ##     outlist <- list()
-    ##     length(outlist) <- length(l[[1]])
-    ##     outlist <- lapply(outlist, function(f) {
-    ##         g <- list()
-    ##         length(g) <- length(l)
-    ##         g
-    ##     })
-    
-    ##     for (i in 1:length(l)) {
-    ##         for (j in 1:length(l[[1]])) {
-    ##             outlist[[j]][[i]] <- l[[i]][[j]]
-    ##         }
-    ##     }
-    ##     outlist
-    ## }
-
-    ## Fytx <- reverseListIndex(Fytx)
-    
-
-    ##Fyt <- lapply(Fytx, function(FFytx) {
-    ##    combineDfs(yvals, FFytx)
-    ##})
-
-    ## out <- list(cop.param=parms2coppar(res$maximum, copula=copula, x=1),
-    ##             copula=copula, Fytxlist=Fytx, Fyt=Fyt, tvals=tvals, x=xdf)
 
     if (!retFytxlist) { ## often want to drop this because it is huge
       Fytxlist <- NULL

@@ -10,6 +10,7 @@ mh_mcmc_innerC(
   burnin,
   drawsd,
   betmat,
+  me_dist,
   m,
   pi,
   mu,
@@ -30,6 +31,9 @@ mh_mcmc_innerC(
 MH algorithm}
 
 \item{betmat}{matrix of QR parameters}
+
+\item{me_dist}{the distribution of the measurement error.  "gaussian" is the
+default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{number of mixture components for measurement error}
 

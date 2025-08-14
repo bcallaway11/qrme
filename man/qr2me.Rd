@@ -12,6 +12,7 @@ qr2me(
   data,
   xdf = NULL,
   tvals = NULL,
+  me_dist = "gaussian",
   copula = "gaussian",
   Qyx,
   Qtx,
@@ -35,8 +36,11 @@ not to be measured with error)}
 \item{xdf}{If you want conditional distributions to be returned, pass in the value of the distribution here;
 otherwise the default behavior is to return a single distribution that averages over all values of X in the dataset}
 
-\item{tvals}{values of the treatment to compute conditional distribution-type
-parameters for}
+\item{tvals}{a vector of values of the treatment variable at which to compute the conditional distribution 
+of Y given X and T}
+
+\item{me_dist}{which type of measurement error distribution to use (default is "gaussian"), 
+"laplace" is also supported}
 
 \item{copula}{which type of copula to use (default is "gaussian")}
 

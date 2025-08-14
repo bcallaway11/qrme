@@ -21,14 +21,16 @@ fyxC <- function(y, betmat, X, tau) {
 #'  a mixture of normals distribution
 #'
 #' @param v value to estimate the density at
+#' @param me_dist the distribution of the measurement error.  "gaussian" is the
+#'  default and supports a mixture of normals.  "laplace" is also supported.
 #' @param m number of mixture components
 #' @param pi vector of mixture probabilities
 #' @param mu vector of mixture means
 #' @param sig vector of mixture standard deviations
 #'
 #' @return estimated density of measurement error at v
-fvC <- function(v, m, pi, mu, sig) {
-    .Call('_qrme_fvC', PACKAGE = 'qrme', v, m, pi, mu, sig)
+fvC <- function(v, me_dist, m, pi, mu, sig) {
+    .Call('_qrme_fvC', PACKAGE = 'qrme', v, me_dist, m, pi, mu, sig)
 }
 
 #' fvyxC
@@ -43,8 +45,8 @@ fvC <- function(v, m, pi, mu, sig) {
 #' @inheritParams mh_mcmcC
 #'
 #' @return estimate of density of measurement error conditional on y and x
-fvyxC <- function(v, betmat, m, pi, mu, sig, y, x, tau) {
-    .Call('_qrme_fvyxC', PACKAGE = 'qrme', v, betmat, m, pi, mu, sig, y, x, tau)
+fvyxC <- function(v, betmat, me_dist, m, pi, mu, sig, y, x, tau) {
+    .Call('_qrme_fvyxC', PACKAGE = 'qrme', v, betmat, me_dist, m, pi, mu, sig, y, x, tau)
 }
 
 #' mh_mcmc_innerC
@@ -56,8 +58,8 @@ fvyxC <- function(v, betmat, m, pi, mu, sig, y, x, tau) {
 #' @inheritParams mh_mcmcC
 #'
 #' @return vector of MCMC draws of measurement error
-mh_mcmc_innerC <- function(startval, iters, burnin, drawsd, betmat, m, pi, mu, sig, y, x, tau) {
-    .Call('_qrme_mh_mcmc_innerC', PACKAGE = 'qrme', startval, iters, burnin, drawsd, betmat, m, pi, mu, sig, y, x, tau)
+mh_mcmc_innerC <- function(startval, iters, burnin, drawsd, betmat, me_dist, m, pi, mu, sig, y, x, tau) {
+    .Call('_qrme_mh_mcmc_innerC', PACKAGE = 'qrme', startval, iters, burnin, drawsd, betmat, me_dist, m, pi, mu, sig, y, x, tau)
 }
 
 #' imp_sampC
@@ -70,8 +72,8 @@ mh_mcmc_innerC <- function(startval, iters, burnin, drawsd, betmat, m, pi, mu, s
 #' @inheritParams mh_mcmcC
 #'
 #' @return vector of weights to be used in importance sampling
-imp_sampC <- function(Y, X, V, iters, drawsd, betmat, m, pi, mu, sig, tau) {
-    .Call('_qrme_imp_sampC', PACKAGE = 'qrme', Y, X, V, iters, drawsd, betmat, m, pi, mu, sig, tau)
+imp_sampC <- function(Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, tau) {
+    .Call('_qrme_imp_sampC', PACKAGE = 'qrme', Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, tau)
 }
 
 #' mh_mcmcC
@@ -84,13 +86,15 @@ imp_sampC <- function(Y, X, V, iters, drawsd, betmat, m, pi, mu, sig, tau) {
 #' @param drawsd the standard deviation for the standard normal draws in the
 #'  MH algorithm
 #' @param betmat matrix of QR parameters
+#' @param me_dist the distribution of the measurement error.  "gaussian" is the
+#'  default and supports a mixture of normals.  "laplace" is also supported.
 #' @param m number of mixture components for measurement error
 #' @param pi mixture probabilities
 #' @param mu means of mixture components
 #' @param sig standard deviations of mixture components
 #' @param tau which values QR's have been estimated for
-mh_mcmcC <- function(Y, X, startval, iters, burnin, drawsd, betmat, m, pi, mu, sig, tau) {
-    .Call('_qrme_mh_mcmcC', PACKAGE = 'qrme', Y, X, startval, iters, burnin, drawsd, betmat, m, pi, mu, sig, tau)
+mh_mcmcC <- function(Y, X, startval, iters, burnin, drawsd, betmat, me_dist, m, pi, mu, sig, tau) {
+    .Call('_qrme_mh_mcmcC', PACKAGE = 'qrme', Y, X, startval, iters, burnin, drawsd, betmat, me_dist, m, pi, mu, sig, tau)
 }
 
 #' fYXmatC

@@ -9,6 +9,7 @@ em.algo.inner(
   data,
   betmat,
   tau,
+  me_dist = "gaussian",
   m = 1,
   pi = 1,
   mu = 0,
@@ -30,6 +31,9 @@ em.algo.inner(
 and K the dimension of the covariates}
 
 \item{tau}{An L-vector indicating which quantiles have been estimated}
+
+\item{me_dist}{The distribution of the measurement error.  "gaussian" is the 
+default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{The number of components of the mixture distribution for the
 measurement error}

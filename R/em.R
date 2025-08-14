@@ -10,6 +10,8 @@
 #'  an LxK matrix where L is the number of quantiles and K is the dimension
 #'  of the covariates
 #' @param tau An L-vector indicating which quantiles have been estimated
+#' @param me_dist The distribution of the measurement error.  "gaussian" is the 
+#'  default and supports a mixture of normals.  "laplace" is also supported.
 #' @param m The number of components of the mixture distribution for the
 #'  measurement error
 #' @param piguess Starting value for the probabilities of each mixture distribution (should have length equal to k)
@@ -31,17 +33,36 @@
 #'
 #' @export
 em.algo <- function(formla, data,
-                    betmatguess, tau, m=1, piguess=1, muguess=0,
+                    betmatguess, tau, 
+                    me_dist="gaussian",
+                    m=1, piguess=1, muguess=0,
                     sigguess=1, simstep="MH", tol=.01,
                     iters=400, burnin=200, drawsd=4, cl=1,
                     messages=FALSE) {
     
+    
+    # some checks
+    if (me_dist == "laplace" & simstep != "MH") {
+        stop("Laplace distribution only supported with MH algorithm")
+    }
+    if (me_dist == "laplace" & m > 1) {
+        stop("Laplace distribution only supported with m=1")
+    }
+    
     stopIters <- 100
     counter <- 1
     
+    # run em algorithm
     while (counter <= stopIters) {
         newone <- em.algo.inner(formla, data,
-                                betmatguess, tau, m, piguess, muguess, sigguess, simstep, iters=iters, burnin=burnin, drawsd=drawsd, cl=cl, messages=messages)
+                                betmatguess, tau, 
+                                me_dist, 
+                                m, piguess, muguess, 
+                                sigguess, simstep, 
+                                iters=iters, burnin=burnin, 
+                                drawsd=drawsd, 
+                                cl=cl, 
+                                messages=messages)
         newbet <- newone$bet
         newpi <- newone$pi
         newmu <- newone$mu
@@ -81,7 +102,9 @@ em.algo <- function(formla, data,
 #'  the measurement error term
 #' @export
 em.algo.inner <- function(formla, data, 
-                          betmat, tau, m=1, pi=1, mu=0, sig=1,
+                          betmat, tau, 
+                          me_dist = "gaussian",
+                          m=1, pi=1, mu=0, sig=1,
                           simstep="MH",
                           iters=400, burnin=200, drawsd=4, cl=1, messages=FALSE) {
     
@@ -101,7 +124,7 @@ em.algo.inner <- function(formla, data,
         startval <- 0
 
         edraws <- mh_mcmcC(Y, X, startval=startval, iters=iters, burnin=burnin,
-                           drawsd=drawsd, betmat=betmat, m=m,
+                           drawsd=drawsd, betmat=betmat, me_dist=me_dist, m=m,
                            pi=pi, mu=mu, sig=sig, tau=tau)
 
         newids <- unlist(lapply(1:n, function(i) rep(i, (iters-burnin)))) # just replicates Y and X over and over
