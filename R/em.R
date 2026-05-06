@@ -1,6 +1,6 @@
 #-----------------------------------------------------------------------------
 # code for running EM algorithm to estimate distribution of outcome conditional on covariates
-##-----------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 
 
 #' @title em.algo
@@ -10,7 +10,7 @@
 #'  an LxK matrix where L is the number of quantiles and K is the dimension
 #'  of the covariates
 #' @param tau An L-vector indicating which quantiles have been estimated
-#' @param me_dist The distribution of the measurement error.  "gaussian" is the 
+#' @param me_dist The distribution of the measurement error.  "gaussian" is the
 #'  default and supports a mixture of normals.  "laplace" is also supported.
 #' @param m The number of components of the mixture distribution for the
 #'  measurement error
@@ -22,6 +22,8 @@
 #' @param simstep Whether to use MH in EM algorithm or importance sampling
 #'  in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
 #'  Default is MH.
+#' @param maxit Maximum number of EM outer iterations. If convergence is not
+#'  reached, the estimates from the final iteration are returned (default is 100)
 #' @param tol This is the convergence criteria.  When the change in the
 #'  Euclidean distance between the new parameters (at each iteration) and
 #'  the old parameters (from the previous iteration) is smaller than tol,
@@ -33,14 +35,12 @@
 #'
 #' @export
 em.algo <- function(formla, data,
-                    betmatguess, tau, 
-                    me_dist="gaussian",
-                    m=1, piguess=1, muguess=0,
-                    sigguess=1, simstep="MH", tol=.01,
-                    iters=400, burnin=200, drawsd=4, cl=1,
-                    messages=FALSE) {
-    
-    
+                    betmatguess, tau,
+                    me_dist = "gaussian",
+                    m = 1, piguess = 1, muguess = 0,
+                    sigguess = 1, simstep = "MH", tol = .01,
+                    iters = 400, burnin = 200, drawsd = 4, cl = 1,
+                    maxit = 100, messages = FALSE) {
     # some checks
     if (me_dist == "laplace" & simstep != "MH") {
         stop("Laplace distribution only supported with MH algorithm")
@@ -48,21 +48,21 @@ em.algo <- function(formla, data,
     if (me_dist == "laplace" & m > 1) {
         stop("Laplace distribution only supported with m=1")
     }
-    
-    stopIters <- 100
+
     counter <- 1
-    
+
     # run em algorithm
-    while (counter <= stopIters) {
+    while (counter <= maxit) {
         newone <- em.algo.inner(formla, data,
-                                betmatguess, tau, 
-                                me_dist, 
-                                m, piguess, muguess, 
-                                sigguess, simstep, 
-                                iters=iters, burnin=burnin, 
-                                drawsd=drawsd, 
-                                cl=cl, 
-                                messages=messages)
+            betmatguess, tau,
+            me_dist,
+            m, piguess, muguess,
+            sigguess, simstep,
+            iters = iters, burnin = burnin,
+            drawsd = drawsd,
+            cl = cl,
+            messages = messages
+        )
         newbet <- newone$bet
         newpi <- newone$pi
         newmu <- newone$mu
@@ -71,15 +71,15 @@ em.algo <- function(formla, data,
         if (messages) {
             cat("\n\n\nIteration: ", counter, "\n pi: ", newpi, "\n mu: ", newmu, "\n sig: ", newsig, "\n\n")
         }
-        criteria <- sqrt(sum(c(newbet-betmatguess,newsig-sigguess,newpi-piguess,newmu-muguess)^2))
+        criteria <- sqrt(sum(c(newbet - betmatguess, newsig - sigguess, newpi - piguess, newmu - muguess)^2))
         if (messages) {
             cat(" convergence criteria: ", criteria, "\n\n")
         }
-        if ( criteria <= tol) { ## Euclidean norm
-            if (messages) cat("\n algorithm converged\n") 
+        if (criteria <= tol) { ## Euclidean norm
+            if (messages) cat("\n algorithm converged\n")
             return(newone)
         }
-        counter <- counter+1
+        counter <- counter + 1
         betmatguess <- newbet
         sigguess <- newsig
         muguess <- newmu
@@ -101,111 +101,114 @@ em.algo <- function(formla, data,
 #' @return A list of QR parameters and parameters for mixture of normals for
 #'  the measurement error term
 #' @export
-em.algo.inner <- function(formla, data, 
-                          betmat, tau, 
+em.algo.inner <- function(formla, data,
+                          betmat, tau,
                           me_dist = "gaussian",
-                          m=1, pi=1, mu=0, sig=1,
-                          simstep="MH",
-                          iters=400, burnin=200, drawsd=4, cl=1, messages=FALSE) {
-    
-
+                          m = 1, pi = 1, mu = 0, sig = 1,
+                          simstep = "MH",
+                          iters = 400, burnin = 200, drawsd = 4, cl = 1, messages = FALSE) {
     xformla <- formla
     xformla[[2]] <- NULL # drop y variable
     X <- model.matrix(xformla, data)
     yname <- as.character(formla[[2]])
-    Y <- data[,yname]
+    Y <- data[, yname]
     k <- ncol(X) # number of x variables
     n <- length(Y)
     if (messages) {
         cat("\nSimulating measurement error...")
     }
 
-    if (simstep=="MH") {
+    if (simstep == "MH") {
         startval <- 0
 
-        edraws <- mh_mcmcC(Y, X, startval=startval, iters=iters, burnin=burnin,
-                           drawsd=drawsd, betmat=betmat, me_dist=me_dist, m=m,
-                           pi=pi, mu=mu, sig=sig, tau=tau)
+        edraws <- mh_mcmcC(Y, X,
+            startval = startval, iters = iters, burnin = burnin,
+            drawsd = drawsd, betmat = betmat, me_dist = me_dist, m = m,
+            pi = pi, mu = mu, sig = sig, tau = tau
+        )
 
-        newids <- unlist(lapply(1:n, function(i) rep(i, (iters-burnin)))) # just replicates Y and X over and over
+        newids <- unlist(lapply(1:n, function(i) rep(i, (iters - burnin)))) # just replicates Y and X over and over
 
-        newdta1 <- as.data.frame(cbind(Y=(Y[newids]-edraws), X=X[newids,], e=edraws))
+        newdta1 <- as.data.frame(cbind(Y = (Y[newids] - edraws), X = X[newids, ], e = edraws))
 
         # some extra debugging code for acceptance ratio of mh algorithm
         # newdta1$id <- sapply(strsplit(rownames(newdta1), split="[.]"), function(cc) cc[1])
         # ib <- iters-burnin
         # acceptanceratio <- sapply(split(newdta1, f=newdta1$id), function(df) 1-mean(df$e[1:(ib-1)] == df$e[2:ib]))
         # hist(acceptanceratio)
-        
+
         # Note: this currently just works for one X; will need to update
         if (messages) {
             cat("\nEstimating QR including simulated measurement error...")
         }
-        #newdta1 <- do.call(rbind.data.frame, newdta)
+        # newdta1 <- do.call(rbind.data.frame, newdta)
         colnames(newdta1) <- c(yname, colnames(X), "e")
 
-        #thetime <- Sys.time()
-        #out  <- quantreg::rq(formla, tau=tau, data=newdta1, method="fn")
-        #Sys.time() - thetime
-        #out <- quantreg::rq(formla, tau=tau, data=newdta1, method="pfn", weights=rep(1,nrow(newdta1)))
-        #out <- rq.fit.pfnb(x=model.matrix(formla, data=data), 
-        #              y=model.response(model.frame(formla, data=data)), 
+        # thetime <- Sys.time()
+        # out  <- quantreg::rq(formla, tau=tau, data=newdta1, method="fn")
+        # Sys.time() - thetime
+        # out <- quantreg::rq(formla, tau=tau, data=newdta1, method="pfn", weights=rep(1,nrow(newdta1)))
+        # out <- rq.fit.pfnb(x=model.matrix(formla, data=data),
+        #              y=model.response(model.frame(formla, data=data)),
         #              tau=tau
         newdta1$w <- 1
-        out <- quantreg::rq(formula=formla, 
-                            tau=tau, 
-                            weights=w,
-                            data=newdta1, 
-                            method="pfn")
+        out <- quantreg::rq(
+            formula = formla,
+            tau = tau,
+            weights = w,
+            data = newdta1,
+            method = "pfn"
+        )
         # this is part I am not sure about, once you have a new beta then estimate a new sigma??
         # also should probably restrict overall mean of measurement error term to be equal to 0
         if (messages) {
             cat("\nEstimating finite mixture model...")
         }
         if (m == 1) {
-            nm <- list(m=1, lambda=1, mu=0, sigma=sd(newdta1$e))
+            nm <- list(m = 1, lambda = 1, mu = 0, sigma = sd(newdta1$e))
         } else {
-            nm <- mixtools::normalmixEM(newdta1$e, k=m, epsilon=1e-03)
+            nm <- mixtools::normalmixEM(newdta1$e, k = m, epsilon = 1e-03)
         }
-        nmorder <- order(nm$mu)# reorder results by mean of each component
+        nmorder <- order(nm$mu) # reorder results by mean of each component
 
-        return(list(bet=t(coef(out)), m=m, pi=nm$lambda[nmorder], mu=nm$mu[nmorder], sig=nm$sigma[nmorder]))#, Ystar=newdta1[,yname]))
-        
-    } else if (simstep=="ImpSamp") {
+        return(list(bet = t(coef(out)), m = m, pi = nm$lambda[nmorder], mu = nm$mu[nmorder], sig = nm$sigma[nmorder])) # , Ystar=newdta1[,yname]))
+    } else if (simstep == "ImpSamp") {
         # importance sampling
-        edraws <- rnorm((iters*n), 0, drawsd)
+        edraws <- rnorm((iters * n), 0, drawsd)
 
         newids <- unlist(lapply(1:n, function(i) rep(i, iters))) # just replicates Y and X over and over
 
-        newdta1 <- as.data.frame(cbind(Y=(Y[newids]-edraws), X=X[newids,], e=edraws))  # prepopulate some fields in dataset
+        newdta1 <- as.data.frame(cbind(Y = (Y[newids] - edraws), X = X[newids, ], e = edraws)) # prepopulate some fields in dataset
 
         # compute weights using importance sampling
-        newdta1$w <- imp_sampC(Y=Y[newids], X=X[newids,], V=edraws, iters=iters, drawsd=drawsd,
-                              betmat=betmat, m=m, pi=pi, mu=mu, sig=sig, tau=tau) # but use original versions of the data (not adjusted for measurement errors) to compute weights
-        newdta1$w  <- sapply(1:length(edraws), function(i) max(1e-05,newdta1$w[i])) # drop negative weights (not many of these...)
+        newdta1$w <- imp_sampC(
+            Y = Y[newids], X = X[newids, ], V = edraws, iters = iters, drawsd = drawsd,
+            betmat = betmat, m = m, pi = pi, mu = mu, sig = sig, tau = tau
+        ) # but use original versions of the data (not adjusted for measurement errors) to compute weights
+        newdta1$w <- sapply(1:length(edraws), function(i) max(1e-05, newdta1$w[i])) # drop negative weights (not many of these...)
         # run weighted quantile regression
-        out <- quantreg::rq(formla, tau=tau, data=newdta1, method="fn", weights=newdta1$w)
+        out <- quantreg::rq(formla, tau = tau, data = newdta1, method = "fn", weights = newdta1$w)
         if (messages) {
             cat("\nEstimating finite mixture model...")
         }
         ##
         # need to make actual draws here
-        ## 
+        ##
         # set up newids again
-        #this is going to have a different length from
+        # this is going to have a different length from
         # newids above because we are going to use the length of tau rather than number of iterations
-        newids <- unlist(lapply(1:n, function(i) rep(i, length(tau)))) 
-        # draws of Y^* using X'\beta(U) and having U take all possible values of tau 
-        Ystar  <- c(t(X%*%coef(out)))
+        newids <- unlist(lapply(1:n, function(i) rep(i, length(tau))))
+        # draws of Y^* using X'\beta(U) and having U take all possible values of tau
+        Ystar <- c(t(X %*% coef(out)))
         # finally, recover draws of measurement error
-        U  <- Y[newids] - Ystar
+        U <- Y[newids] - Ystar
         if (m == 1) {
-            nm <- list(m=1, lambda=1, mu=0, sigma=sd(U))
+            nm <- list(m = 1, lambda = 1, mu = 0, sigma = sd(U))
         } else {
-            nm <- mixtools::normalmixEM(U, k=m, epsilon=1e-03)
+            nm <- mixtools::normalmixEM(U, k = m, epsilon = 1e-03)
         }
-        nmorder <- order(nm$mu)# reorder results by mean of each component
-        return(list(bet=t(coef(out)), m=m, pi=nm$lambda[nmorder], mu=nm$mu[nmorder], sig=nm$sigma[nmorder]))#, Ystar=Ystar))
+        nmorder <- order(nm$mu) # reorder results by mean of each component
+        return(list(bet = t(coef(out)), m = m, pi = nm$lambda[nmorder], mu = nm$mu[nmorder], sig = nm$sigma[nmorder])) # , Ystar=Ystar))
     } else {
         stop("provided simstep not supported")
     }
@@ -238,36 +241,36 @@ em.algo.inner <- function(formla, data,
 #'
 #' @export
 fy.x <- function(y, betmat, X, tau) {
-  X <- as.matrix(X)
-  
-  fout <- apply(X, 1, FUN = function(x) {
-    ## take a particular row of X
-    x <- as.matrix(x)
-    
-    ## the index for the "X" part
-    xtb <- t(x) %*% t(betmat)
-    
-    ## figure out if we are in an "inner case" (i.e. standard case)
-    ## or in one of the tails
-    ul.pos <- tail(which(xtb-y <= 0),1) ## position of ul (in text)
-    uu.pos <- head(which(xtb-y > 0),1) ## position of uu (in text)
-    
-    ## code to handle tails uniquely
-    lam1 <- 1 - min(tau)
-    lam2 <- max(tau)
-    if (length(uu.pos) > 0) { ## add extra check for some missing cases; don't
-      ## need for other side because of the ordering
-      if (uu.pos == 1) { ##we are way on left tail
-        return(min(tau) * lam1 * exp(lam1*(y - t(x) %*%betmat[1,])))
-      }
-    }
-    if (ul.pos == length(tau)) { ## we are way on the right tail
-      return( (1-max(tau)) * lam2 * exp(-lam2 * (y - t(x)%*%betmat[length(tau), ])))  
-    }
-    ## standard case ("inner case")
-    (tau[uu.pos] - tau[ul.pos]) / t(x)%*%(betmat[uu.pos,] - betmat[ul.pos,])
-  })
-  fout
+    X <- as.matrix(X)
+
+    fout <- apply(X, 1, FUN = function(x) {
+        ## take a particular row of X
+        x <- as.matrix(x)
+
+        ## the index for the "X" part
+        xtb <- t(x) %*% t(betmat)
+
+        ## figure out if we are in an "inner case" (i.e. standard case)
+        ## or in one of the tails
+        ul.pos <- tail(which(xtb - y <= 0), 1) ## position of ul (in text)
+        uu.pos <- head(which(xtb - y > 0), 1) ## position of uu (in text)
+
+        ## code to handle tails uniquely
+        lam1 <- 1 - min(tau)
+        lam2 <- max(tau)
+        if (length(uu.pos) > 0) { ## add extra check for some missing cases; don't
+            ## need for other side because of the ordering
+            if (uu.pos == 1) { ## we are way on left tail
+                return(min(tau) * lam1 * exp(lam1 * (y - t(x) %*% betmat[1, ])))
+            }
+        }
+        if (ul.pos == length(tau)) { ## we are way on the right tail
+            return((1 - max(tau)) * lam2 * exp(-lam2 * (y - t(x) %*% betmat[length(tau), ])))
+        }
+        ## standard case ("inner case")
+        (tau[uu.pos] - tau[ul.pos]) / t(x) %*% (betmat[uu.pos, ] - betmat[ul.pos, ])
+    })
+    fout
 }
 
 
@@ -294,10 +297,10 @@ fy.x <- function(y, betmat, X, tau) {
 #' @keywords internal
 #' @export
 fv.yx <- function(v, betmat, m, pi, mu, sig, Y, X, tau) {
-  fy.xvals <- sapply(1:length(Y), function(i) {
-    fy.x(y = (Y[i] - v), X=t(X[i,]), betmat=betmat, tau=tau)
-  })
-  fy.xvals * fv(v,m,pi,mu,sig)
+    fy.xvals <- sapply(1:length(Y), function(i) {
+        fy.x(y = (Y[i] - v), X = t(X[i, ]), betmat = betmat, tau = tau)
+    })
+    fy.xvals * fv(v, m, pi, mu, sig)
 }
 
 
@@ -310,11 +313,11 @@ fv.yx <- function(v, betmat, m, pi, mu, sig, Y, X, tau) {
 #' @return scalar f(v)
 #' @keywords internal
 #' @export
-fv <- function(v,m=1,pi=1,mu=0,sig=1) {
-  ## mixture of normals
-  sum(sapply(1:m, function(i) {
-    pi[i]/sig[i] * dnorm( (v-mu[i])/ sig[i] )
-  }))
+fv <- function(v, m = 1, pi = 1, mu = 0, sig = 1) {
+    ## mixture of normals
+    sum(sapply(1:m, function(i) {
+        pi[i] / sig[i] * dnorm((v - mu[i]) / sig[i])
+    }))
 }
 
 
@@ -330,23 +333,23 @@ fv <- function(v,m=1,pi=1,mu=0,sig=1) {
 #' @param x particular value of x
 #' @return vector of draws of measurement error
 #' @export
-mh_mcmc <- function(startval=0, iters=500, burnin=100, drawsd=sqrt(4), betmat, m, pi, mu, sig, y, x, tau) {
+mh_mcmc <- function(startval = 0, iters = 500, burnin = 100, drawsd = sqrt(4), betmat, m, pi, mu, sig, y, x, tau) {
     x <- t(x)
     out <- rep(NA, iters)
     out[1] <- startval
     for (i in 2:iters) {
-        trialval <- out[i-1] + rnorm(1, sd=drawsd)
-        fvold <- fv.yx(out[i-1], betmat, m, pi, mu, sig, y, x, tau)
+        trialval <- out[i - 1] + rnorm(1, sd = drawsd)
+        fvold <- fv.yx(out[i - 1], betmat, m, pi, mu, sig, y, x, tau)
         fvnew <- fv.yx(trialval, betmat, m, pi, mu, sig, y, x, tau)
-        if ( fvnew > fvold ) {
+        if (fvnew > fvold) {
             out[i] <- trialval
         } else {
-            if ( (fvnew / fvold) >= runif(1)) {
+            if ((fvnew / fvold) >= runif(1)) {
                 out[i] <- trialval
             } else {
-                out[i] <- out[i-1]
+                out[i] <- out[i - 1]
             }
         }
     }
-    return(tail(out, iters-burnin))
+    return(tail(out, iters - burnin))
 }

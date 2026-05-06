@@ -8,7 +8,7 @@
 #' @export
 compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
                          startsig=NULL, startpi=NULL, simstep="MH", tol=1, iters=400,
-                         burnin=200, drawsd=4, cl=1, messages=FALSE) {
+                         burnin=200, drawsd=4, cl=1, maxit=100, messages=FALSE) {
   xformla <- formla
   xformla[[2]] <- NULL ## drop y variable
   x <- model.matrix(xformla, data)
@@ -50,7 +50,8 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
                  me_dist=me_dist,
                  m=m, piguess=pivals, muguess=muvals,
                  sigguess=sigvals, simstep=simstep, tol=tol,
-                 iters=iters, burnin=burnin, drawsd=drawsd, cl=cl, messages=messages)
+                 iters=iters, burnin=burnin, drawsd=drawsd, cl=cl,
+                 maxit=maxit, messages=messages)
 
   
   out <- makeRQS(res, formla, data, tau=tau)
@@ -62,6 +63,9 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
   out$pi <- res$pi
   out$mu <- res$mu
   out$sig <- res$sig
+  out$x <- x
+  out$y <- y
+  out$me_dist <- me_dist
   #out$Ystar <- res$Ystar
 
   out
@@ -112,6 +116,8 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #'  term.
 #' @param cl The numbe of clusters to use for parallel computation (default
 #'  is 1 so that computation is not done in parallel)
+#' @param maxit Maximum number of EM outer iterations. If convergence is not
+#'  reached, the estimates from the final iteration are returned (default is 100)
 #' @param se Whether or not to compute standard errors using the bootstrap
 #'  (default is FALSE)
 #' @param biters Number of bootstrap iterations to use.  Only is considered
@@ -119,12 +125,13 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #' @param messages Whether or not to report details of estimation procedure
 #'  (default is FALSE)
 #' 
-#' @return an object of class "merr"
+#' @return an object of class "merr". Supports \code{logLik()}, \code{AIC()},
+#'   and \code{BIC()} for comparing fits across different starting values.
 #'
 #' @export
 qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
                  startsig=NULL, startpi=NULL, simstep="MH", tol=1, iters=400,
-                 burnin=200, drawsd=4, cl=1, se=FALSE, biters=100, messages=FALSE) {
+                 burnin=200, drawsd=4, cl=1, maxit=100, se=FALSE, biters=100, messages=FALSE) {
 
 
 
@@ -142,7 +149,9 @@ qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NUL
                       iters=iters,
                       burnin=burnin,
                       drawsd=drawsd,
-                      cl=cl, messages=messages)
+                      cl=cl,
+                      maxit=maxit,
+                      messages=messages)
 
   if (se) {
     eachIter <- pbapply::pblapply(1:biters, function(b) {
@@ -164,7 +173,8 @@ qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NUL
                             iters=iters,
                             burnin=burnin,
                             drawsd=drawsd,
-                            cl=1)
+                            cl=1,
+                            maxit=maxit)
         out$Ystar=NULL ## just drop this because it takes up a lot of memory
         out
       }, error=function(cond) {
