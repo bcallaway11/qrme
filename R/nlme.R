@@ -10,13 +10,13 @@
 #' @keywords internal
 #' @export
 compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
-                         me_dist=me_dist, copType="gaussian", 
+                         me_dist=me_dist, copType="gaussian",
                          simstep="MH", ndraws=250,
                          reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                          reportPov=TRUE,
                          povline=log(20000), reportQ=c(.1,.5,.9),
-                         Ynmix=1, Tnmix=1, tol=1, iters=400,
-                         burnin=200, drawsd=4, ignore_me=FALSE,
+                         Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
+                         iters=400, burnin=200, drawsd=4, ignore_me=FALSE,
                          messages=FALSE) {
   
   yname <- lhs.vars(Yformla)
@@ -27,11 +27,11 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
   meres <- NULL
   
   if (!ignore_me) {
-    Qyx <- qrme(Yformla, data=data, tau=tau, me_dist=me_dist, nmix=Ynmix, simstep=simstep, 
-                tol=tol, iters=iters, burnin=burnin, drawsd=drawsd,
+    Qyx <- qrme(Yformla, data=data, tau=tau, me_dist=me_dist, nmix=Ynmix, simstep=simstep,
+                tol=tol, conv_crit=conv_crit, iters=iters, burnin=burnin, drawsd=drawsd,
                 messages=messages, se=FALSE) # don't bootstrap these
     Qtx  <- qrme(Tformla, data=data, tau=tau, me_dist=me_dist, nmix=Tnmix, simstep=simstep,
-                 tol=tol, drawsd=drawsd, messages=messages, se=FALSE)
+                 tol=tol, conv_crit=conv_crit, drawsd=drawsd, messages=messages, se=FALSE)
 
     # now get joint distribution
     meres <- qr2me(yname=yname,
@@ -169,9 +169,11 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  model
 #' @param Tnmix number of mixture components for treatment measurement error
 #'  model
-#' @param tol tolerance for first step quantile regression model to converge
-#'  (default is 1).  Note that convergence  will be sensitive to \code{length(tau)}
-#'  and the number of mixture components included in the model
+#' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
+#'  chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+#'  for details.
+#' @param conv_crit Convergence criterion passed to \code{\link{qrme}}:
+#'  \code{"params"} (default) or \code{"loglik"}.  See \code{\link{em.algo}}.
 #' @param iters the number of MCMC iterations (default is 400)
 #' @param burnin the number of MCMC iterations to drop (default is 200)
 #' @param drawsd starting value of standard deviations of mixture components
@@ -189,13 +191,13 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #' @return list of nonlinear measures of intergenerational income mobility
 #'  adjusted for measurement error
 #' @export
-nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL, 
+nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                  me_dist="gaussian", copType="gaussian",
                  simstep="MH", ndraws=250,
                  reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                  reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
-                 Ynmix=1, Tnmix=1, tol=1, iters=400, burnin=200,
-                 drawsd=4, ignore_me=FALSE, messages=FALSE,
+                 Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
+                 iters=400, burnin=200, drawsd=4, ignore_me=FALSE, messages=FALSE,
                  se=FALSE, biters=100, cl=1) {
 
   res <- compute.nlme(data=data,
@@ -217,6 +219,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                       Ynmix=Ynmix,
                       Tnmix=Tnmix,
                       tol=tol,
+                      conv_crit=conv_crit,
                       iters=iters,
                       burnin=burnin,
                       drawsd=drawsd,
@@ -248,6 +251,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                             Ynmix=Ynmix,
                             Tnmix=Tnmix,
                             tol=tol,
+                            conv_crit=conv_crit,
                             drawsd=drawsd,
                             messages=messages)
         out

@@ -7,8 +7,8 @@
 #' @keywords internal
 #' @export
 compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
-                         startsig=NULL, startpi=NULL, simstep="MH", tol=1, iters=400,
-                         burnin=200, drawsd=4, cl=1, maxit=100, messages=FALSE) {
+                         startsig=NULL, startpi=NULL, simstep="MH", tol=NULL, conv_crit="params",
+                         iters=400, burnin=200, drawsd=4, cl=1, maxit=100, messages=FALSE) {
   xformla <- formla
   xformla[[2]] <- NULL ## drop y variable
   x <- model.matrix(xformla, data)
@@ -50,6 +50,7 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
                  me_dist=me_dist,
                  m=m, piguess=pivals, muguess=muvals,
                  sigguess=sigvals, simstep=simstep, tol=tol,
+                 conv_crit=conv_crit,
                  iters=iters, burnin=burnin, drawsd=drawsd, cl=cl,
                  maxit=maxit, messages=messages)
 
@@ -102,12 +103,12 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #' @param simstep The type of simulation step to use in the EM algorithm.
 #'  The default is "MH" for Metropolis-Hasting.  The alternative is
 #'  "ImpSamp" for importance sampling. 
-#' @param tol This is the convergence criteria.  When the change in the
-#'  Euclidean distance between the new parameters (at each iteration) and
-#'  the old parameters (from the previous iteration) is smaller than tol,
-#'  the algorithm concludes.  In general, larger values for tol will result
-#'  in a fewer number of iterations and smaller values will result in more
-#'  accurate estimates.
+#' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
+#'  chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+#'  for details.
+#' @param conv_crit Convergence criterion: \code{"params"} (default) uses the
+#'  Euclidean norm of parameter changes; \code{"loglik"} uses the relative
+#'  change in the observed-data log-likelihood.  See \code{\link{em.algo}}.
 #' @param iters How many iterations to use in the simulation step (default is
 #'  400)
 #' @param burnin How many iterations to drop in the simulation step (default
@@ -130,8 +131,8 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #'
 #' @export
 qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
-                 startsig=NULL, startpi=NULL, simstep="MH", tol=1, iters=400,
-                 burnin=200, drawsd=4, cl=1, maxit=100, se=FALSE, biters=100, messages=FALSE) {
+                 startsig=NULL, startpi=NULL, simstep="MH", tol=NULL, conv_crit="params",
+                 iters=400, burnin=200, drawsd=4, cl=1, maxit=100, se=FALSE, biters=100, messages=FALSE) {
 
 
 
@@ -146,6 +147,7 @@ qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NUL
                       startpi=startpi,
                       simstep=simstep,
                       tol=tol,
+                      conv_crit=conv_crit,
                       iters=iters,
                       burnin=burnin,
                       drawsd=drawsd,
@@ -170,6 +172,7 @@ qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NUL
                             startpi=res$pi,
                             simstep=simstep,
                             tol=tol,
+                            conv_crit=conv_crit,
                             iters=iters,
                             burnin=burnin,
                             drawsd=drawsd,

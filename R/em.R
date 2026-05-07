@@ -24,12 +24,17 @@
 #'  Default is MH.
 #' @param maxit Maximum number of EM outer iterations. If convergence is not
 #'  reached, the estimates from the final iteration are returned (default is 100)
-#' @param tol This is the convergence criteria.  When the change in the
-#'  Euclidean distance between the new parameters (at each iteration) and
-#'  the old parameters (from the previous iteration) is smaller than tol,
-#'  the algorithm concludes.  In general, larger values for tol will result
-#'  in a fewer number of iterations and smaller values will result in more
-#'  accurate estimates.
+#' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
+#'  chosen automatically based on \code{conv_crit}: \code{sqrt(p) * 0.1} where
+#'  \code{p = length(tau) * K + m * 3} and \code{K} is the number of columns
+#'  in the model matrix for \code{"params"}, or \code{1e-2} for
+#'  \code{"loglik"}.  See \code{conv_crit} for the scale of this parameter.
+#' @param conv_crit Convergence criterion.  \code{"params"} (default) stops
+#'  when the Euclidean norm of the change in all parameters falls below
+#'  \code{tol}.  \code{"loglik"} stops when the relative change in the
+#'  observed-data log-likelihood, \code{|ll_new - ll_old| / |ll_old|}, falls
+#'  below \code{tol}; the log-likelihood is evaluated using Monte Carlo
+#'  integration with 100 draws per outer iteration.
 #' @inheritParams qrme
 #' @return QRME object
 #'
@@ -38,7 +43,8 @@ em.algo <- function(formla, data,
                     betmatguess, tau,
                     me_dist = "gaussian",
                     m = 1, piguess = 1, muguess = 0,
-                    sigguess = 1, simstep = "MH", tol = .01,
+                    sigguess = 1, simstep = "MH", tol = NULL,
+                    conv_crit = "params",
                     iters = 400, burnin = 200, drawsd = 4, cl = 1,
                     maxit = 100, messages = FALSE) {
     # some checks
@@ -48,8 +54,33 @@ em.algo <- function(formla, data,
     if (me_dist == "laplace" & m > 1) {
         stop("Laplace distribution only supported with m=1")
     }
+    if (!conv_crit %in% c("params", "loglik")) {
+        stop('conv_crit must be "params" or "loglik"')
+    }
+
+    # Extract y and x once; needed for default tol computation and/or loglik criterion
+    xformla_rhs <- formla
+    xformla_rhs[[2]] <- NULL
+    x_for_ll <- model.matrix(xformla_rhs, data)
+    yname <- as.character(formla[[2]])
+    y_for_ll <- data[, yname]
+
+    # Set default tol if not provided by the user
+    if (is.null(tol)) {
+        if (conv_crit == "loglik") {
+            # Relative log-likelihood change; 1e-2 is deliberately loose as a starting point
+            tol <- 1e-2
+        } else {
+            # Euclidean norm scaled to a per-parameter threshold of 0.1:
+            # if all p parameters each change by 0.1, the norm equals sqrt(p)*0.1
+            K <- ncol(x_for_ll)
+            p <- length(tau) * K + m * 3L
+            tol <- sqrt(p) * 0.1
+        }
+    }
 
     counter <- 1
+    ll_old <- NULL  # used only when conv_crit == "loglik"
 
     # run em algorithm
     while (counter <= maxit) {
@@ -71,14 +102,32 @@ em.algo <- function(formla, data,
         if (messages) {
             cat("\n\n\nIteration: ", counter, "\n pi: ", newpi, "\n mu: ", newmu, "\n sig: ", newsig, "\n\n")
         }
-        criteria <- sqrt(sum(c(newbet - betmatguess, newsig - sigguess, newpi - piguess, newmu - muguess)^2))
-        if (messages) {
-            cat(" convergence criteria: ", criteria, "\n\n")
+
+        if (conv_crit == "loglik") {
+            # Evaluate log-likelihood with fewer draws than the final reported value;
+            # 100 draws is sufficient for detecting convergence
+            ll_new <- loglik_raw(y_for_ll, x_for_ll, newbet, tau,
+                                 newpi, newmu, newsig, me_dist, ndraws = 100L)
+            if (messages) cat(" log-likelihood: ", round(ll_new, 4), "\n")
+            # Skip convergence check on first iteration (no ll_old yet)
+            if (!is.null(ll_old)) {
+                criteria <- abs(ll_new - ll_old) / abs(ll_old)
+                if (messages) cat(" relative log-likelihood change: ", criteria, "\n\n")
+                if (criteria <= tol) {
+                    if (messages) cat("\n algorithm converged\n")
+                    return(newone)
+                }
+            }
+            ll_old <- ll_new
+        } else {
+            criteria <- sqrt(sum(c(newbet - betmatguess, newsig - sigguess, newpi - piguess, newmu - muguess)^2))
+            if (messages) cat(" convergence criteria: ", criteria, "\n\n")
+            if (criteria <= tol) { ## Euclidean norm
+                if (messages) cat("\n algorithm converged\n")
+                return(newone)
+            }
         }
-        if (criteria <= tol) { ## Euclidean norm
-            if (messages) cat("\n algorithm converged\n")
-            return(newone)
-        }
+
         counter <- counter + 1
         betmatguess <- newbet
         sigguess <- newsig

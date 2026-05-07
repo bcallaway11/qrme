@@ -1,3 +1,27 @@
+# Internal helper: compute observed-data log-likelihood from raw parameters via
+# Monte Carlo integration. Called by logLik.merr (ndraws=500) and by em.algo
+# at each outer iteration for convergence checking (ndraws=100).
+loglik_raw <- function(y, x, betmat, tau, pi, mu, sig, me_dist, ndraws = 100L) {
+  m <- length(sig)
+  n <- length(y)
+
+  if (me_dist == "laplace") {
+    vdraws <- rlaplace(ndraws, mu = 0, sigma = sig[1])
+  } else {
+    comp   <- sample(seq_len(m), ndraws, replace = TRUE, prob = pi)
+    vdraws <- rnorm(ndraws, mean = mu[comp], sd = sig[comp])
+  }
+
+  log_fy <- vapply(seq_len(n), function(i) {
+    xi       <- as.matrix(x[i, ])
+    fyx_vals <- vapply(y[i] - vdraws, function(ys) fyxC(ys, betmat, xi, tau), numeric(1))
+    log(max(mean(fyx_vals), .Machine$double.eps))
+  }, numeric(1))
+
+  sum(log_fy)
+}
+
+
 #' @title logLik.merr
 #'
 #' @description Observed-data log-likelihood for a \code{merr} object via
@@ -24,20 +48,7 @@ logLik.merr <- function(object, ndraws = 500, ...) {
   m       <- length(sig)
   n       <- length(y)
 
-  if (me_dist == "laplace") {
-    vdraws <- rlaplace(ndraws, mu = 0, sigma = sig[1])
-  } else {
-    comp   <- sample(seq_len(m), ndraws, replace = TRUE, prob = pi)
-    vdraws <- rnorm(ndraws, mean = mu[comp], sd = sig[comp])
-  }
-
-  log_fy <- vapply(seq_len(n), function(i) {
-    xi       <- as.matrix(x[i, ])
-    fyx_vals <- vapply(y[i] - vdraws, function(ys) fyxC(ys, betmat, xi, tau), numeric(1))
-    log(max(mean(fyx_vals), .Machine$double.eps))
-  }, numeric(1))
-
-  ll_val <- sum(log_fy)
+  ll_val <- loglik_raw(y, x, betmat, tau, pi, mu, sig, me_dist, ndraws = ndraws)
 
   ## df: L*K (beta) + (m-1) (pi, sums-to-1) + (m-1) (mu, mean-zero) + m (sigma)
   L  <- length(tau)
