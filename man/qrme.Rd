@@ -20,6 +20,7 @@ qrme(
   tol = NULL,
   conv_crit = "params",
   ndraws_ll = 1000L,
+  conv_patience = 1L,
   iters = 400,
   burnin = 200,
   drawsd = 4,
@@ -74,6 +75,10 @@ change in the observed-data log-likelihood.  See \code{\link{em.algo}}.}
 \item{ndraws_ll}{Number of Monte Carlo draws for the log-likelihood
 convergence check when \code{conv_crit = "loglik"} (default 1000).
 Ignored when \code{conv_crit = "params"}.}
+
+\item{conv_patience}{Integer. Consecutive iterations that must satisfy the
+convergence criterion before stopping (default 1). Setting to 2 guards
+against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.}
 
 \item{iters}{How many iterations to use in the simulation step (default is
 400)}

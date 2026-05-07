@@ -18,6 +18,7 @@ em.algo(
   tol = NULL,
   conv_crit = "params",
   ndraws_ll = 1000L,
+  conv_patience = 1L,
   iters = 400,
   burnin = 200,
   drawsd = 4,
@@ -72,6 +73,12 @@ integration with \code{ndraws_ll} draws per outer iteration.}
 log-likelihood at each outer EM iteration when \code{conv_crit = "loglik"}.
 More draws reduce noise in the convergence check at the cost of speed.
 Default is 1000.}
+
+\item{conv_patience}{Integer. Number of consecutive iterations that must
+satisfy the convergence criterion before the algorithm stops. Default is
+1 (current behaviour). Setting this to 2 requires two back-to-back
+iterations below \code{tol}, guarding against false convergence caused by
+Monte Carlo noise in the log-likelihood or parameter updates.}
 
 \item{iters}{How many iterations to use in the simulation step (default is
 400)}

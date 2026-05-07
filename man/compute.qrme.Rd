@@ -18,6 +18,7 @@ compute.qrme(
   tol = NULL,
   conv_crit = "params",
   ndraws_ll = 1000L,
+  conv_patience = 1L,
   iters = 400,
   burnin = 200,
   drawsd = 4,

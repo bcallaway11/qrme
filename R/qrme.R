@@ -1,3 +1,14 @@
+# =============================================================================
+# Title: QRME Main Functions
+# Description: compute.qrme() and qrme() implement quantile regression with
+#              mixture-of-normals measurement error in the dependent variable
+#              via the pseudo-EM algorithm in em.R. Also includes qr2me() for
+#              two-sided measurement error and supporting S3 methods.
+# Author: Brant Callaway
+# Last update: 2026-05-07
+# Date created: 2026-05-07
+# =============================================================================
+
 #' @title compute.qrme
 #' @description does the heavy lifting on computing quantile regression with
 #'  left hand side measurement error
@@ -8,7 +19,8 @@
 #' @export
 compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
                          startsig=NULL, startpi=NULL, simstep="MH", tol=NULL, conv_crit="params",
-                         ndraws_ll=1000L, iters=400, burnin=200, drawsd=4, cl=1, maxit=100, messages=FALSE) {
+                         ndraws_ll=1000L, conv_patience=1L, iters=400, burnin=200, drawsd=4, cl=1,
+                         maxit=100, messages=FALSE) {
   xformla <- formla
   xformla[[2]] <- NULL ## drop y variable
   x <- model.matrix(xformla, data)
@@ -51,6 +63,7 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
                  m=m, piguess=pivals, muguess=muvals,
                  sigguess=sigvals, simstep=simstep, tol=tol,
                  conv_crit=conv_crit, ndraws_ll=ndraws_ll,
+                 conv_patience=conv_patience,
                  iters=iters, burnin=burnin, drawsd=drawsd, cl=cl,
                  maxit=maxit, messages=messages)
 
@@ -112,6 +125,9 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #' @param ndraws_ll Number of Monte Carlo draws for the log-likelihood
 #'  convergence check when \code{conv_crit = "loglik"} (default 1000).
 #'  Ignored when \code{conv_crit = "params"}.
+#' @param conv_patience Integer. Consecutive iterations that must satisfy the
+#'  convergence criterion before stopping (default 1). Setting to 2 guards
+#'  against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.
 #' @param iters How many iterations to use in the simulation step (default is
 #'  400)
 #' @param burnin How many iterations to drop in the simulation step (default
@@ -135,7 +151,8 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #' @export
 qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
                  startsig=NULL, startpi=NULL, simstep="MH", tol=NULL, conv_crit="params",
-                 ndraws_ll=1000L, iters=400, burnin=200, drawsd=4, cl=1, maxit=100, se=FALSE, biters=100, messages=FALSE) {
+                 ndraws_ll=1000L, conv_patience=1L, iters=400, burnin=200, drawsd=4, cl=1,
+                 maxit=100, se=FALSE, biters=100, messages=FALSE) {
 
 
 
@@ -152,6 +169,7 @@ qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NUL
                       tol=tol,
                       conv_crit=conv_crit,
                       ndraws_ll=ndraws_ll,
+                      conv_patience=conv_patience,
                       iters=iters,
                       burnin=burnin,
                       drawsd=drawsd,
@@ -178,6 +196,7 @@ qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NUL
                             tol=tol,
                             conv_crit=conv_crit,
                             ndraws_ll=ndraws_ll,
+                            conv_patience=conv_patience,
                             iters=iters,
                             burnin=burnin,
                             drawsd=drawsd,

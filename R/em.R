@@ -45,6 +45,11 @@
 #'  log-likelihood at each outer EM iteration when \code{conv_crit = "loglik"}.
 #'  More draws reduce noise in the convergence check at the cost of speed.
 #'  Default is 1000.
+#' @param conv_patience Integer. Number of consecutive iterations that must
+#'  satisfy the convergence criterion before the algorithm stops. Default is
+#'  1 (current behaviour). Setting this to 2 requires two back-to-back
+#'  iterations below \code{tol}, guarding against false convergence caused by
+#'  Monte Carlo noise in the log-likelihood or parameter updates.
 #' @inheritParams qrme
 #' @return QRME object
 #'
@@ -55,6 +60,7 @@ em.algo <- function(formla, data,
                     m = 1, piguess = 1, muguess = 0,
                     sigguess = 1, simstep = "MH", tol = NULL,
                     conv_crit = "params", ndraws_ll = 1000L,
+                    conv_patience = 1L,
                     iters = 400, burnin = 200, drawsd = 4, cl = 1,
                     maxit = 100, messages = FALSE) {
     # some checks
@@ -90,7 +96,8 @@ em.algo <- function(formla, data,
     }
 
     counter <- 1
-    ll_old <- NULL  # used only when conv_crit == "loglik"
+    ll_old <- NULL       # used only when conv_crit == "loglik"
+    consec_count <- 0L   # consecutive iterations satisfying the convergence criterion
 
     # run em algorithm
     while (counter <= maxit) {
@@ -122,8 +129,13 @@ em.algo <- function(formla, data,
                 criteria <- abs(ll_new - ll_old) / abs(ll_old)
                 if (messages) cat(" relative log-likelihood change: ", criteria, "\n\n")
                 if (criteria <= tol) {
-                    if (messages) cat("\n algorithm converged\n")
-                    return(newone)
+                    consec_count <- consec_count + 1L
+                    if (consec_count >= conv_patience) {
+                        if (messages) cat("\n algorithm converged\n")
+                        return(newone)
+                    }
+                } else {
+                    consec_count <- 0L
                 }
             }
             ll_old <- ll_new
@@ -131,8 +143,13 @@ em.algo <- function(formla, data,
             criteria <- sqrt(sum(c(newbet - betmatguess, newsig - sigguess, newpi - piguess, newmu - muguess)^2))
             if (messages) cat(" convergence criteria: ", criteria, "\n\n")
             if (criteria <= tol) { ## Euclidean norm
-                if (messages) cat("\n algorithm converged\n")
-                return(newone)
+                consec_count <- consec_count + 1L
+                if (consec_count >= conv_patience) {
+                    if (messages) cat("\n algorithm converged\n")
+                    return(newone)
+                }
+            } else {
+                consec_count <- 0L
             }
         }
 
