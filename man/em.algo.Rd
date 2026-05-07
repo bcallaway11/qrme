@@ -15,11 +15,14 @@ em.algo(
   muguess = 0,
   sigguess = 1,
   simstep = "MH",
-  tol = 0.01,
+  tol = NULL,
+  conv_crit = "params",
+  ndraws_ll = 1000L,
   iters = 400,
   burnin = 200,
   drawsd = 4,
   cl = 1,
+  maxit = 100,
   messages = FALSE
 )
 }
@@ -34,7 +37,7 @@ of the covariates}
 
 \item{tau}{An L-vector indicating which quantiles have been estimated}
 
-\item{me_dist}{The distribution of the measurement error.  "gaussian" is the 
+\item{me_dist}{The distribution of the measurement error.  "gaussian" is the
 default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{The number of components of the mixture distribution for the
@@ -52,12 +55,23 @@ component (should have length equal to k)}
 in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
 Default is MH.}
 
-\item{tol}{This is the convergence criteria.  When the change in the
-Euclidean distance between the new parameters (at each iteration) and
-the old parameters (from the previous iteration) is smaller than tol,
-the algorithm concludes.  In general, larger values for tol will result
-in a fewer number of iterations and smaller values will result in more
-accurate estimates.}
+\item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
+chosen automatically based on \code{conv_crit}: \code{sqrt(p) * 0.1} where
+\code{p = length(tau) * K + m * 3} and \code{K} is the number of columns
+in the model matrix for \code{"params"}, or \code{1e-2} for
+\code{"loglik"}.  See \code{conv_crit} for the scale of this parameter.}
+
+\item{conv_crit}{Convergence criterion.  \code{"params"} (default) stops
+when the Euclidean norm of the change in all parameters falls below
+\code{tol}.  \code{"loglik"} stops when the relative change in the
+observed-data log-likelihood, \code{|ll_new - ll_old| / |ll_old|}, falls
+below \code{tol}; the log-likelihood is evaluated using Monte Carlo
+integration with \code{ndraws_ll} draws per outer iteration.}
+
+\item{ndraws_ll}{Number of Monte Carlo draws used to evaluate the
+log-likelihood at each outer EM iteration when \code{conv_crit = "loglik"}.
+More draws reduce noise in the convergence check at the cost of speed.
+Default is 1000.}
 
 \item{iters}{How many iterations to use in the simulation step (default is
 400)}
@@ -70,6 +84,9 @@ term.}
 
 \item{cl}{The numbe of clusters to use for parallel computation (default
 is 1 so that computation is not done in parallel)}
+
+\item{maxit}{Maximum number of EM outer iterations. If convergence is not
+reached, the estimates from the final iteration are returned (default is 100)}
 
 \item{messages}{Whether or not to report details of estimation procedure
 (default is FALSE)}

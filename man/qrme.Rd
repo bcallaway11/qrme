@@ -17,11 +17,14 @@ qrme(
   startsig = NULL,
   startpi = NULL,
   simstep = "MH",
-  tol = 1,
+  tol = NULL,
+  conv_crit = "params",
+  ndraws_ll = 1000L,
   iters = 400,
   burnin = 200,
   drawsd = 4,
   cl = 1,
+  maxit = 100,
   se = FALSE,
   biters = 100,
   messages = FALSE
@@ -60,12 +63,17 @@ values are all set to be 1/nmix)}
 The default is "MH" for Metropolis-Hasting.  The alternative is
 "ImpSamp" for importance sampling.}
 
-\item{tol}{This is the convergence criteria.  When the change in the
-Euclidean distance between the new parameters (at each iteration) and
-the old parameters (from the previous iteration) is smaller than tol,
-the algorithm concludes.  In general, larger values for tol will result
-in a fewer number of iterations and smaller values will result in more
-accurate estimates.}
+\item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
+chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+for details.}
+
+\item{conv_crit}{Convergence criterion: \code{"params"} (default) uses the
+Euclidean norm of parameter changes; \code{"loglik"} uses the relative
+change in the observed-data log-likelihood.  See \code{\link{em.algo}}.}
+
+\item{ndraws_ll}{Number of Monte Carlo draws for the log-likelihood
+convergence check when \code{conv_crit = "loglik"} (default 1000).
+Ignored when \code{conv_crit = "params"}.}
 
 \item{iters}{How many iterations to use in the simulation step (default is
 400)}
@@ -79,6 +87,9 @@ term.}
 \item{cl}{The numbe of clusters to use for parallel computation (default
 is 1 so that computation is not done in parallel)}
 
+\item{maxit}{Maximum number of EM outer iterations. If convergence is not
+reached, the estimates from the final iteration are returned (default is 100)}
+
 \item{se}{Whether or not to compute standard errors using the bootstrap
 (default is FALSE)}
 
@@ -89,7 +100,8 @@ in the case where computing standard errors (default is 100)}
 (default is FALSE)}
 }
 \value{
-an object of class "merr"
+an object of class "merr". Supports \code{logLik()}, \code{AIC()},
+  and \code{BIC()} for comparing fits across different starting values.
 }
 \description{
 Code for estimating quantile regressions with measurement error. The first main set of functions estimates quantile regression with measurement error in the dependent variable using an EM-type-algorithm. The second set of functions estimates quantile regressions with measurement error in the outcome and in a continuous "treatment" variable. All functions allow for an arbitrary number of other covariates that are assumed not to be measured with error.
@@ -104,6 +116,7 @@ Quantile Regression with measurement error in the dependent
 
 Authors:
 \itemize{
+  \item Callaway Brantly \email{brantly.callaway@temple.edu}
   \item Li Tong \email{tong.li@vanderbilt.edu}
   \item Murtazashvili Irina \email{im99@drexel.edu}
 }

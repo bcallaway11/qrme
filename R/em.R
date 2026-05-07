@@ -1,6 +1,12 @@
-#-----------------------------------------------------------------------------
-# code for running EM algorithm to estimate distribution of outcome conditional on covariates
-## -----------------------------------------------------------------------------
+# =============================================================================
+# Title: EM Algorithm for QRME
+# Description: Pseudo EM algorithm and helpers for quantile regression with
+#              mixture-of-normals measurement error. em.algo() is the outer
+#              loop; em.algo.inner() does one E+M step.
+# Author: Brant Callaway
+# Last update: 2026-05-07
+# Date created: 2026-05-07
+# =============================================================================
 
 
 #' @title em.algo
@@ -34,7 +40,11 @@
 #'  \code{tol}.  \code{"loglik"} stops when the relative change in the
 #'  observed-data log-likelihood, \code{|ll_new - ll_old| / |ll_old|}, falls
 #'  below \code{tol}; the log-likelihood is evaluated using Monte Carlo
-#'  integration with 100 draws per outer iteration.
+#'  integration with \code{ndraws_ll} draws per outer iteration.
+#' @param ndraws_ll Number of Monte Carlo draws used to evaluate the
+#'  log-likelihood at each outer EM iteration when \code{conv_crit = "loglik"}.
+#'  More draws reduce noise in the convergence check at the cost of speed.
+#'  Default is 1000.
 #' @inheritParams qrme
 #' @return QRME object
 #'
@@ -44,7 +54,7 @@ em.algo <- function(formla, data,
                     me_dist = "gaussian",
                     m = 1, piguess = 1, muguess = 0,
                     sigguess = 1, simstep = "MH", tol = NULL,
-                    conv_crit = "params",
+                    conv_crit = "params", ndraws_ll = 1000L,
                     iters = 400, burnin = 200, drawsd = 4, cl = 1,
                     maxit = 100, messages = FALSE) {
     # some checks
@@ -104,10 +114,8 @@ em.algo <- function(formla, data,
         }
 
         if (conv_crit == "loglik") {
-            # Evaluate log-likelihood with fewer draws than the final reported value;
-            # 100 draws is sufficient for detecting convergence
             ll_new <- loglik_raw(y_for_ll, x_for_ll, newbet, tau,
-                                 newpi, newmu, newsig, me_dist, ndraws = 100L)
+                                 newpi, newmu, newsig, me_dist, ndraws = ndraws_ll)
             if (messages) cat(" log-likelihood: ", round(ll_new, 4), "\n")
             # Skip convergence check on first iteration (no ll_old yet)
             if (!is.null(ll_old)) {

@@ -23,7 +23,8 @@ nlme(
   reportQ = c(0.1, 0.5, 0.9),
   Ynmix = 1,
   Tnmix = 1,
-  tol = 1,
+  tol = NULL,
+  conv_crit = "params",
   iters = 400,
   burnin = 200,
   drawsd = 4,
@@ -83,9 +84,12 @@ model}
 \item{Tnmix}{number of mixture components for treatment measurement error
 model}
 
-\item{tol}{tolerance for first step quantile regression model to converge
-(default is 1).  Note that convergence  will be sensitive to \code{length(tau)}
-and the number of mixture components included in the model}
+\item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
+chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+for details.}
+
+\item{conv_crit}{Convergence criterion passed to \code{\link{qrme}}:
+\code{"params"} (default) or \code{"loglik"}.  See \code{\link{em.algo}}.}
 
 \item{iters}{the number of MCMC iterations (default is 400)}
 

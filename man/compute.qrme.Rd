@@ -15,16 +15,16 @@ compute.qrme(
   startsig = NULL,
   startpi = NULL,
   simstep = "MH",
-  tol = 1,
+  tol = NULL,
+  conv_crit = "params",
+  ndraws_ll = 1000L,
   iters = 400,
   burnin = 200,
   drawsd = 4,
   cl = 1,
+  maxit = 100,
   messages = FALSE
 )
-}
-\arguments{
-\item{compute.qrme}{}
 }
 \description{
 does the heavy lifting on computing quantile regression with
