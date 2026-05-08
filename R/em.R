@@ -244,8 +244,25 @@ em.algo.inner <- function(formla, data,
             nm <- mixtools::normalmixEM(newdta1$e, k = m, epsilon = 1e-03)
         }
         nmorder <- order(nm$mu) # reorder results by mean of each component
+        pi_ord  <- nm$lambda[nmorder]
+        mu_ord  <- nm$mu[nmorder]
+        sig_ord <- nm$sigma[nmorder]
 
-        return(list(bet = t(coef(out)), m = m, pi = nm$lambda[nmorder], mu = nm$mu[nmorder], sig = nm$sigma[nmorder])) # , Ystar=newdta1[,yname]))
+        # Enforce mean-zero constraint: sum(pi_k * mu_k) = 0.
+        # Without this, the intercept of beta and the ME mean drift together
+        # along a flat ridge in the observed-data likelihood (they are not
+        # separately identified). A uniform shift by delta is exact in the
+        # observed-data likelihood but is an approximation to the true
+        # constrained M-step optimum (which requires component-specific shifts
+        # weighted by pi_k * sigma_k^2 / n_k). The approximation is exact when
+        # all components share the same variance; in practice it is close and
+        # the algorithm still converges to the correct constrained solution.
+        delta        <- sum(pi_ord * mu_ord)
+        mu_ord       <- mu_ord - delta
+        bet_out      <- t(coef(out))
+        bet_out[, 1] <- bet_out[, 1] + delta  # column 1 is always the intercept
+
+        return(list(bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord))
     } else if (simstep == "ImpSamp") {
         # importance sampling
         edraws <- rnorm((iters * n), 0, drawsd)
@@ -282,7 +299,17 @@ em.algo.inner <- function(formla, data,
             nm <- mixtools::normalmixEM(U, k = m, epsilon = 1e-03)
         }
         nmorder <- order(nm$mu) # reorder results by mean of each component
-        return(list(bet = t(coef(out)), m = m, pi = nm$lambda[nmorder], mu = nm$mu[nmorder], sig = nm$sigma[nmorder])) # , Ystar=Ystar))
+        pi_ord  <- nm$lambda[nmorder]
+        mu_ord  <- nm$mu[nmorder]
+        sig_ord <- nm$sigma[nmorder]
+
+        # Enforce mean-zero constraint (same as MH branch; see comment there)
+        delta        <- sum(pi_ord * mu_ord)
+        mu_ord       <- mu_ord - delta
+        bet_out      <- t(coef(out))
+        bet_out[, 1] <- bet_out[, 1] + delta
+
+        return(list(bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord))
     } else {
         stop("provided simstep not supported")
     }
