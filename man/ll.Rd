@@ -17,7 +17,7 @@ ll(
   Us,
   Vs,
   ndraws = 100,
-  eps = 1e-300
+  eps = .Machine$double.eps
 )
 }
 \arguments{

@@ -17,7 +17,7 @@ em.algo(
   mcmc_method = "MH",
   tol = NULL,
   conv_crit = "params",
-  ndraws_ll = 1000L,
+  ndraws_ll = 100L,
   conv_patience = 1L,
   mcmc_draws = 200,
   mcmc_burnin = 100,
@@ -52,9 +52,8 @@ have length equal to k)}
 \item{sigguess}{Starting value for the standard deviation of each mixture
 component (should have length equal to k)}
 
-\item{mcmc_method}{Whether to use MH in EM algorithm or importance sampling
-in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
-Default is MH.}
+\item{mcmc_method}{Simulation step to use in the EM algorithm. Currently
+only \code{"MH"} is supported.}
 
 \item{tol}{Convergence tolerance.  When \code{NULL} (default), \code{1e-2}
 is used for both criteria.  For \code{"params"}, \code{tol} is compared
@@ -75,7 +74,7 @@ integration with \code{ndraws_ll} draws per outer iteration.}
 \item{ndraws_ll}{Number of Monte Carlo draws used to evaluate the
 log-likelihood at each outer EM iteration when \code{conv_crit = "loglik"}.
 More draws reduce noise in the convergence check at the cost of speed.
-Default is 1000.}
+Default is 100.}
 
 \item{conv_patience}{Integer. Number of consecutive iterations that must
 satisfy the convergence criterion before the algorithm stops. Default is
@@ -100,8 +99,11 @@ reached, the estimates from the final iteration are returned (default is 100)}
 
 \item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
 suppresses progress output. If \code{TRUE} or \code{1}, reports major
-computational stages and EM convergence diagnostics. If \code{2} or larger,
-also reports detailed finite-mixture EM output from \code{normalmixEM()}.}
+computational stages, EM iteration numbers, and convergence diagnostics.
+If \code{2}, also reports qrme-native details such as \code{pi},
+\code{mu}, \code{sigma}, tolerance, and finite-mixture summaries. If
+\code{3} or larger, also reports raw \code{normalmixEM()} output, which
+uses \code{lambda} for mixture probabilities.}
 }
 \value{
 QRME object

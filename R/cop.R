@@ -16,7 +16,7 @@
 #' @return vector of copula pdf values
 #'
 #' @export
-cop.pdf <- function(u,v,type="gumbel",delt,eps=1e-300) {
+cop.pdf <- function(u,v,type="gumbel",delt,eps = .Machine$double.eps) {
   if ( !(all(0 <= u) & all(u <= 1)) | !(all(0 <= v) & all(v <= 1))) {
     stop("u and v must be between 0 and 1")
   }
@@ -58,7 +58,7 @@ cop.pdf <- function(u,v,type="gumbel",delt,eps=1e-300) {
 #' 
 #' @export
 ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx,
-               Us, Vs, ndraws=100, eps=1e-300) {
+               Us, Vs, ndraws=100, eps = .Machine$double.eps) {
   
   k <- length(params)
   params <- as.matrix(params)

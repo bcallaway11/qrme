@@ -5,7 +5,7 @@
 #              via the pseudo-EM algorithm in em.R. Also includes qr2me() for
 #              two-sided measurement error and supporting S3 methods.
 # Author: Brant Callaway
-# Last update: 2026-05-07
+# Last update: 2026-05-14
 # Date created: 2026-05-07
 # =============================================================================
 
@@ -13,13 +13,13 @@
 #' @description does the heavy lifting on computing quantile regression with
 #'  left hand side measurement error
 #'
-#' @param compute.qrme
+#' @inheritParams qrme
 #'
 #' @keywords internal
 #' @export
-compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=NULL, start_mu=NULL,
+compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, start_beta=NULL, start_mu=NULL,
                          start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
-                         ndraws_ll=1000L, conv_patience=1L, mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL, ncores=1,
+                         ndraws_ll=100L, conv_patience=1L, mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL, ncores=1,
                          maxit=100, verbose=FALSE) {
   xformula <- formula
   xformula[[2]] <- NULL ## drop y variable
@@ -105,6 +105,8 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 #' @param tau vector for which quantiles to compute quantile regression
 #' @param data a data.frame that contains y and x
 #' @param nmix The number of mixture components of the measurement error
+#'  (default 1). Increase this for more flexible measurement-error
+#'  distributions.
 #' @param start_beta an LxK matrix of starting values for beta where
 #'  L is the dimension of tau and K is the number of covariates (default is
 #'  NULL and in this case, the starting values are set to be the QR
@@ -122,8 +124,7 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 #'  for the measurement error (default is NULL and in this case, the starting
 #'  values are all set to be 1/nmix)
 #' @param mcmc_method The type of simulation step to use in the EM algorithm.
-#'  The default is "MH" for Metropolis-Hastings. The alternative is
-#'  "ImpSamp" for importance sampling.
+#'  Currently only \code{"MH"} for Metropolis-Hastings is supported.
 #' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
 #'  chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
 #'  for details.
@@ -131,7 +132,7 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 #'  Euclidean norm of parameter changes; \code{"loglik"} uses the relative
 #'  change in the observed-data log-likelihood.  See \code{\link{em.algo}}.
 #' @param ndraws_ll Number of Monte Carlo draws for the log-likelihood
-#'  convergence check when \code{conv_crit = "loglik"} (default 1000).
+#'  convergence check when \code{conv_crit = "loglik"} (default 100).
 #'  Ignored when \code{conv_crit = "params"}.
 #' @param conv_patience Integer. Consecutive iterations that must satisfy the
 #'  convergence criterion before stopping (default 1). Setting to 2 guards
@@ -139,8 +140,8 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 #' @param mcmc_draws Total number of MCMC draws per EM step (default 200)
 #' @param mcmc_burnin Number of MCMC draws to discard as burnin (default 100)
 #' @param proposal_sd Standard deviation of the Metropolis-Hastings proposal
-#'  (random-walk step size) or the importance-sampling proposal. When
-#'  \code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
+#'  (random-walk step size). When \code{NULL} (default), set automatically
+#'  to \code{sqrt(var(y))}, scaling
 #'  the proposal to the spread of the outcome. Pass a positive numeric to
 #'  override.
 #' @param ncores Number of cores for parallel bootstrap computation (default 1)
@@ -151,16 +152,19 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 #' @param n_boot Number of bootstrap iterations for standard errors (default 100)
 #' @param verbose Logical or nonnegative integer. If \code{FALSE} (default),
 #'  suppresses progress output. If \code{TRUE} or \code{1}, reports major
-#'  computational stages and EM convergence diagnostics. If \code{2} or larger,
-#'  also reports detailed finite-mixture EM output from \code{normalmixEM()}.
+#'  computational stages, EM iteration numbers, and convergence diagnostics.
+#'  If \code{2}, also reports qrme-native details such as \code{pi},
+#'  \code{mu}, \code{sigma}, tolerance, and finite-mixture summaries. If
+#'  \code{3} or larger, also reports raw \code{normalmixEM()} output, which
+#'  uses \code{lambda} for mixture probabilities.
 #' 
 #' @return an object of class "merr". Supports \code{logLik()}, \code{AIC()},
 #'   and \code{BIC()} for comparing fits across different starting values.
 #'
 #' @export
-qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=NULL, start_mu=NULL,
+qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, start_beta=NULL, start_mu=NULL,
                  start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
-                 ndraws_ll=1000L, conv_patience=1L, mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL, ncores=1,
+                 ndraws_ll=100L, conv_patience=1L, mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL, ncores=1,
                  maxit=100, se=FALSE, n_boot=100, verbose=FALSE) {
 
 
@@ -261,12 +265,19 @@ qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=
 #' @param retFytxlist whether or not to return the conditional distribution
 #'  for every value of x in xdf
 #'  (default is FALSE because this can take up a lot of room in memory)
+#' @param copula_me_draws Number of measurement-error draws used in the
+#'  second-stage copula likelihood (default 100). Increase this for a less
+#'  noisy copula likelihood at the cost of speed.
+#' @param mobility_copula_draws Number of copula draws per covariate row used
+#'  to compute mobility summaries such as transition matrices and rank
+#'  correlations (default 100).
 #' @inheritParams tsme
 #' @inheritParams qrme
 qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
                     me_dist="gaussian", copula="gaussian",
                     Qyx, Qtx, retFytxlist=FALSE,
-                    ndraws=100, verbose=FALSE) {
+                    copula_me_draws=100L, mobility_copula_draws=100L,
+                    verbose=FALSE) {
 
   if (qrme_verbose_level(verbose) >= 1L) {
     message("qr2me method")
@@ -283,7 +294,8 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   x <- model.matrix(xformla, data)
   n <-  nrow(data)
 
-  tau_grid <- seq(0,1,length.out=200)
+  # Internal numerical grid for turning sparse QR estimates into CDF objects.
+  tau_grid <- seq(0, 1, length.out = 100)
   Qyx_interpolated <- lapply(1:nrow(x), function(i) {
     xb <- as.numeric(t(as.matrix(x[i,]))%*%as.matrix(coef(Qyx)))
     sapply(tau_grid, function(tt_grid_val) {
@@ -319,7 +331,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   qrme_progress(verbose, "Step 1 of 3: converting QR to conditional density estimates...")
   ##fyx1 <- pbsapply(unique(data[,yname]), fy.x, betmat=t(coef(Qyx)), XX=x, tau=tau)
   fyx1 <- fYXmatC(Y=unique(data[,yname]), betmat=t(coef(Qyx)), X=x, tau=tau)
-  eps <- 1e-300 ##.Machine$double.eps
+  eps <- .Machine$double.eps
   fyx <- apply(fyx1, 1, FUN=function(y) approxfun(x=unique(data[,yname]), y=y, yleft=eps, yright=eps))
   ##ftx1 <- pbsapply(unique(data[,tname]), fy.x, betmat=t(coef(Qtx)), XX=x, tau=tau)
   ftx1 <- fYXmatC(Y=unique(data[,tname]), betmat=t(coef(Qtx)), X=x, tau=tau)
@@ -328,8 +340,8 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   
   ## make draws from the measurement error distribution
   if (me_dist == "laplace") {
-    Us <- rlaplace(ndraws, mu=0, sigma=Qyx$sig)
-    Vs <- rlaplace(ndraws, mu=0, sigma=Qtx$sig)
+    Us <- rlaplace(copula_me_draws, mu=0, sigma=Qyx$sig)
+    Vs <- rlaplace(copula_me_draws, mu=0, sigma=Qtx$sig)
   } else { # gaussian
     Usig <- Qyx$sig
     Upi <- Qyx$pi
@@ -338,10 +350,10 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     Vpi <- Qtx$pi
     Vmu <- Qtx$mu
     ksig <- length(Usig)
-    Ucomponents <- sample(1:length(Usig), ndraws, replace=TRUE, prob=Upi)
-    Us <- rnorm(ndraws, Umu[Ucomponents], Usig[Ucomponents])
-    Vcomponents <- sample(1:length(Vsig), ndraws, replace=TRUE, prob=Vpi)
-    Vs <- rnorm(ndraws, Vmu[Vcomponents], Vsig[Vcomponents])
+    Ucomponents <- sample(1:length(Usig), copula_me_draws, replace=TRUE, prob=Upi)
+    Us <- rnorm(copula_me_draws, Umu[Ucomponents], Usig[Ucomponents])
+    Vcomponents <- sample(1:length(Vsig), copula_me_draws, replace=TRUE, prob=Vpi)
+    Vs <- rnorm(copula_me_draws, Vmu[Vcomponents], Vsig[Vcomponents])
   }
 
   ################################################################
@@ -372,7 +384,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   # estimate copula-type parameters
   cop <- copula::setTheta(cop, delt[1])
   Ystar_Tstar_inner <- lapply(1:nrow(x), function(i) {
-    cop_draws <- copula::rCopula(100, cop)
+    cop_draws <- copula::rCopula(mobility_copula_draws, cop)
     eY <- cop_draws[,1]
     eT <- cop_draws[,2]
     Y_xb <- as.numeric(t(as.matrix(x[i,]))%*%as.matrix(coef(Qyx)))

@@ -1,32 +1,106 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-This is code for Callaway, Li, and Murtazashvili (2024) “Nonlinear
-Approaches to Intergenerational Mobility Allowing for Measurement
-Error.” The code mainly contains our implementations of the following:
+# qrme
 
-- **Quantile Regression with Measurement Error** — This builds upon the
-  work of Hausman, Liu, Luo, and Palmer (2021) who study quantile
-  regression with measurement error in the outcome variable. We
-  implement an alternative approach to quantile regression with
-  measurement error that involves an iterative procedure (EM algorithm)
-  to estimate the QR model in the presence of measurement error
+`qrme` is the companion R package for
 
-- **Quantile Regression with Two-Sided Measurement Error** — We
-  additionally implement the approach suggested in our paper to
+> Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2024).
+> *Distributional Effects with Two-Sided Measurement Error: An
+> Application to Intergenerational Income Mobility.*
+> [arXiv:2107.09235](https://arxiv.org/abs/2107.09235)
 
-- **Estimating Joint Distributions in the Presence of Measurement Error
-  in both Variables** —
+It provides two main estimators:
 
-- A variety of nonlinear measures of intergenerational income mobility
-  parameters
+- **`qrme()`** — Quantile regression with measurement error in the
+  outcome variable. This is an EM-based implementation of the estimator
+  developed by [Hausman, Liu, Luo, and Palmer (2021,
+  *Econometrica*)](https://doi.org/10.3982/ECTA14563), extended to
+  support finite Gaussian mixtures for the measurement error
+  distribution. The pseudo-EM algorithm alternates between a
+  Metropolis–Hastings MCMC step (E-step) to integrate out the latent
+  outcome and a standard quantile regression M-step, iterating until
+  convergence. `qrme()` is a useful standalone tool for any setting
+  where the dependent variable is measured with classical error.
 
-**Note:** I only lightly support this code, and it is more like a
-demonstration of the type of code that can work in this case as well as
-a replication package for our work.
+- **`tsme()`** — Two-sided measurement error: joint quantile regression
+  when *both* the outcome and a continuous regressor are measured with
+  error. Combines two `qrme()` fits via a copula to recover the joint
+  distribution and a range of distributional parameters such as
+  quantile-on-quantile transition matrices and poverty measures.
 
-# References
+## Installation
 
-- Hausman, J., Liu, H., Luo, Y. and Palmer, C., 2021. Errors in the
-  dependent variable of quantile regression models. Econometrica, 89(2),
-  pp.849-873.
+``` r
+# install.packages("remotes")
+remotes::install_github("bcallaway11/qrme")
+```
+
+## Usage
+
+### Quantile regression with measurement error in the outcome (`qrme`)
+
+``` r
+library(qrme)
+
+# Simulate data: Y* = 1 + X + u, Y = Y* + e (measurement error)
+set.seed(42)
+n  <- 500
+X  <- runif(n)
+Ys <- 1 + X + rnorm(n)         # latent outcome
+Y  <- Ys + rnorm(n, sd = 0.5)  # observed outcome with ME
+dd <- data.frame(Y = Y, X = X)
+
+fit <- qrme(
+  formula = Y ~ X,
+  data    = dd,
+  tau     = c(0.25, 0.5, 0.75)
+)
+
+# Coefficient matrix: one row per quantile
+fit$bet
+```
+
+Key arguments:
+
+| Argument      | Default    | Description                                               |
+|---------------|------------|-----------------------------------------------------------|
+| `tau`         | `0.5`      | Quantile(s) to estimate                                   |
+| `nmix`        | `1`        | Number of Gaussian mixture components for ME distribution |
+| `conv_crit`   | `"params"` | Convergence criterion: `"params"` or `"loglik"`           |
+| `tol`         | `1e-2`     | Convergence tolerance                                     |
+| `maxit`       | `100`      | Maximum EM iterations                                     |
+| `mcmc_draws`  | `200`      | MCMC draws per EM E-step                                  |
+| `mcmc_burnin` | `100`      | MCMC burn-in draws                                        |
+| `se`          | `FALSE`    | Compute bootstrap standard errors                         |
+| `verbose`     | `FALSE`    | Print progress (numeric levels 0–3)                       |
+
+### Two-sided measurement error (`tsme`)
+
+``` r
+res <- tsme(
+  data     = dd,
+  Yformla  = Y ~ X,
+  Tformla  = T ~ X,
+  tau      = c(0.25, 0.5, 0.75),
+  tvals    = mean(dd$T),
+  povline  = quantile(dd$Y, 0.2)
+)
+
+# Transition matrix (distributional mobility summary)
+res$meTmat
+```
+
+`tsme()` fits a `qrme()` model for each variable, then links them with a
+copula to estimate joint distributions and mobility parameters such as
+quantile-on-quantile transition matrices and poverty measures.
+
+## References
+
+- Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2024).
+  Distributional Effects with Two-Sided Measurement Error: An
+  Application to Intergenerational Income Mobility. arXiv:2107.09235.
+
+- Hausman, J., Liu, H., Luo, Y. and Palmer, C. (2021). Errors in the
+  dependent variable of quantile regression models. *Econometrica*,
+  89(2), pp. 849–873.

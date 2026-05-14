@@ -9,7 +9,7 @@ compute.qrme(
   tau = 0.5,
   data,
   me_dist = "gaussian",
-  nmix = 3,
+  nmix = 1,
   start_beta = NULL,
   start_mu = NULL,
   start_sigma = NULL,
@@ -17,7 +17,7 @@ compute.qrme(
   mcmc_method = "MH",
   tol = NULL,
   conv_crit = "params",
-  ndraws_ll = 1000L,
+  ndraws_ll = 100L,
   conv_patience = 1L,
   mcmc_draws = 200,
   mcmc_burnin = 100,
@@ -26,6 +26,79 @@ compute.qrme(
   maxit = 100,
   verbose = FALSE
 )
+}
+\arguments{
+\item{formula}{y ~ x}
+
+\item{tau}{vector for which quantiles to compute quantile regression}
+
+\item{data}{a data.frame that contains y and x}
+
+\item{nmix}{The number of mixture components of the measurement error
+(default 1). Increase this for more flexible measurement-error
+distributions.}
+
+\item{start_beta}{an LxK matrix of starting values for beta where
+L is the dimension of tau and K is the number of covariates (default is
+NULL and in this case, the starting values are set to be the QR
+coefficients coming from QR that ignores measurment error)}
+
+\item{start_mu}{A vector of length nmix of starting values for the mean
+of the mixture of normals distribution for the measurment error (default
+is NULL and in this case, the starting values are basically set to be
+equally spaced from -nmix to nmix but forced to have mean 0)}
+
+\item{start_sigma}{A vector of length nmix of starting values for the
+standard deviation of the mixture of normals distribution for the
+measurement error (default is NULL and in this case, the starting values
+are all set to be 1)}
+
+\item{start_pi}{A vector of length nmix of starting values for the fraction
+of observations in each component of the mixture of normals distribution
+for the measurement error (default is NULL and in this case, the starting
+values are all set to be 1/nmix)}
+
+\item{mcmc_method}{The type of simulation step to use in the EM algorithm.
+Currently only \code{"MH"} for Metropolis-Hastings is supported.}
+
+\item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
+chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+for details.}
+
+\item{conv_crit}{Convergence criterion: \code{"params"} (default) uses the
+Euclidean norm of parameter changes; \code{"loglik"} uses the relative
+change in the observed-data log-likelihood.  See \code{\link{em.algo}}.}
+
+\item{ndraws_ll}{Number of Monte Carlo draws for the log-likelihood
+convergence check when \code{conv_crit = "loglik"} (default 100).
+Ignored when \code{conv_crit = "params"}.}
+
+\item{conv_patience}{Integer. Consecutive iterations that must satisfy the
+convergence criterion before stopping (default 1). Setting to 2 guards
+against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.}
+
+\item{mcmc_draws}{Total number of MCMC draws per EM step (default 200)}
+
+\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 100)}
+
+\item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
+(random-walk step size). When \code{NULL} (default), set automatically
+to \code{sqrt(var(y))}, scaling
+the proposal to the spread of the outcome. Pass a positive numeric to
+override.}
+
+\item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
+
+\item{maxit}{Maximum number of EM outer iterations. If convergence is not
+reached, the estimates from the final iteration are returned (default is 100)}
+
+\item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
+suppresses progress output. If \code{TRUE} or \code{1}, reports major
+computational stages, EM iteration numbers, and convergence diagnostics.
+If \code{2}, also reports qrme-native details such as \code{pi},
+\code{mu}, \code{sigma}, tolerance, and finite-mixture summaries. If
+\code{3} or larger, also reports raw \code{normalmixEM()} output, which
+uses \code{lambda} for mixture probabilities.}
 }
 \description{
 does the heavy lifting on computing quantile regression with

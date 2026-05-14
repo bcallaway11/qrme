@@ -11,13 +11,14 @@
 #' @export
 compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                          me_dist=me_dist, copType="gaussian",
-                         mcmc_method="MH", ndraws=250,
+                         mcmc_method="MH", copula_me_draws=100L,
                          reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                          reportPov=TRUE,
                          povline=log(20000), reportQ=c(.1,.5,.9),
                          Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
-                         ndraws_ll=1000L, conv_patience=1L, maxit=100L,
-                         mcmc_draws=200, mcmc_burnin=100, proposal_sd=4, ignore_me=FALSE,
+                         ndraws_ll=100L, conv_patience=1L, maxit=100L,
+                         mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL,
+                         mobility_copula_draws=100L, ignore_me=FALSE,
                          verbose=FALSE) {
   
   yname <- lhs.vars(Yformla)
@@ -52,7 +53,8 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                    copula=copType,
                    Qyx=Qyx,
                    Qtx=Qtx,
-                   ndraws=ndraws,
+                   copula_me_draws=copula_me_draws,
+                   mobility_copula_draws=mobility_copula_draws,
                    retFytxlist=FALSE,
                    verbose=verbose)
   }
@@ -69,7 +71,8 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
   rqyx$sig <- rqtx$sig <- 0
 
   nomeres <- qr2me(yname, tname, Yformla, tau=tau, data=data,
-                   tvals=tvals, xdf=xdf, ndraws=ndraws,
+                   tvals=tvals, xdf=xdf, copula_me_draws=copula_me_draws,
+                   mobility_copula_draws=mobility_copula_draws,
                    copula=copType, 
                    Qyx=rqyx, Qtx=rqtx, retFytxlist=FALSE,
                    verbose=qrme_verbose_level(verbose) >= 2L)
@@ -167,10 +170,11 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  default and supports a mixture of normals.  "laplace" is also supported
 #' @param copType what type of copula to use in second step.  Options are
 #'  "gaussian" (the default), "clayton", or "gumbel"
-#' @param mcmc_method whether to use an MH algorithm ("MH") or an importance
-#'  sampling algorithm ("ImpSamp")
-#' @param ndraws number of draws to use in MH algorithm to estimate first
-#'  step quantile regressions (default 250)
+#' @param mcmc_method simulation step to use in the EM algorithm. Currently
+#'  only \code{"MH"} is supported.
+#' @param copula_me_draws Number of measurement-error draws used in the
+#'  second-stage copula likelihood (default 100). Increase this for a less
+#'  noisy copula likelihood at the cost of speed.
 #' @param reportTmat whether or not to report a transition matrix
 #' @param reportSP whether or not to report Spearman's rho (rank-rank correlation)
 #' @param reportUM whether or not to report upward mobility parameters
@@ -189,7 +193,7 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #' @param conv_crit Convergence criterion passed to \code{\link{qrme}}:
 #'  \code{"params"} (default) or \code{"loglik"}.  See \code{\link{em.algo}}.
 #' @param ndraws_ll Number of Monte Carlo draws for the log-likelihood
-#'  convergence check when \code{conv_crit = "loglik"} (default 1000).
+#'  convergence check when \code{conv_crit = "loglik"} (default 100).
 #'  Ignored when \code{conv_crit = "params"}.
 #' @param conv_patience Integer. Consecutive iterations that must satisfy the
 #'  convergence criterion before stopping (default 1).
@@ -197,14 +201,23 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  (default 100).
 #' @param mcmc_draws total number of MCMC draws per EM step (default 200)
 #' @param mcmc_burnin number of MCMC draws to discard as burnin (default 100)
-#' @param proposal_sd standard deviation of the MH proposal
+#' @param proposal_sd Standard deviation of the MH proposal used in the two
+#'  first-stage \code{\link{qrme}} calls. When \code{NULL} (default), each
+#'  first stage uses its own automatic scale, \code{sqrt(var(Y))} or
+#'  \code{sqrt(var(T))}.
+#' @param mobility_copula_draws Number of copula draws per covariate row used
+#'  to compute mobility summaries such as transition matrices and rank
+#'  correlations (default 100).
 #' @param ignore_me whether or not to ignore measurement error (this is primarily
 #'  a way to get speedy calculations using copula-based approach)
 #' @param verbose Logical or nonnegative integer. If \code{FALSE} (default),
 #'  suppresses progress output. If \code{TRUE} or \code{1}, reports major
-#'  computational stages and EM convergence diagnostics. If \code{2} or larger,
-#'  also reports detailed finite-mixture EM output and the no-measurement-error
-#'  comparison copula step.
+#'  computational stages, EM iteration numbers, and convergence diagnostics.
+#'  If \code{2}, also reports qrme-native details such as \code{pi},
+#'  \code{mu}, \code{sigma}, tolerance, finite-mixture summaries, and the
+#'  no-measurement-error comparison copula step. If \code{3} or larger, also
+#'  reports raw \code{normalmixEM()} output, which uses \code{lambda} for
+#'  mixture probabilities.
 #' @param se whether or not to estimate standard errors using the boostrap
 #'  (default is FALSE)
 #' @param n_boot if computing standard errors, the number of bootstrap iterations
@@ -217,12 +230,13 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #' @export
 tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                  me_dist="gaussian", copType="gaussian",
-                 mcmc_method="MH", ndraws=250,
+                 mcmc_method="MH", copula_me_draws=100L,
                  reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                  reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
                  Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
-                 ndraws_ll=1000L, conv_patience=1L, maxit=100L,
-                 mcmc_draws=200, mcmc_burnin=100, proposal_sd=4, ignore_me=FALSE, verbose=FALSE,
+                 ndraws_ll=100L, conv_patience=1L, maxit=100L,
+                 mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL,
+                 mobility_copula_draws=100L, ignore_me=FALSE, verbose=FALSE,
                  se=FALSE, n_boot=100, ncores=1) {
 
   res <- compute.tsme(data=data,
@@ -234,7 +248,7 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                       me_dist=me_dist,
                       copType=copType,
                       mcmc_method=mcmc_method,
-                      ndraws=ndraws,
+                      copula_me_draws=copula_me_draws,
                       reportTmat=reportTmat,
                       reportSP=reportSP,
                       reportUM=reportUM,
@@ -251,6 +265,7 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                       mcmc_draws=mcmc_draws,
                       mcmc_burnin=mcmc_burnin,
                       proposal_sd=proposal_sd,
+                      mobility_copula_draws=mobility_copula_draws,
                       ignore_me=ignore_me,
                       verbose=verbose)
   
@@ -271,7 +286,7 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                             me_dist=me_dist,
                             copType=copType,
                             mcmc_method=mcmc_method,
-                            ndraws=ndraws,
+                            copula_me_draws=copula_me_draws,
                             reportTmat=reportTmat,
                             reportSP=reportSP,
                             reportUM=reportUM,
@@ -287,6 +302,7 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                               mcmc_draws=mcmc_draws,
                               mcmc_burnin=mcmc_burnin,
                               proposal_sd=proposal_sd,
+                              mobility_copula_draws=mobility_copula_draws,
                               verbose=FALSE)
         out
       }, error=function(cond) {

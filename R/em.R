@@ -44,11 +44,11 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
       x,
       k = m,
       epsilon = epsilon,
-      verb = qrme_verbose_level(verbose) >= 2L
+      verb = qrme_verbose_level(verbose) >= 3L
     )
   })
 
-  if (qrme_verbose_level(verbose) >= 2L && length(nm_output) > 0L) {
+  if (qrme_verbose_level(verbose) >= 3L && length(nm_output) > 0L) {
     message(paste(nm_output, collapse = "\n"))
   }
 
@@ -58,7 +58,8 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
     verbose,
     "  finite mixture iterations: ", mix_iter,
     "; log-likelihood: ", round(nm$loglik, 4),
-    "; converged: ", !not_converged
+    "; converged: ", !not_converged,
+    level = 2L
   )
 
   list(
@@ -86,9 +87,8 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
 #'  have length equal to k)
 #' @param sigguess Starting value for the standard deviation of each mixture
 #'  component (should have length equal to k)
-#' @param mcmc_method Whether to use MH in EM algorithm or importance sampling
-#'  in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
-#'  Default is MH.
+#' @param mcmc_method Simulation step to use in the EM algorithm. Currently
+#'  only \code{"MH"} is supported.
 #' @param maxit Maximum number of EM outer iterations. If convergence is not
 #'  reached, the estimates from the final iteration are returned (default is 100)
 #' @param tol Convergence tolerance.  When \code{NULL} (default), \code{1e-2}
@@ -108,7 +108,7 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
 #' @param ndraws_ll Number of Monte Carlo draws used to evaluate the
 #'  log-likelihood at each outer EM iteration when \code{conv_crit = "loglik"}.
 #'  More draws reduce noise in the convergence check at the cost of speed.
-#'  Default is 1000.
+#'  Default is 100.
 #' @param conv_patience Integer. Number of consecutive iterations that must
 #'  satisfy the convergence criterion before the algorithm stops. Default is
 #'  1 (current behaviour). Setting this to 2 requires two back-to-back
@@ -128,7 +128,7 @@ em.algo <- function(formula, data,
                     me_dist = "gaussian",
                     m = 1, piguess = 1, muguess = 0,
                     sigguess = 1, mcmc_method = "MH", tol = NULL,
-                    conv_crit = "params", ndraws_ll = 1000L,
+                    conv_crit = "params", ndraws_ll = 100L,
                     conv_patience = 1L,
                     mcmc_draws = 200, mcmc_burnin = 100, proposal_sd = NULL, ncores = 1,
                     maxit = 100, verbose = FALSE) {
@@ -138,6 +138,12 @@ em.algo <- function(formula, data,
     }
     if (me_dist == "laplace" & m > 1) {
         stop("Laplace distribution only supported with m=1")
+    }
+    if (mcmc_method == "ImpSamp") {
+        stop("mcmc_method = 'ImpSamp' is not currently supported", call. = FALSE)
+    }
+    if (mcmc_method != "MH") {
+        stop('mcmc_method must be "MH"', call. = FALSE)
     }
     if (!conv_crit %in% c("params", "loglik")) {
         stop('conv_crit must be "params" or "loglik"')
@@ -189,13 +195,13 @@ em.algo <- function(formula, data,
 
     qrme_progress(verbose, "QRME EM algorithm")
     qrme_progress(verbose, "  convergence criterion: ", conv_crit)
-    qrme_progress(verbose, "  tolerance: ", signif(tol, 4))
-    qrme_progress(verbose, "  max iterations: ", maxit)
-    qrme_progress(verbose, "  MCMC draws: ", mcmc_draws, "; burnin: ", mcmc_burnin)
+    qrme_progress(verbose, "  tolerance: ", signif(tol, 4), level = 2L)
+    qrme_progress(verbose, "  max iterations: ", maxit, level = 2L)
+    qrme_progress(verbose, "  MCMC draws: ", mcmc_draws, "; burnin: ", mcmc_burnin, level = 2L)
 
     # run em algorithm
     while (counter <= maxit) {
-        qrme_progress(verbose, "Iteration ", counter, "/", maxit)
+        qrme_progress(verbose, "EM iteration ", counter)
         newone <- em.algo.inner(formula, data,
             betmatguess, tau,
             me_dist,
@@ -211,14 +217,14 @@ em.algo <- function(formula, data,
         newmu <- newone$mu
         newsig <- newone$sig
 
-        qrme_progress(verbose, "  pi: ", paste(signif(newpi, 4), collapse = ", "))
-        qrme_progress(verbose, "  mu: ", paste(signif(newmu, 4), collapse = ", "))
-        qrme_progress(verbose, "  sig: ", paste(signif(newsig, 4), collapse = ", "))
+        qrme_progress(verbose, "  pi: ", paste(signif(newpi, 4), collapse = ", "), level = 2L)
+        qrme_progress(verbose, "  mu: ", paste(signif(newmu, 4), collapse = ", "), level = 2L)
+        qrme_progress(verbose, "  sig: ", paste(signif(newsig, 4), collapse = ", "), level = 2L)
 
         if (conv_crit == "loglik") {
             ll_new <- loglik_raw(y_for_ll, x_for_ll, newbet, tau,
                                  newpi, newmu, newsig, me_dist, ndraws = ndraws_ll)
-            qrme_progress(verbose, "  log-likelihood: ", round(ll_new, 4))
+            qrme_progress(verbose, "  log-likelihood: ", round(ll_new, 4), level = 2L)
             # Skip convergence check on first iteration (no ll_old yet)
             if (!is.null(ll_old)) {
                 criteria <- abs(ll_new - ll_old) / abs(ll_old)
@@ -335,6 +341,9 @@ em.algo.inner <- function(formula, data,
         pi_ord  <- nm$lambda[nmorder]
         mu_ord  <- nm$mu[nmorder]
         sig_ord <- nm$sigma[nmorder]
+        qrme_progress(verbose, "  mixture pi: ", paste(signif(pi_ord, 4), collapse = ", "), level = 2L)
+        qrme_progress(verbose, "  mixture mu: ", paste(signif(mu_ord, 4), collapse = ", "), level = 2L)
+        qrme_progress(verbose, "  mixture sig: ", paste(signif(sig_ord, 4), collapse = ", "), level = 2L)
 
         # Enforce mean-zero constraint: sum(pi_k * mu_k) = 0.
         # Without this, the intercept of beta and the ME mean drift together
@@ -390,6 +399,9 @@ em.algo.inner <- function(formula, data,
         pi_ord  <- nm$lambda[nmorder]
         mu_ord  <- nm$mu[nmorder]
         sig_ord <- nm$sigma[nmorder]
+        qrme_progress(verbose, "  mixture pi: ", paste(signif(pi_ord, 4), collapse = ", "), level = 2L)
+        qrme_progress(verbose, "  mixture mu: ", paste(signif(mu_ord, 4), collapse = ", "), level = 2L)
+        qrme_progress(verbose, "  mixture sig: ", paste(signif(sig_ord, 4), collapse = ", "), level = 2L)
 
         # Enforce mean-zero constraint (same as MH branch; see comment there)
         delta        <- sum(pi_ord * mu_ord)

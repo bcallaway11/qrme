@@ -17,7 +17,8 @@ qr2me(
   Qyx,
   Qtx,
   retFytxlist = FALSE,
-  ndraws = 100,
+  copula_me_draws = 100L,
+  mobility_copula_draws = 100L,
   verbose = FALSE
 )
 }
@@ -54,14 +55,22 @@ error) of T on X}
 for every value of x in xdf
 (default is FALSE because this can take up a lot of room in memory)}
 
-\item{ndraws}{number of draws to use in MH algorithm to estimate first
-step quantile regressions (default 250)}
+\item{copula_me_draws}{Number of measurement-error draws used in the
+second-stage copula likelihood (default 100). Increase this for a less
+noisy copula likelihood at the cost of speed.}
+
+\item{mobility_copula_draws}{Number of copula draws per covariate row used
+to compute mobility summaries such as transition matrices and rank
+correlations (default 100).}
 
 \item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
 suppresses progress output. If \code{TRUE} or \code{1}, reports major
-computational stages and EM convergence diagnostics. If \code{2} or larger,
-also reports detailed finite-mixture EM output and the no-measurement-error
-comparison copula step.}
+computational stages, EM iteration numbers, and convergence diagnostics.
+If \code{2}, also reports qrme-native details such as \code{pi},
+\code{mu}, \code{sigma}, tolerance, finite-mixture summaries, and the
+no-measurement-error comparison copula step. If \code{3} or larger, also
+reports raw \code{normalmixEM()} output, which uses \code{lambda} for
+mixture probabilities.}
 }
 \description{
 Estimates QR parameters in the case with measurement error

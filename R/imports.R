@@ -1,7 +1,5 @@
 #' qrme: Quantile regression with measurement error
 #'
-#' @docType package
-#' @name qrme
 #' @useDynLib qrme
 #' @importFrom Rcpp evalCpp
 #' @exportPattern "^[[:alpha:]]+"
@@ -14,6 +12,5 @@
 #' @import utils
 #' @import quantreg
 #' @import tidyr
-NULL
-
+"_PACKAGE"
 

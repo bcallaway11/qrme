@@ -14,7 +14,7 @@ compute.tsme(
   me_dist = me_dist,
   copType = "gaussian",
   mcmc_method = "MH",
-  ndraws = 250,
+  copula_me_draws = 100L,
   reportTmat = TRUE,
   reportSP = TRUE,
   reportUM = TRUE,
@@ -25,12 +25,13 @@ compute.tsme(
   Tnmix = 1,
   tol = NULL,
   conv_crit = "params",
-  ndraws_ll = 1000L,
+  ndraws_ll = 100L,
   conv_patience = 1L,
   maxit = 100L,
   mcmc_draws = 200,
   mcmc_burnin = 100,
-  proposal_sd = 4,
+  proposal_sd = NULL,
+  mobility_copula_draws = 100L,
   ignore_me = FALSE,
   verbose = FALSE
 )
@@ -58,11 +59,12 @@ parameters for}
 \item{copType}{what type of copula to use in second step.  Options are
 "gaussian" (the default), "clayton", or "gumbel"}
 
-\item{mcmc_method}{whether to use an MH algorithm ("MH") or an importance
-sampling algorithm ("ImpSamp")}
+\item{mcmc_method}{simulation step to use in the EM algorithm. Currently
+only \code{"MH"} is supported.}
 
-\item{ndraws}{number of draws to use in MH algorithm to estimate first
-step quantile regressions (default 250)}
+\item{copula_me_draws}{Number of measurement-error draws used in the
+second-stage copula likelihood (default 100). Increase this for a less
+noisy copula likelihood at the cost of speed.}
 
 \item{reportTmat}{whether or not to report a transition matrix}
 
@@ -92,7 +94,7 @@ for details.}
 \code{"params"} (default) or \code{"loglik"}.  See \code{\link{em.algo}}.}
 
 \item{ndraws_ll}{Number of Monte Carlo draws for the log-likelihood
-convergence check when \code{conv_crit = "loglik"} (default 1000).
+convergence check when \code{conv_crit = "loglik"} (default 100).
 Ignored when \code{conv_crit = "params"}.}
 
 \item{conv_patience}{Integer. Consecutive iterations that must satisfy the
@@ -105,16 +107,26 @@ convergence criterion before stopping (default 1).}
 
 \item{mcmc_burnin}{number of MCMC draws to discard as burnin (default 100)}
 
-\item{proposal_sd}{standard deviation of the MH proposal}
+\item{proposal_sd}{Standard deviation of the MH proposal used in the two
+first-stage \code{\link{qrme}} calls. When \code{NULL} (default), each
+first stage uses its own automatic scale, \code{sqrt(var(Y))} or
+\code{sqrt(var(T))}.}
+
+\item{mobility_copula_draws}{Number of copula draws per covariate row used
+to compute mobility summaries such as transition matrices and rank
+correlations (default 100).}
 
 \item{ignore_me}{whether or not to ignore measurement error (this is primarily
 a way to get speedy calculations using copula-based approach)}
 
 \item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
 suppresses progress output. If \code{TRUE} or \code{1}, reports major
-computational stages and EM convergence diagnostics. If \code{2} or larger,
-also reports detailed finite-mixture EM output and the no-measurement-error
-comparison copula step.}
+computational stages, EM iteration numbers, and convergence diagnostics.
+If \code{2}, also reports qrme-native details such as \code{pi},
+\code{mu}, \code{sigma}, tolerance, finite-mixture summaries, and the
+no-measurement-error comparison copula step. If \code{3} or larger, also
+reports raw \code{normalmixEM()} output, which uses \code{lambda} for
+mixture probabilities.}
 }
 \description{
 does the heavy lifting for computing nonlinear models with measurement error

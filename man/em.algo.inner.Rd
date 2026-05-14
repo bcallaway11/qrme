@@ -47,9 +47,8 @@ to m)}
 \item{sig}{The standard deviation of each mixture component (should have
 length equal to m)}
 
-\item{mcmc_method}{Whether to use MH in EM algorithm or importance sampling
-in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
-Default is MH.}
+\item{mcmc_method}{Simulation step to use in the EM algorithm. Currently
+only \code{"MH"} is supported.}
 
 \item{mcmc_draws}{Total number of MCMC draws per EM step (default 200)}
 
@@ -65,8 +64,11 @@ override.}
 
 \item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
 suppresses progress output. If \code{TRUE} or \code{1}, reports major
-computational stages and EM convergence diagnostics. If \code{2} or larger,
-also reports detailed finite-mixture EM output from \code{normalmixEM()}.}
+computational stages, EM iteration numbers, and convergence diagnostics.
+If \code{2}, also reports qrme-native details such as \code{pi},
+\code{mu}, \code{sigma}, tolerance, and finite-mixture summaries. If
+\code{3} or larger, also reports raw \code{normalmixEM()} output, which
+uses \code{lambda} for mixture probabilities.}
 }
 \value{
 A list of QR parameters and parameters for mixture of normals for
