@@ -2,21 +2,22 @@
 # functions for nonlinear models with measurement error
 #-----------------------------------------------------------------------------
 
-#' @title compute.nlme
+#' @title compute.tsme
 #' @description does the heavy lifting for computing nonlinear models with measurement error
 #'
-#' @inheritParams nlme
+#' @inheritParams tsme
 #'
 #' @keywords internal
 #' @export
-compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
+compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                          me_dist=me_dist, copType="gaussian",
-                         simstep="MH", ndraws=250,
+                         mcmc_method="MH", ndraws=250,
                          reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                          reportPov=TRUE,
                          povline=log(20000), reportQ=c(.1,.5,.9),
                          Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
-                         iters=400, burnin=200, drawsd=4, ignore_me=FALSE,
+                         ndraws_ll=1000L, conv_patience=1L, maxit=100L,
+                         mcmc_draws=400, mcmc_burnin=200, proposal_sd=4, ignore_me=FALSE,
                          messages=FALSE) {
   
   yname <- lhs.vars(Yformla)
@@ -27,11 +28,14 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
   meres <- NULL
   
   if (!ignore_me) {
-    Qyx <- qrme(Yformla, data=data, tau=tau, me_dist=me_dist, nmix=Ynmix, simstep=simstep,
-                tol=tol, conv_crit=conv_crit, iters=iters, burnin=burnin, drawsd=drawsd,
-                messages=messages, se=FALSE) # don't bootstrap these
-    Qtx  <- qrme(Tformla, data=data, tau=tau, me_dist=me_dist, nmix=Tnmix, simstep=simstep,
-                 tol=tol, conv_crit=conv_crit, drawsd=drawsd, messages=messages, se=FALSE)
+    Qyx <- qrme(Yformla, data=data, tau=tau, me_dist=me_dist, nmix=Ynmix, mcmc_method=mcmc_method,
+                tol=tol, conv_crit=conv_crit, ndraws_ll=ndraws_ll, conv_patience=conv_patience,
+                mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd,
+                maxit=maxit, messages=messages, se=FALSE) # don't bootstrap these
+    Qtx  <- qrme(Tformla, data=data, tau=tau, me_dist=me_dist, nmix=Tnmix, mcmc_method=mcmc_method,
+                 tol=tol, conv_crit=conv_crit, ndraws_ll=ndraws_ll, conv_patience=conv_patience,
+                 mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd,
+                 maxit=maxit, messages=messages, se=FALSE)
 
     # now get joint distribution
     meres <- qr2me(yname=yname,
@@ -135,7 +139,7 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 
 
 
-#' @title nlme
+#' @title tsme
 #' @description function to compute nonlinear models with two sided measurement error
 #' 
 #' @param data data.frame
@@ -153,7 +157,7 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  default and supports a mixture of normals.  "laplace" is also supported
 #' @param copType what type of copula to use in second step.  Options are
 #'  "gaussian" (the default), "clayton", or "gumbel"
-#' @param simstep whether to use an MH algorithm ("MH") or an importance
+#' @param mcmc_method whether to use an MH algorithm ("MH") or an importance
 #'  sampling algorithm ("ImpSamp")
 #' @param ndraws number of draws to use in MH algorithm to estimate first
 #'  step quantile regressions (default 250)
@@ -174,33 +178,41 @@ compute.nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  for details.
 #' @param conv_crit Convergence criterion passed to \code{\link{qrme}}:
 #'  \code{"params"} (default) or \code{"loglik"}.  See \code{\link{em.algo}}.
-#' @param iters the number of MCMC iterations (default is 400)
-#' @param burnin the number of MCMC iterations to drop (default is 200)
-#' @param drawsd starting value of standard deviations of mixture components
+#' @param ndraws_ll Number of Monte Carlo draws for the log-likelihood
+#'  convergence check when \code{conv_crit = "loglik"} (default 1000).
+#'  Ignored when \code{conv_crit = "params"}.
+#' @param conv_patience Integer. Consecutive iterations that must satisfy the
+#'  convergence criterion before stopping (default 1).
+#' @param maxit Maximum number of EM outer iterations per \code{qrme} call
+#'  (default 100).
+#' @param mcmc_draws total number of MCMC draws per EM step (default 400)
+#' @param mcmc_burnin number of MCMC draws to discard as burnin (default 200)
+#' @param proposal_sd standard deviation of the MH proposal
 #' @param ignore_me whether or not to ignore measurement error (this is primarily
 #'  a way to get speedy calculations using copula-based approach)
 #' @param messages whether or not to report details of computation as they
 #'  occur (default is \code{FALSE})
 #' @param se whether or not to estimate standard errors using the boostrap
 #'  (default is FALSE)
-#' @param biters if computing standard errors, the number of bootstrap iterations
+#' @param n_boot if computing standard errors, the number of bootstrap iterations
 #'  to use (default is 100)
-#' @param cl allows for parallel processing in computing standard errors using
+#' @param ncores allows for parallel processing in computing standard errors using
 #'  the bootstrap (the default is 1)
 #'
 #' @return list of nonlinear measures of intergenerational income mobility
 #'  adjusted for measurement error
 #' @export
-nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
+tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                  me_dist="gaussian", copType="gaussian",
-                 simstep="MH", ndraws=250,
+                 mcmc_method="MH", ndraws=250,
                  reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
                  reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
                  Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
-                 iters=400, burnin=200, drawsd=4, ignore_me=FALSE, messages=FALSE,
-                 se=FALSE, biters=100, cl=1) {
+                 ndraws_ll=1000L, conv_patience=1L, maxit=100L,
+                 mcmc_draws=400, mcmc_burnin=200, proposal_sd=4, ignore_me=FALSE, messages=FALSE,
+                 se=FALSE, n_boot=100, ncores=1) {
 
-  res <- compute.nlme(data=data,
+  res <- compute.tsme(data=data,
                       Yformla=Yformla,
                       Tformla=Tformla,
                       tau=tau,
@@ -208,7 +220,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                       xdf=xdf,
                       me_dist=me_dist,
                       copType=copType,
-                      simstep=simstep,
+                      mcmc_method=mcmc_method,
                       ndraws=ndraws,
                       reportTmat=reportTmat,
                       reportSP=reportSP,
@@ -220,21 +232,24 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                       Tnmix=Tnmix,
                       tol=tol,
                       conv_crit=conv_crit,
-                      iters=iters,
-                      burnin=burnin,
-                      drawsd=drawsd,
+                      ndraws_ll=ndraws_ll,
+                      conv_patience=conv_patience,
+                      maxit=maxit,
+                      mcmc_draws=mcmc_draws,
+                      mcmc_burnin=mcmc_burnin,
+                      proposal_sd=proposal_sd,
                       ignore_me=ignore_me,
                       messages=messages)
   
 
   if (se) {
 
-    eachIter <- pbapply::pblapply(1:biters, function(b) {
+    eachIter <- pbapply::pblapply(1:n_boot, function(b) {
       n <- nrow(data)
       brows <- sample(1:n, size=n, replace=TRUE)
       bdata <- data[brows,]
       tryCatch({
-        out <- compute.nlme(data=bdata,
+        out <- compute.tsme(data=bdata,
                             Yformla=Yformla,
                             Tformla=Tformla,
                             tau=tau,
@@ -242,6 +257,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                             xdf=xdf,
                             me_dist=me_dist,
                             copType=copType,
+                            mcmc_method=mcmc_method,
                             ndraws=ndraws,
                             reportTmat=reportTmat,
                             reportSP=reportSP,
@@ -252,14 +268,19 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                             Tnmix=Tnmix,
                             tol=tol,
                             conv_crit=conv_crit,
-                            drawsd=drawsd,
+                            ndraws_ll=ndraws_ll,
+                            conv_patience=conv_patience,
+                            maxit=maxit,
+                            mcmc_draws=mcmc_draws,
+                            mcmc_burnin=mcmc_burnin,
+                            proposal_sd=proposal_sd,
                             messages=messages)
         out
       }, error=function(cond) {
         return(NULL) # use this as code for error on that bootstrap iteration
         #return(cond)
       })
-    }, cl=cl)
+    }, cl=ncores)
 
     
     # drop list elements where bootstrap failed
@@ -307,7 +328,7 @@ nlme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
     res$nomeresQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$nomeresQ)), 1:2, sd)
     res$qrytxQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$qrytxQ)), 1:2, sd)
 
-    res$biters <- length(eachIter)
+    res$n_boot <- length(eachIter)
     
   }
 

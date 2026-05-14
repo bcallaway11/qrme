@@ -4,7 +4,20 @@
 \alias{imp_sampC}
 \title{imp_sampC}
 \usage{
-imp_sampC(Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, tau)
+imp_sampC(
+  Y,
+  X,
+  V,
+  mcmc_draws,
+  proposal_sd,
+  betmat,
+  me_dist,
+  m,
+  pi,
+  mu,
+  sig,
+  tau
+)
 }
 \arguments{
 \item{Y}{vector of outcomes}
@@ -13,9 +26,9 @@ imp_sampC(Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, tau)
 
 \item{V}{vector of measurement errors}
 
-\item{iters}{number of Monte Carlo iterations}
+\item{mcmc_draws}{total number of Monte Carlo draws}
 
-\item{drawsd}{the standard deviation for the standard normal draws in the
+\item{proposal_sd}{standard deviation of the random-walk MH proposal
 MH algorithm}
 
 \item{betmat}{matrix of QR parameters}

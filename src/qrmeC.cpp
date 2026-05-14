@@ -135,17 +135,17 @@ double fvyxC(double v, arma::mat betmat, std::string me_dist,
 //'
 //' @return vector of MCMC draws of measurement error
 // [[Rcpp::export]]
-NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
-		       double drawsd, arma::mat betmat,
+NumericVector mh_mcmc_innerC(double startval, int mcmc_draws, int mcmc_burnin,
+		       double proposal_sd, arma::mat betmat,
            std::string me_dist,
 		       int m, NumericVector pi, NumericVector mu,
 		       NumericVector sig, double y, arma::mat x,
 		       NumericVector tau) {
 
-  NumericVector out(iters);
+  NumericVector out(mcmc_draws);
   out[0] = startval;
-  for (int i = 1; i < iters; i++) {
-    double trialval = out[i-1] + rnorm(1,0,drawsd)[0];
+  for (int i = 1; i < mcmc_draws; i++) {
+    double trialval = out[i-1] + rnorm(1,0,proposal_sd)[0];
     double fvold = fvyxC(out[i-1], betmat=betmat, me_dist=me_dist, m=m, pi=pi, mu=mu,
     			 sig=sig, y=y, x=x, tau=tau);
     double fvnew = fvyxC(trialval, betmat=betmat, me_dist=me_dist, m=m, pi=pi, mu=mu,
@@ -160,7 +160,7 @@ NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
       }
     }
   }
-  return out[Rcpp::Range((burnin), (out.size()-1))];
+  return out[Rcpp::Range((mcmc_burnin), (out.size()-1))];
 }
 
 
@@ -175,7 +175,7 @@ NumericVector mh_mcmc_innerC(double startval, int iters, int burnin,
 //'
 //' @return vector of weights to be used in importance sampling
 // [[Rcpp::export]]
-NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double iters, double drawsd, arma::mat betmat, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
+NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, int mcmc_draws, double proposal_sd, arma::mat betmat, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
   int n = Y.size(); // n includes measurement error so is greater than true number of observations
   double y;
   double v;
@@ -185,7 +185,7 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double it
   NumericVector weights(n);
 
   // go ahead and compute denominator of weights
-  NumericVector denW = dnorm(V, 0, drawsd);
+  NumericVector denW = dnorm(V, 0, proposal_sd);
 
   // last, compute overall weights as ration of densities
   for (int i = 0; i < n; i++) {
@@ -207,9 +207,9 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double it
 //' @param Y vector of outcomes
 //' @param X matrix of covariates
 //' @param startval starting value for the markov chain
-//' @param iters number of Monte Carlo iterations
-//' @param burnin number of first MC iteration to drop
-//' @param drawsd the standard deviation for the standard normal draws in the
+//' @param mcmc_draws total number of Monte Carlo draws
+//' @param mcmc_burnin number of initial draws to discard as burnin
+//' @param proposal_sd standard deviation of the random-walk MH proposal
 //'  MH algorithm
 //' @param betmat matrix of QR parameters
 //' @param me_dist the distribution of the measurement error.  "gaussian" is the
@@ -220,26 +220,26 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, double it
 //' @param sig standard deviations of mixture components
 //' @param tau which values QR's have been estimated for
 // [[Rcpp::export]]
-std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int iters,
-		   int burnin, double drawsd, arma::mat betmat,
+std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int mcmc_draws,
+		   int mcmc_burnin, double proposal_sd, arma::mat betmat,
        std::string me_dist,
 		   int m, NumericVector pi, NumericVector mu,
 		   NumericVector sig, NumericVector tau) {
 
   int n = Y.size();
-  int nume = iters-burnin;
+  int n_draws = mcmc_draws-mcmc_burnin;
   NumericVector e;
   double y;
   arma::mat x;
   std::vector<double> ee;
-  ee.reserve(n*nume);
+  ee.reserve(n*n_draws);
 
   for (int i = 0; i < n; i++) {
    y = Y[i];
    x = X.rows(i,i); // this gets the i-th row
    x = x.t();
-   e = mh_mcmc_innerC(startval=startval, iters=iters, burnin=burnin,
-    		      drawsd=drawsd, betmat=betmat,
+   e = mh_mcmc_innerC(startval=startval, mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin,
+    		      proposal_sd=proposal_sd, betmat=betmat,
               me_dist=me_dist,
     		      m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau);
    ee.insert(ee.end(), e.begin(), e.end());

@@ -17,58 +17,58 @@
 #'
 #' @keywords internal
 #' @export
-compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
-                         startsig=NULL, startpi=NULL, simstep="MH", tol=NULL, conv_crit="params",
-                         ndraws_ll=1000L, conv_patience=1L, iters=400, burnin=200, drawsd=4, cl=1,
+compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=NULL, start_mu=NULL,
+                         start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
+                         ndraws_ll=1000L, conv_patience=1L, mcmc_draws=400, mcmc_burnin=200, proposal_sd=NULL, ncores=1,
                          maxit=100, messages=FALSE) {
-  xformla <- formla
-  xformla[[2]] <- NULL ## drop y variable
-  x <- model.matrix(xformla, data)
-  yname <- as.character(formla[[2]])
+  xformula <- formula
+  xformula[[2]] <- NULL ## drop y variable
+  x <- model.matrix(xformula, data)
+  yname <- as.character(formula[[2]])
   y <- data[,yname]
   k <- ncol(x) ## number of x variables
   m <- nmix
-  if (is.null(startbet)) {
+  if (is.null(start_beta)) {
     ## this defaults the start values of the beta_0 to be
     ## the observed quantiles of the outcome and the other
     ## betas to be equal to 0
-    betvals <- t(coef(quantreg::rq(formla, tau=tau, data=data)))
-    
+    betvals <- t(coef(quantreg::rq(formula, tau=tau, data=data)))
+
   } else {
-    betvals <- startbet
+    betvals <- start_beta
   }
-  if (is.null(startmu)) {
+  if (is.null(start_mu)) {
     muvals1 <- seq(-m, m, length.out=m)
     muvals <- muvals1 - mean(muvals1)
   } else {
-    muvals <- startmu
+    muvals <- start_mu
   }
-  if (is.null(startsig)) {
+  if (is.null(start_sigma)) {
     sigvals <- rep(1,m)
   } else {
-    sigvals <- startsig
+    sigvals <- start_sigma
   }
-  if (is.null(startpi)) {
+  if (is.null(start_pi)) {
     pivals <- rep(1/m, m)
   } else {
-    pivals <- startpi
+    pivals <- start_pi
   }
   qrparams <- list(bet=betvals, m=m, pi=pivals, mu=muvals, sig=sigvals)
 
 
   ## Estimate QR model with measurement error using EM algorithm
-  res <- em.algo(formla, data,
+  res <- em.algo(formula, data,
                  betmatguess=betvals, tau=tau,
                  me_dist=me_dist,
                  m=m, piguess=pivals, muguess=muvals,
-                 sigguess=sigvals, simstep=simstep, tol=tol,
+                 sigguess=sigvals, mcmc_method=mcmc_method, tol=tol,
                  conv_crit=conv_crit, ndraws_ll=ndraws_ll,
                  conv_patience=conv_patience,
-                 iters=iters, burnin=burnin, drawsd=drawsd, cl=cl,
+                 mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd, ncores=ncores,
                  maxit=maxit, messages=messages)
 
-  
-  out <- makeRQS(res, formla, data, tau=tau)
+
+  out <- makeRQS(res, formula, data, tau=tau)
 
   class(out) <- c("merr", class(out))
 
@@ -80,6 +80,7 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
   out$x <- x
   out$y <- y
   out$me_dist <- me_dist
+  out$n_iter <- res$n_iter
   #out$Ystar <- res$Ystar
 
   out
@@ -93,29 +94,29 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #'  that the measurement error distribution is a mixture of normal
 #'  distributions.
 #'
-#' @param formla y ~ x
+#' @param formula y ~ x
 #' @param tau vector for which quantiles to compute quantile regression
 #' @param data a data.frame that contains y and x
 #' @param nmix The number of mixture components of the measurement error
-#' @param startbet an LxK matrix of starting values for beta where
+#' @param start_beta an LxK matrix of starting values for beta where
 #'  L is the dimension of tau and K is the number of covariates (default is
 #'  NULL and in this case, the starting values are set to be the QR
 #'  coefficients coming from QR that ignores measurment error)
-#' @param startmu A vector of length nmix of starting values for the mean
+#' @param start_mu A vector of length nmix of starting values for the mean
 #'  of the mixture of normals distribution for the measurment error (default
 #'  is NULL and in this case, the starting values are basically set to be
 #'  equally spaced from -nmix to nmix but forced to have mean 0)
-#' @param startsig A vector of length nmix of starting values for the
+#' @param start_sigma A vector of length nmix of starting values for the
 #'  standard deviation of the mixture of normals distribution for the
 #'  measurement error (default is NULL and in this case, the starting values
 #'  are all set to be 1)
-#' @param startpi A vector of length nmix of starting values for the fraction
-#'  of observations in each component of the mimxture of normals distribution
+#' @param start_pi A vector of length nmix of starting values for the fraction
+#'  of observations in each component of the mixture of normals distribution
 #'  for the measurement error (default is NULL and in this case, the starting
 #'  values are all set to be 1/nmix)
-#' @param simstep The type of simulation step to use in the EM algorithm.
-#'  The default is "MH" for Metropolis-Hasting.  The alternative is
-#'  "ImpSamp" for importance sampling. 
+#' @param mcmc_method The type of simulation step to use in the EM algorithm.
+#'  The default is "MH" for Metropolis-Hastings. The alternative is
+#'  "ImpSamp" for importance sampling.
 #' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
 #'  chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
 #'  for details.
@@ -128,20 +129,19 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #' @param conv_patience Integer. Consecutive iterations that must satisfy the
 #'  convergence criterion before stopping (default 1). Setting to 2 guards
 #'  against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.
-#' @param iters How many iterations to use in the simulation step (default is
-#'  400)
-#' @param burnin How many iterations to drop in the simulation step (default
-#'  is 200)
-#' @param drawsd The starting standard deviation for the measurement error
-#'  term.
-#' @param cl The numbe of clusters to use for parallel computation (default
-#'  is 1 so that computation is not done in parallel)
+#' @param mcmc_draws Total number of MCMC draws per EM step (default 400)
+#' @param mcmc_burnin Number of MCMC draws to discard as burnin (default 200)
+#' @param proposal_sd Standard deviation of the Metropolis-Hastings proposal
+#'  (random-walk step size) or the importance-sampling proposal. When
+#'  \code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
+#'  the proposal to the spread of the outcome. Pass a positive numeric to
+#'  override.
+#' @param ncores Number of cores for parallel bootstrap computation (default 1)
 #' @param maxit Maximum number of EM outer iterations. If convergence is not
 #'  reached, the estimates from the final iteration are returned (default is 100)
 #' @param se Whether or not to compute standard errors using the bootstrap
 #'  (default is FALSE)
-#' @param biters Number of bootstrap iterations to use.  Only is considered
-#'  in the case where computing standard errors (default is 100)
+#' @param n_boot Number of bootstrap iterations for standard errors (default 100)
 #' @param messages Whether or not to report details of estimation procedure
 #'  (default is FALSE)
 #' 
@@ -149,65 +149,65 @@ compute.qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, star
 #'   and \code{BIC()} for comparing fits across different starting values.
 #'
 #' @export
-qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NULL, startmu=NULL,
-                 startsig=NULL, startpi=NULL, simstep="MH", tol=NULL, conv_crit="params",
-                 ndraws_ll=1000L, conv_patience=1L, iters=400, burnin=200, drawsd=4, cl=1,
-                 maxit=100, se=FALSE, biters=100, messages=FALSE) {
+qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=NULL, start_mu=NULL,
+                 start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
+                 ndraws_ll=1000L, conv_patience=1L, mcmc_draws=400, mcmc_burnin=200, proposal_sd=NULL, ncores=1,
+                 maxit=100, se=FALSE, n_boot=100, messages=FALSE) {
 
 
 
-  res <- compute.qrme(formla=formla,
+  res <- compute.qrme(formula=formula,
                       tau=tau,
                       data=data,
                       me_dist=me_dist,
                       nmix=nmix,
-                      startbet=startbet,
-                      startmu=startmu,
-                      startsig=startsig,
-                      startpi=startpi,
-                      simstep=simstep,
+                      start_beta=start_beta,
+                      start_mu=start_mu,
+                      start_sigma=start_sigma,
+                      start_pi=start_pi,
+                      mcmc_method=mcmc_method,
                       tol=tol,
                       conv_crit=conv_crit,
                       ndraws_ll=ndraws_ll,
                       conv_patience=conv_patience,
-                      iters=iters,
-                      burnin=burnin,
-                      drawsd=drawsd,
-                      cl=cl,
+                      mcmc_draws=mcmc_draws,
+                      mcmc_burnin=mcmc_burnin,
+                      proposal_sd=proposal_sd,
+                      ncores=ncores,
                       maxit=maxit,
                       messages=messages)
 
   if (se) {
-    eachIter <- pbapply::pblapply(1:biters, function(b) {
+    eachIter <- pbapply::pblapply(1:n_boot, function(b) {
       n <- nrow(data)
       brows <- sample(1:n, size=n, replace=TRUE)
       bdata <- data[brows,]
       tryCatch({
-        out <- compute.qrme(formla=formla,
+        out <- compute.qrme(formula=formula,
                             tau=tau,
                             data=bdata,
                             me_dist=me_dist,
                             nmix=nmix,
-                            startbet=res$bet,
-                            startmu=res$mu,
-                            startsig=res$sig,
-                            startpi=res$pi,
-                            simstep=simstep,
+                            start_beta=res$bet,
+                            start_mu=res$mu,
+                            start_sigma=res$sig,
+                            start_pi=res$pi,
+                            mcmc_method=mcmc_method,
                             tol=tol,
                             conv_crit=conv_crit,
                             ndraws_ll=ndraws_ll,
                             conv_patience=conv_patience,
-                            iters=iters,
-                            burnin=burnin,
-                            drawsd=drawsd,
-                            cl=1,
+                            mcmc_draws=mcmc_draws,
+                            mcmc_burnin=mcmc_burnin,
+                            proposal_sd=proposal_sd,
+                            ncores=1,
                             maxit=maxit)
         out$Ystar=NULL ## just drop this because it takes up a lot of memory
         out
       }, error=function(cond) {
         return(NULL)
       })
-    }, cl=cl)
+    }, cl=ncores)
 
     ## drop list elements where bootstrap failed
     eachIter <- eachIter[!sapply(eachIter, is.null)]
@@ -252,7 +252,7 @@ qrme <- function(formla, tau=0.5, data, me_dist="gaussian", nmix=3, startbet=NUL
 #' @param retFytxlist whether or not to return the conditional distribution
 #'  for every value of x in xdf
 #'  (default is FALSE because this can take up a lot of room in memory)
-#' @inheritParams nlme
+#' @inheritParams tsme
 #' @inheritParams qrme
 qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
                   me_dist="gaussian", copula="gaussian",

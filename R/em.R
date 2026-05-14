@@ -25,7 +25,7 @@
 #'  have length equal to k)
 #' @param sigguess Starting value for the standard deviation of each mixture
 #'  component (should have length equal to k)
-#' @param simstep Whether to use MH in EM algorithm or importance sampling
+#' @param mcmc_method Whether to use MH in EM algorithm or importance sampling
 #'  in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
 #'  Default is MH.
 #' @param maxit Maximum number of EM outer iterations. If convergence is not
@@ -50,21 +50,26 @@
 #'  1 (current behaviour). Setting this to 2 requires two back-to-back
 #'  iterations below \code{tol}, guarding against false convergence caused by
 #'  Monte Carlo noise in the log-likelihood or parameter updates.
+#' @param proposal_sd Standard deviation of the Metropolis-Hastings proposal
+#'  (random-walk step size) or the importance-sampling proposal. When
+#'  \code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
+#'  the proposal to the spread of the outcome. Pass a positive numeric to
+#'  override.
 #' @inheritParams qrme
 #' @return QRME object
 #'
 #' @export
-em.algo <- function(formla, data,
+em.algo <- function(formula, data,
                     betmatguess, tau,
                     me_dist = "gaussian",
                     m = 1, piguess = 1, muguess = 0,
-                    sigguess = 1, simstep = "MH", tol = NULL,
+                    sigguess = 1, mcmc_method = "MH", tol = NULL,
                     conv_crit = "params", ndraws_ll = 1000L,
                     conv_patience = 1L,
-                    iters = 400, burnin = 200, drawsd = 4, cl = 1,
+                    mcmc_draws = 400, mcmc_burnin = 200, proposal_sd = NULL, ncores = 1,
                     maxit = 100, messages = FALSE) {
     # some checks
-    if (me_dist == "laplace" & simstep != "MH") {
+    if (me_dist == "laplace" & mcmc_method != "MH") {
         stop("Laplace distribution only supported with MH algorithm")
     }
     if (me_dist == "laplace" & m > 1) {
@@ -75,11 +80,16 @@ em.algo <- function(formla, data,
     }
 
     # Extract y and x once; needed for default tol computation and/or loglik criterion
-    xformla_rhs <- formla
-    xformla_rhs[[2]] <- NULL
-    x_for_ll <- model.matrix(xformla_rhs, data)
-    yname <- as.character(formla[[2]])
+    xformula_rhs <- formula
+    xformula_rhs[[2]] <- NULL
+    x_for_ll <- model.matrix(xformula_rhs, data)
+    yname <- as.character(formula[[2]])
     y_for_ll <- data[, yname]
+
+    # Set default proposal_sd if not provided by the user
+    if (is.null(proposal_sd)) {
+        proposal_sd <- sqrt(var(y_for_ll))
+    }
 
     # Set default tol if not provided by the user
     if (is.null(tol)) {
@@ -101,14 +111,14 @@ em.algo <- function(formla, data,
 
     # run em algorithm
     while (counter <= maxit) {
-        newone <- em.algo.inner(formla, data,
+        newone <- em.algo.inner(formula, data,
             betmatguess, tau,
             me_dist,
             m, piguess, muguess,
-            sigguess, simstep,
-            iters = iters, burnin = burnin,
-            drawsd = drawsd,
-            cl = cl,
+            sigguess, mcmc_method,
+            mcmc_draws = mcmc_draws, mcmc_burnin = mcmc_burnin,
+            proposal_sd = proposal_sd,
+            ncores = ncores,
             messages = messages
         )
         newbet <- newone$bet
@@ -132,6 +142,7 @@ em.algo <- function(formla, data,
                     consec_count <- consec_count + 1L
                     if (consec_count >= conv_patience) {
                         if (messages) cat("\n algorithm converged\n")
+                        newone$n_iter <- counter
                         return(newone)
                     }
                 } else {
@@ -146,6 +157,7 @@ em.algo <- function(formla, data,
                 consec_count <- consec_count + 1L
                 if (consec_count >= conv_patience) {
                     if (messages) cat("\n algorithm converged\n")
+                    newone$n_iter <- counter
                     return(newone)
                 }
             } else {
@@ -160,6 +172,7 @@ em.algo <- function(formla, data,
         piguess <- newpi
     }
     cat("\n algorithm failed to converge\n")
+    newone$n_iter <- maxit
     return(newone)
 }
 
@@ -175,16 +188,16 @@ em.algo <- function(formla, data,
 #' @return A list of QR parameters and parameters for mixture of normals for
 #'  the measurement error term
 #' @export
-em.algo.inner <- function(formla, data,
+em.algo.inner <- function(formula, data,
                           betmat, tau,
                           me_dist = "gaussian",
                           m = 1, pi = 1, mu = 0, sig = 1,
-                          simstep = "MH",
-                          iters = 400, burnin = 200, drawsd = 4, cl = 1, messages = FALSE) {
-    xformla <- formla
-    xformla[[2]] <- NULL # drop y variable
-    X <- model.matrix(xformla, data)
-    yname <- as.character(formla[[2]])
+                          mcmc_method = "MH",
+                          mcmc_draws = 400, mcmc_burnin = 200, proposal_sd = NULL, ncores = 1, messages = FALSE) {
+    xformula <- formula
+    xformula[[2]] <- NULL # drop y variable
+    X <- model.matrix(xformula, data)
+    yname <- as.character(formula[[2]])
     Y <- data[, yname]
     k <- ncol(X) # number of x variables
     n <- length(Y)
@@ -192,16 +205,16 @@ em.algo.inner <- function(formla, data,
         cat("\nSimulating measurement error...")
     }
 
-    if (simstep == "MH") {
+    if (mcmc_method == "MH") {
         startval <- 0
 
         edraws <- mh_mcmcC(Y, X,
-            startval = startval, iters = iters, burnin = burnin,
-            drawsd = drawsd, betmat = betmat, me_dist = me_dist, m = m,
+            startval = startval, mcmc_draws = mcmc_draws, mcmc_burnin = mcmc_burnin,
+            proposal_sd = proposal_sd, betmat = betmat, me_dist = me_dist, m = m,
             pi = pi, mu = mu, sig = sig, tau = tau
         )
 
-        newids <- unlist(lapply(1:n, function(i) rep(i, (iters - burnin)))) # just replicates Y and X over and over
+        newids <- unlist(lapply(1:n, function(i) rep(i, (mcmc_draws - mcmc_burnin)))) # just replicates Y and X over and over
 
         newdta1 <- as.data.frame(cbind(Y = (Y[newids] - edraws), X = X[newids, ], e = edraws))
 
@@ -227,7 +240,7 @@ em.algo.inner <- function(formla, data,
         #              tau=tau
         newdta1$w <- 1
         out <- quantreg::rq(
-            formula = formla,
+            formula = formula,
             tau = tau,
             weights = w,
             data = newdta1,
@@ -263,22 +276,22 @@ em.algo.inner <- function(formla, data,
         bet_out[, 1] <- bet_out[, 1] + delta  # column 1 is always the intercept
 
         return(list(bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord))
-    } else if (simstep == "ImpSamp") {
+    } else if (mcmc_method == "ImpSamp") {
         # importance sampling
-        edraws <- rnorm((iters * n), 0, drawsd)
+        edraws <- rnorm((mcmc_draws * n), 0, proposal_sd)
 
-        newids <- unlist(lapply(1:n, function(i) rep(i, iters))) # just replicates Y and X over and over
+        newids <- unlist(lapply(1:n, function(i) rep(i, mcmc_draws))) # just replicates Y and X over and over
 
         newdta1 <- as.data.frame(cbind(Y = (Y[newids] - edraws), X = X[newids, ], e = edraws)) # prepopulate some fields in dataset
 
         # compute weights using importance sampling
         newdta1$w <- imp_sampC(
-            Y = Y[newids], X = X[newids, ], V = edraws, iters = iters, drawsd = drawsd,
+            Y = Y[newids], X = X[newids, ], V = edraws, mcmc_draws = mcmc_draws, proposal_sd = proposal_sd,
             betmat = betmat, m = m, pi = pi, mu = mu, sig = sig, tau = tau
         ) # but use original versions of the data (not adjusted for measurement errors) to compute weights
         newdta1$w <- sapply(1:length(edraws), function(i) max(1e-05, newdta1$w[i])) # drop negative weights (not many of these...)
         # run weighted quantile regression
-        out <- quantreg::rq(formla, tau = tau, data = newdta1, method = "fn", weights = newdta1$w)
+        out <- quantreg::rq(formula, tau = tau, data = newdta1, method = "fn", weights = newdta1$w)
         if (messages) {
             cat("\nEstimating finite mixture model...")
         }
@@ -311,7 +324,7 @@ em.algo.inner <- function(formla, data,
 
         return(list(bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord))
     } else {
-        stop("provided simstep not supported")
+        stop("provided mcmc_method not supported")
     }
 }
 
@@ -426,20 +439,21 @@ fv <- function(v, m = 1, pi = 1, mu = 0, sig = 1) {
 #' @description A Metropolis-Hastings algorithm for drawing measurment errors.
 #'
 #' @param startval The first value in the markov chain
-#' @param iters The total number of measurement error draws to make
-#' @param burnin The number of draws to drop
-#' @param drawsd Trial values are drawn from N(0, sd=drawsd), default is 4
+#' @param mcmc_draws The total number of measurement error draws to make
+#' @param mcmc_burnin The number of draws to drop
+#' @param proposal_sd Standard deviation of the random-walk MH proposal. Passed
+#'  from \code{em.algo} after automatic scaling; see \code{\link{em.algo}}.
 #' @inheritParams fv.yx
 #' @param y particular value of y
 #' @param x particular value of x
 #' @return vector of draws of measurement error
 #' @export
-mh_mcmc <- function(startval = 0, iters = 500, burnin = 100, drawsd = sqrt(4), betmat, m, pi, mu, sig, y, x, tau) {
+mh_mcmc <- function(startval = 0, mcmc_draws = 500, mcmc_burnin = 100, proposal_sd = NULL, betmat, m, pi, mu, sig, y, x, tau) {
     x <- t(x)
-    out <- rep(NA, iters)
+    out <- rep(NA, mcmc_draws)
     out[1] <- startval
-    for (i in 2:iters) {
-        trialval <- out[i - 1] + rnorm(1, sd = drawsd)
+    for (i in 2:mcmc_draws) {
+        trialval <- out[i - 1] + rnorm(1, sd = proposal_sd)
         fvold <- fv.yx(out[i - 1], betmat, m, pi, mu, sig, y, x, tau)
         fvnew <- fv.yx(trialval, betmat, m, pi, mu, sig, y, x, tau)
         if (fvnew > fvold) {
@@ -452,5 +466,5 @@ mh_mcmc <- function(startval = 0, iters = 500, burnin = 100, drawsd = sqrt(4), b
             }
         }
     }
-    return(tail(out, iters - burnin))
+    return(tail(out, mcmc_draws - mcmc_burnin))
 }

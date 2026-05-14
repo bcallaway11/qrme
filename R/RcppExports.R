@@ -58,8 +58,8 @@ fvyxC <- function(v, betmat, me_dist, m, pi, mu, sig, y, x, tau) {
 #' @inheritParams mh_mcmcC
 #'
 #' @return vector of MCMC draws of measurement error
-mh_mcmc_innerC <- function(startval, iters, burnin, drawsd, betmat, me_dist, m, pi, mu, sig, y, x, tau) {
-    .Call('_qrme_mh_mcmc_innerC', PACKAGE = 'qrme', startval, iters, burnin, drawsd, betmat, me_dist, m, pi, mu, sig, y, x, tau)
+mh_mcmc_innerC <- function(startval, mcmc_draws, mcmc_burnin, proposal_sd, betmat, me_dist, m, pi, mu, sig, y, x, tau) {
+    .Call('_qrme_mh_mcmc_innerC', PACKAGE = 'qrme', startval, mcmc_draws, mcmc_burnin, proposal_sd, betmat, me_dist, m, pi, mu, sig, y, x, tau)
 }
 
 #' imp_sampC
@@ -72,8 +72,8 @@ mh_mcmc_innerC <- function(startval, iters, burnin, drawsd, betmat, me_dist, m, 
 #' @inheritParams mh_mcmcC
 #'
 #' @return vector of weights to be used in importance sampling
-imp_sampC <- function(Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, tau) {
-    .Call('_qrme_imp_sampC', PACKAGE = 'qrme', Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, tau)
+imp_sampC <- function(Y, X, V, mcmc_draws, proposal_sd, betmat, me_dist, m, pi, mu, sig, tau) {
+    .Call('_qrme_imp_sampC', PACKAGE = 'qrme', Y, X, V, mcmc_draws, proposal_sd, betmat, me_dist, m, pi, mu, sig, tau)
 }
 
 #' mh_mcmcC
@@ -81,9 +81,9 @@ imp_sampC <- function(Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, t
 #' @param Y vector of outcomes
 #' @param X matrix of covariates
 #' @param startval starting value for the markov chain
-#' @param iters number of Monte Carlo iterations
-#' @param burnin number of first MC iteration to drop
-#' @param drawsd the standard deviation for the standard normal draws in the
+#' @param mcmc_draws total number of Monte Carlo draws
+#' @param mcmc_burnin number of initial draws to discard as burnin
+#' @param proposal_sd standard deviation of the random-walk MH proposal
 #'  MH algorithm
 #' @param betmat matrix of QR parameters
 #' @param me_dist the distribution of the measurement error.  "gaussian" is the
@@ -93,8 +93,8 @@ imp_sampC <- function(Y, X, V, iters, drawsd, betmat, me_dist, m, pi, mu, sig, t
 #' @param mu means of mixture components
 #' @param sig standard deviations of mixture components
 #' @param tau which values QR's have been estimated for
-mh_mcmcC <- function(Y, X, startval, iters, burnin, drawsd, betmat, me_dist, m, pi, mu, sig, tau) {
-    .Call('_qrme_mh_mcmcC', PACKAGE = 'qrme', Y, X, startval, iters, burnin, drawsd, betmat, me_dist, m, pi, mu, sig, tau)
+mh_mcmcC <- function(Y, X, startval, mcmc_draws, mcmc_burnin, proposal_sd, betmat, me_dist, m, pi, mu, sig, tau) {
+    .Call('_qrme_mh_mcmcC', PACKAGE = 'qrme', Y, X, startval, mcmc_draws, mcmc_burnin, proposal_sd, betmat, me_dist, m, pi, mu, sig, tau)
 }
 
 #' fYXmatC

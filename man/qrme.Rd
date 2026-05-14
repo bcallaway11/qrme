@@ -7,32 +7,32 @@
 \title{qrme: Quantile regression with measurement error}
 \usage{
 qrme(
-  formla,
+  formula,
   tau = 0.5,
   data,
   me_dist = "gaussian",
   nmix = 3,
-  startbet = NULL,
-  startmu = NULL,
-  startsig = NULL,
-  startpi = NULL,
-  simstep = "MH",
+  start_beta = NULL,
+  start_mu = NULL,
+  start_sigma = NULL,
+  start_pi = NULL,
+  mcmc_method = "MH",
   tol = NULL,
   conv_crit = "params",
   ndraws_ll = 1000L,
   conv_patience = 1L,
-  iters = 400,
-  burnin = 200,
-  drawsd = 4,
-  cl = 1,
+  mcmc_draws = 400,
+  mcmc_burnin = 200,
+  proposal_sd = NULL,
+  ncores = 1,
   maxit = 100,
   se = FALSE,
-  biters = 100,
+  n_boot = 100,
   messages = FALSE
 )
 }
 \arguments{
-\item{formla}{y ~ x}
+\item{formula}{y ~ x}
 
 \item{tau}{vector for which quantiles to compute quantile regression}
 
@@ -40,28 +40,28 @@ qrme(
 
 \item{nmix}{The number of mixture components of the measurement error}
 
-\item{startbet}{an LxK matrix of starting values for beta where
+\item{start_beta}{an LxK matrix of starting values for beta where
 L is the dimension of tau and K is the number of covariates (default is
 NULL and in this case, the starting values are set to be the QR
 coefficients coming from QR that ignores measurment error)}
 
-\item{startmu}{A vector of length nmix of starting values for the mean
+\item{start_mu}{A vector of length nmix of starting values for the mean
 of the mixture of normals distribution for the measurment error (default
 is NULL and in this case, the starting values are basically set to be
 equally spaced from -nmix to nmix but forced to have mean 0)}
 
-\item{startsig}{A vector of length nmix of starting values for the
+\item{start_sigma}{A vector of length nmix of starting values for the
 standard deviation of the mixture of normals distribution for the
 measurement error (default is NULL and in this case, the starting values
 are all set to be 1)}
 
-\item{startpi}{A vector of length nmix of starting values for the fraction
-of observations in each component of the mimxture of normals distribution
+\item{start_pi}{A vector of length nmix of starting values for the fraction
+of observations in each component of the mixture of normals distribution
 for the measurement error (default is NULL and in this case, the starting
 values are all set to be 1/nmix)}
 
-\item{simstep}{The type of simulation step to use in the EM algorithm.
-The default is "MH" for Metropolis-Hasting.  The alternative is
+\item{mcmc_method}{The type of simulation step to use in the EM algorithm.
+The default is "MH" for Metropolis-Hastings. The alternative is
 "ImpSamp" for importance sampling.}
 
 \item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
@@ -80,17 +80,17 @@ Ignored when \code{conv_crit = "params"}.}
 convergence criterion before stopping (default 1). Setting to 2 guards
 against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.}
 
-\item{iters}{How many iterations to use in the simulation step (default is
-400)}
+\item{mcmc_draws}{Total number of MCMC draws per EM step (default 400)}
 
-\item{burnin}{How many iterations to drop in the simulation step (default
-is 200)}
+\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 200)}
 
-\item{drawsd}{The starting standard deviation for the measurement error
-term.}
+\item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
+(random-walk step size) or the importance-sampling proposal. When
+\code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
+the proposal to the spread of the outcome. Pass a positive numeric to
+override.}
 
-\item{cl}{The numbe of clusters to use for parallel computation (default
-is 1 so that computation is not done in parallel)}
+\item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
 
 \item{maxit}{Maximum number of EM outer iterations. If convergence is not
 reached, the estimates from the final iteration are returned (default is 100)}
@@ -98,8 +98,7 @@ reached, the estimates from the final iteration are returned (default is 100)}
 \item{se}{Whether or not to compute standard errors using the bootstrap
 (default is FALSE)}
 
-\item{biters}{Number of bootstrap iterations to use.  Only is considered
-in the case where computing standard errors (default is 100)}
+\item{n_boot}{Number of bootstrap iterations for standard errors (default 100)}
 
 \item{messages}{Whether or not to report details of estimation procedure
 (default is FALSE)}

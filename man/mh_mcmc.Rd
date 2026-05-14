@@ -6,9 +6,9 @@
 \usage{
 mh_mcmc(
   startval = 0,
-  iters = 500,
-  burnin = 100,
-  drawsd = sqrt(4),
+  mcmc_draws = 500,
+  mcmc_burnin = 100,
+  proposal_sd = NULL,
   betmat,
   m,
   pi,
@@ -22,11 +22,12 @@ mh_mcmc(
 \arguments{
 \item{startval}{The first value in the markov chain}
 
-\item{iters}{The total number of measurement error draws to make}
+\item{mcmc_draws}{The total number of measurement error draws to make}
 
-\item{burnin}{The number of draws to drop}
+\item{mcmc_burnin}{The number of draws to drop}
 
-\item{drawsd}{Trial values are drawn from N(0, sd=drawsd), default is 4}
+\item{proposal_sd}{Standard deviation of the random-walk MH proposal. Passed
+from \code{em.algo} after automatic scaling; see \code{\link{em.algo}}.}
 
 \item{betmat}{LxK matrix of parameter values with L the number of quantiles
 and K the dimension of the covariates}

@@ -5,7 +5,7 @@
 \title{Inner part of EM-algorithm for QR with measurement error}
 \usage{
 em.algo.inner(
-  formla,
+  formula,
   data,
   betmat,
   tau,
@@ -14,16 +14,16 @@ em.algo.inner(
   pi = 1,
   mu = 0,
   sig = 1,
-  simstep = "MH",
-  iters = 400,
-  burnin = 200,
-  drawsd = 4,
-  cl = 1,
+  mcmc_method = "MH",
+  mcmc_draws = 400,
+  mcmc_burnin = 200,
+  proposal_sd = NULL,
+  ncores = 1,
   messages = FALSE
 )
 }
 \arguments{
-\item{formla}{y ~ x}
+\item{formula}{y ~ x}
 
 \item{data}{a data.frame that contains y and x}
 
@@ -47,21 +47,21 @@ to m)}
 \item{sig}{The standard deviation of each mixture component (should have
 length equal to m)}
 
-\item{simstep}{Whether to use MH in EM algorithm or importance sampling
+\item{mcmc_method}{Whether to use MH in EM algorithm or importance sampling
 in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
 Default is MH.}
 
-\item{iters}{How many iterations to use in the simulation step (default is
-400)}
+\item{mcmc_draws}{Total number of MCMC draws per EM step (default 400)}
 
-\item{burnin}{How many iterations to drop in the simulation step (default
-is 200)}
+\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 200)}
 
-\item{drawsd}{The starting standard deviation for the measurement error
-term.}
+\item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
+(random-walk step size) or the importance-sampling proposal. When
+\code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
+the proposal to the spread of the outcome. Pass a positive numeric to
+override.}
 
-\item{cl}{The numbe of clusters to use for parallel computation (default
-is 1 so that computation is not done in parallel)}
+\item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
 
 \item{messages}{Whether or not to report details of estimation procedure
 (default is FALSE)}

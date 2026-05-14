@@ -5,7 +5,7 @@
 \title{em.algo}
 \usage{
 em.algo(
-  formla,
+  formula,
   data,
   betmatguess,
   tau,
@@ -14,21 +14,21 @@ em.algo(
   piguess = 1,
   muguess = 0,
   sigguess = 1,
-  simstep = "MH",
+  mcmc_method = "MH",
   tol = NULL,
   conv_crit = "params",
   ndraws_ll = 1000L,
   conv_patience = 1L,
-  iters = 400,
-  burnin = 200,
-  drawsd = 4,
-  cl = 1,
+  mcmc_draws = 400,
+  mcmc_burnin = 200,
+  proposal_sd = NULL,
+  ncores = 1,
   maxit = 100,
   messages = FALSE
 )
 }
 \arguments{
-\item{formla}{y ~ x}
+\item{formula}{y ~ x}
 
 \item{data}{a data.frame that contains y and x}
 
@@ -52,7 +52,7 @@ have length equal to k)}
 \item{sigguess}{Starting value for the standard deviation of each mixture
 component (should have length equal to k)}
 
-\item{simstep}{Whether to use MH in EM algorithm or importance sampling
+\item{mcmc_method}{Whether to use MH in EM algorithm or importance sampling
 in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
 Default is MH.}
 
@@ -80,17 +80,17 @@ satisfy the convergence criterion before the algorithm stops. Default is
 iterations below \code{tol}, guarding against false convergence caused by
 Monte Carlo noise in the log-likelihood or parameter updates.}
 
-\item{iters}{How many iterations to use in the simulation step (default is
-400)}
+\item{mcmc_draws}{Total number of MCMC draws per EM step (default 400)}
 
-\item{burnin}{How many iterations to drop in the simulation step (default
-is 200)}
+\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 200)}
 
-\item{drawsd}{The starting standard deviation for the measurement error
-term.}
+\item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
+(random-walk step size) or the importance-sampling proposal. When
+\code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
+the proposal to the spread of the outcome. Pass a positive numeric to
+override.}
 
-\item{cl}{The numbe of clusters to use for parallel computation (default
-is 1 so that computation is not done in parallel)}
+\item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
 
 \item{maxit}{Maximum number of EM outer iterations. If convergence is not
 reached, the estimates from the final iteration are returned (default is 100)}

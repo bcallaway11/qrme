@@ -8,9 +8,9 @@ mh_mcmcC(
   Y,
   X,
   startval,
-  iters,
-  burnin,
-  drawsd,
+  mcmc_draws,
+  mcmc_burnin,
+  proposal_sd,
   betmat,
   me_dist,
   m,
@@ -27,11 +27,11 @@ mh_mcmcC(
 
 \item{startval}{starting value for the markov chain}
 
-\item{iters}{number of Monte Carlo iterations}
+\item{mcmc_draws}{total number of Monte Carlo draws}
 
-\item{burnin}{number of first MC iteration to drop}
+\item{mcmc_burnin}{number of initial draws to discard as burnin}
 
-\item{drawsd}{the standard deviation for the standard normal draws in the
+\item{proposal_sd}{standard deviation of the random-walk MH proposal
 MH algorithm}
 
 \item{betmat}{matrix of QR parameters}
