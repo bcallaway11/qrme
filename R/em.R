@@ -175,8 +175,9 @@ em.algo <- function(formula, data,
 
     counter <- 1
     criteria <- NA_real_
-    ll_old <- NULL       # used only when conv_crit == "loglik"
-    consec_count <- 0L   # consecutive iterations satisfying the convergence criterion
+    ll_old <- NULL        # used only when conv_crit == "loglik"
+    consec_count <- 0L    # consecutive iterations satisfying the convergence criterion
+    last_accept_rate <- NA_real_  # updated each iteration; checked at exit
 
     add_convergence_info <- function(obj, n_iter, converged) {
         if (isFALSE(obj$mix_converged)) {
@@ -184,6 +185,24 @@ em.algo <- function(formula, data,
                 "Finite mixture model did not converge in the final EM iteration",
                 call. = FALSE
             )
+        }
+        # Warn once if the final-iteration acceptance rate is extreme.
+        # For 1-D random-walk MH, ~20-70% is healthy; outside 10-90% suggests
+        # proposal_sd is badly mis-scaled and effective sample size is very low.
+        if (!is.na(last_accept_rate)) {
+            if (last_accept_rate < 0.10) {
+                warning(sprintf(
+                    "MH acceptance rate was %.0f%% in the final EM iteration. ",
+                    last_accept_rate * 100
+                ), "proposal_sd may be too large; consider passing a smaller value.",
+                call. = FALSE)
+            } else if (last_accept_rate > 0.90) {
+                warning(sprintf(
+                    "MH acceptance rate was %.0f%% in the final EM iteration. ",
+                    last_accept_rate * 100
+                ), "proposal_sd may be too small; consider passing a larger value.",
+                call. = FALSE)
+            }
         }
         obj$n_iter <- n_iter
         obj$tol <- tol
@@ -216,7 +235,10 @@ em.algo <- function(formula, data,
         newpi <- newone$pi
         newmu <- newone$mu
         newsig <- newone$sig
+        last_accept_rate <- newone$accept_rate
 
+        qrme_progress(verbose, "  MH acceptance rate: ",
+            sprintf("%.1f%%", last_accept_rate * 100), level = 2L)
         qrme_progress(verbose, "  pi: ", paste(signif(newpi, 4), collapse = ", "), level = 2L)
         qrme_progress(verbose, "  mu: ", paste(signif(newmu, 4), collapse = ", "), level = 2L)
         qrme_progress(verbose, "  sig: ", paste(signif(newsig, 4), collapse = ", "), level = 2L)
@@ -302,15 +324,17 @@ em.algo.inner <- function(formula, data,
             pi = pi, mu = mu, sig = sig, tau = tau
         )
 
-        newids <- unlist(lapply(1:n, function(i) rep(i, (mcmc_draws - mcmc_burnin)))) # just replicates Y and X over and over
+        # Average per-observation MH acceptance rate from post-burnin draws.
+        # Consecutive equal values indicate a rejection.
+        n_kept <- mcmc_draws - mcmc_burnin
+        accept_rate <- mean(vapply(seq_len(n), function(i) {
+            draws_i <- edraws[((i - 1L) * n_kept + 1L):(i * n_kept)]
+            mean(diff(draws_i) != 0)
+        }, numeric(1L)))
+
+        newids <- unlist(lapply(1:n, function(i) rep(i, n_kept)))
 
         newdta1 <- as.data.frame(cbind(Y = (Y[newids] - edraws), X = X[newids, ], e = edraws))
-
-        # some extra debugging code for acceptance ratio of mh algorithm
-        # newdta1$id <- sapply(strsplit(rownames(newdta1), split="[.]"), function(cc) cc[1])
-        # ib <- iters-burnin
-        # acceptanceratio <- sapply(split(newdta1, f=newdta1$id), function(df) 1-mean(df$e[1:(ib-1)] == df$e[2:ib]))
-        # hist(acceptanceratio)
 
         # Note: this currently just works for one X; will need to update
         qrme_progress(verbose, "  fitting QR including simulated measurement error...")
@@ -363,7 +387,8 @@ em.algo.inner <- function(formula, data,
             bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord,
             mix_n_iter = nm_fit$n_iter,
             mix_loglik = nm_fit$loglik,
-            mix_converged = nm_fit$converged
+            mix_converged = nm_fit$converged,
+            accept_rate = accept_rate
         ))
     } else if (mcmc_method == "ImpSamp") {
         # importance sampling
