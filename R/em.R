@@ -106,8 +106,18 @@ em.algo <- function(formula, data,
     }
 
     counter <- 1
+    criteria <- NA_real_
     ll_old <- NULL       # used only when conv_crit == "loglik"
     consec_count <- 0L   # consecutive iterations satisfying the convergence criterion
+
+    add_convergence_info <- function(obj, n_iter, converged) {
+        obj$n_iter <- n_iter
+        obj$tol <- tol
+        obj$conv_crit <- conv_crit
+        obj$conv_criteria <- criteria
+        obj$conv_converged <- converged
+        obj
+    }
 
     # run em algorithm
     while (counter <= maxit) {
@@ -142,8 +152,7 @@ em.algo <- function(formula, data,
                     consec_count <- consec_count + 1L
                     if (consec_count >= conv_patience) {
                         if (messages) cat("\n algorithm converged\n")
-                        newone$n_iter <- counter
-                        return(newone)
+                        return(add_convergence_info(newone, counter, TRUE))
                     }
                 } else {
                     consec_count <- 0L
@@ -157,8 +166,7 @@ em.algo <- function(formula, data,
                 consec_count <- consec_count + 1L
                 if (consec_count >= conv_patience) {
                     if (messages) cat("\n algorithm converged\n")
-                    newone$n_iter <- counter
-                    return(newone)
+                    return(add_convergence_info(newone, counter, TRUE))
                 }
             } else {
                 consec_count <- 0L
@@ -172,8 +180,7 @@ em.algo <- function(formula, data,
         piguess <- newpi
     }
     cat("\n algorithm failed to converge\n")
-    newone$n_iter <- maxit
-    return(newone)
+    return(add_convergence_info(newone, maxit, FALSE))
 }
 
 #' @title Inner part of EM-algorithm for QR with measurement error

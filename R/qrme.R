@@ -81,6 +81,10 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
   out$y <- y
   out$me_dist <- me_dist
   out$n_iter <- res$n_iter
+  out$tol <- res$tol
+  out$conv_crit <- res$conv_crit
+  out$conv_criteria <- res$conv_criteria
+  out$conv_converged <- res$conv_converged
   #out$Ystar <- res$Ystar
 
   out
@@ -657,6 +661,5 @@ addplot <- function(obj, p, tau=c(.1,.5,.9)) {
                                              color=quantile))
   p
 }
-
 
 
