@@ -37,14 +37,32 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, sta
   } else {
     betvals <- start_beta
   }
+  # Target ME mixture SD: half the outcome SD puts the ME on the right scale
+  # without assuming it dominates the signal.
+  target <- 0.5 * sd(y)
+
   if (is.null(start_mu)) {
-    muvals1 <- seq(-m, m, length.out=m)
-    muvals <- muvals1 - mean(muvals1)
+    if (m == 1L) {
+      muvals <- 0
+    } else {
+      # Spread component means evenly over [-target/2, target/2] and center.
+      # Spanning ±target/2 keeps the means within the variance budget so that
+      # sigma can always be backed out as a meaningful positive value.
+      muvals <- seq(-target / 2, target / 2, length.out = m)
+      muvals <- muvals - mean(muvals)
+    }
   } else {
     muvals <- start_mu
   }
   if (is.null(start_sigma)) {
-    sigvals <- rep(1,m)
+    # Back out sigma from the mixture variance identity with equal weights and
+    # equal component SDs:
+    #   Var(mixture) = sigma^2 + mean(muvals^2)
+    # Setting Var(mixture) = target^2 gives sigma = sqrt(target^2 - mean(muvals^2)).
+    # Floor at target/sqrt(m): the equal-share lower bound if means dominate.
+    var_means <- mean(muvals^2)
+    sigma <- sqrt(max(target^2 - var_means, (target / sqrt(m))^2))
+    sigvals <- rep(sigma, m)
   } else {
     sigvals <- start_sigma
   }
@@ -112,13 +130,17 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, sta
 #'  NULL and in this case, the starting values are set to be the QR
 #'  coefficients coming from QR that ignores measurment error)
 #' @param start_mu A vector of length nmix of starting values for the mean
-#'  of the mixture of normals distribution for the measurment error (default
-#'  is NULL and in this case, the starting values are basically set to be
-#'  equally spaced from -nmix to nmix but forced to have mean 0)
+#'  of each mixture component. When \code{NULL} (default), set to 0 for
+#'  \code{nmix = 1} and to evenly-spaced values on
+#'  \code{[-0.25 * sd(y), 0.25 * sd(y)]} for \code{nmix > 1}, mean-centered
+#'  to satisfy the mean-zero ME constraint.
 #' @param start_sigma A vector of length nmix of starting values for the
-#'  standard deviation of the mixture of normals distribution for the
-#'  measurement error (default is NULL and in this case, the starting values
-#'  are all set to be 1)
+#'  standard deviation of each mixture component. When \code{NULL} (default),
+#'  backed out from the mixture variance identity assuming equal weights and
+#'  equal component SDs targeting a mixture SD of \code{0.5 * sd(y)}:
+#'  \code{sigma = sqrt(max(target^2 - mean(start_mu^2), (target/sqrt(nmix))^2))}.
+#'  This gives \code{0.5 * sd(y)} for \code{nmix = 1} and slightly larger
+#'  values for \code{nmix > 1} (since the component means absorb some variance).
 #' @param start_pi A vector of length nmix of starting values for the fraction
 #'  of observations in each component of the mixture of normals distribution
 #'  for the measurement error (default is NULL and in this case, the starting
