@@ -17,7 +17,7 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                          povline=log(20000), reportQ=c(.1,.5,.9),
                          Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
                          ndraws_ll=1000L, conv_patience=1L, maxit=100L,
-                         mcmc_draws=400, mcmc_burnin=200, proposal_sd=4, ignore_me=FALSE,
+                         mcmc_draws=200, mcmc_burnin=100, proposal_sd=4, ignore_me=FALSE,
                          verbose=FALSE) {
   
   yname <- lhs.vars(Yformla)
@@ -195,8 +195,8 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  convergence criterion before stopping (default 1).
 #' @param maxit Maximum number of EM outer iterations per \code{qrme} call
 #'  (default 100).
-#' @param mcmc_draws total number of MCMC draws per EM step (default 400)
-#' @param mcmc_burnin number of MCMC draws to discard as burnin (default 200)
+#' @param mcmc_draws total number of MCMC draws per EM step (default 200)
+#' @param mcmc_burnin number of MCMC draws to discard as burnin (default 100)
 #' @param proposal_sd standard deviation of the MH proposal
 #' @param ignore_me whether or not to ignore measurement error (this is primarily
 #'  a way to get speedy calculations using copula-based approach)
@@ -222,7 +222,7 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                  reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
                  Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
                  ndraws_ll=1000L, conv_patience=1L, maxit=100L,
-                 mcmc_draws=400, mcmc_burnin=200, proposal_sd=4, ignore_me=FALSE, verbose=FALSE,
+                 mcmc_draws=200, mcmc_burnin=100, proposal_sd=4, ignore_me=FALSE, verbose=FALSE,
                  se=FALSE, n_boot=100, ncores=1) {
 
   res <- compute.tsme(data=data,

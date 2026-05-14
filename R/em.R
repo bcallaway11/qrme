@@ -91,14 +91,17 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
 #'  Default is MH.
 #' @param maxit Maximum number of EM outer iterations. If convergence is not
 #'  reached, the estimates from the final iteration are returned (default is 100)
-#' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
-#'  chosen automatically based on \code{conv_crit}: \code{sqrt(p) * 0.1} where
-#'  \code{p = length(tau) * K + m * 3} and \code{K} is the number of columns
-#'  in the model matrix for \code{"params"}, or \code{1e-2} for
-#'  \code{"loglik"}.  See \code{conv_crit} for the scale of this parameter.
+#' @param tol Convergence tolerance.  When \code{NULL} (default), \code{1e-2}
+#'  is used for both criteria.  For \code{"params"}, \code{tol} is compared
+#'  against \code{max(|theta_new - theta_old| / (1 + |theta_old|))}, the
+#'  maximum scaled parameter change across all parameters; this is
+#'  dimensionless and application-invariant.  For \code{"loglik"}, it is
+#'  compared against the relative log-likelihood change
+#'  \code{|ll_new - ll_old| / |ll_old|}.  Tighten to \code{1e-3} or smaller
+#'  for higher accuracy at the cost of more iterations.
 #' @param conv_crit Convergence criterion.  \code{"params"} (default) stops
-#'  when the Euclidean norm of the change in all parameters falls below
-#'  \code{tol}.  \code{"loglik"} stops when the relative change in the
+#'  when the maximum scaled parameter change falls below \code{tol} (see
+#'  \code{tol} above).  \code{"loglik"} stops when the relative change in the
 #'  observed-data log-likelihood, \code{|ll_new - ll_old| / |ll_old|}, falls
 #'  below \code{tol}; the log-likelihood is evaluated using Monte Carlo
 #'  integration with \code{ndraws_ll} draws per outer iteration.
@@ -127,7 +130,7 @@ em.algo <- function(formula, data,
                     sigguess = 1, mcmc_method = "MH", tol = NULL,
                     conv_crit = "params", ndraws_ll = 1000L,
                     conv_patience = 1L,
-                    mcmc_draws = 400, mcmc_burnin = 200, proposal_sd = NULL, ncores = 1,
+                    mcmc_draws = 200, mcmc_burnin = 100, proposal_sd = NULL, ncores = 1,
                     maxit = 100, verbose = FALSE) {
     # some checks
     if (me_dist == "laplace" & mcmc_method != "MH") {
@@ -158,11 +161,9 @@ em.algo <- function(formula, data,
             # Relative log-likelihood change; 1e-2 is deliberately loose as a starting point
             tol <- 1e-2
         } else {
-            # Euclidean norm scaled to a per-parameter threshold of 0.1:
-            # if all p parameters each change by 0.1, the norm equals sqrt(p)*0.1
-            K <- ncol(x_for_ll)
-            p <- length(tau) * K + m * 3L
-            tol <- sqrt(p) * 0.1
+            # Maximum scaled parameter change; 1e-2 matches the loglik default
+            # and is application-invariant (dimensionless by construction)
+            tol <- 1e-2
         }
     }
 
@@ -234,9 +235,11 @@ em.algo <- function(formula, data,
             }
             ll_old <- ll_new
         } else {
-            criteria <- sqrt(sum(c(newbet - betmatguess, newsig - sigguess, newpi - piguess, newmu - muguess)^2))
-            qrme_progress(verbose, "  convergence criterion value: ", signif(criteria, 4))
-            if (criteria <= tol) { ## Euclidean norm
+            old_params <- c(betmatguess, sigguess, piguess, muguess)
+            new_params <- c(newbet,      newsig,   newpi,   newmu)
+            criteria <- max(abs(new_params - old_params) / (1 + abs(old_params)))
+            qrme_progress(verbose, "  max scaled parameter change: ", signif(criteria, 4))
+            if (criteria <= tol) {
                 consec_count <- consec_count + 1L
                 if (consec_count >= conv_patience) {
                     qrme_progress(verbose, "EM algorithm converged")
@@ -274,7 +277,7 @@ em.algo.inner <- function(formula, data,
                           me_dist = "gaussian",
                           m = 1, pi = 1, mu = 0, sig = 1,
                           mcmc_method = "MH",
-                          mcmc_draws = 400, mcmc_burnin = 200, proposal_sd = NULL, ncores = 1, verbose = FALSE) {
+                          mcmc_draws = 200, mcmc_burnin = 100, proposal_sd = NULL, ncores = 1, verbose = FALSE) {
     xformula <- formula
     xformula[[2]] <- NULL # drop y variable
     X <- model.matrix(xformula, data)
@@ -525,7 +528,7 @@ fv <- function(v, m = 1, pi = 1, mu = 0, sig = 1) {
 #' @param x particular value of x
 #' @return vector of draws of measurement error
 #' @export
-mh_mcmc <- function(startval = 0, mcmc_draws = 500, mcmc_burnin = 100, proposal_sd = NULL, betmat, m, pi, mu, sig, y, x, tau) {
+mh_mcmc <- function(startval = 0, mcmc_draws = 200, mcmc_burnin = 100, proposal_sd = NULL, betmat, m, pi, mu, sig, y, x, tau) {
     x <- t(x)
     out <- rep(NA, mcmc_draws)
     out[1] <- startval

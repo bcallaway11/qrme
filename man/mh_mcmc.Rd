@@ -6,7 +6,7 @@
 \usage{
 mh_mcmc(
   startval = 0,
-  mcmc_draws = 500,
+  mcmc_draws = 200,
   mcmc_burnin = 100,
   proposal_sd = NULL,
   betmat,

@@ -51,7 +51,7 @@ test_that("qrme runs and returns a well-formed merr object", {
   expect_equal(length(fit$pi),  ctrl$nmix)
   expect_true(is.numeric(fit$n_iter) && fit$n_iter >= 1)
   expect_equal(fit$conv_crit, ctrl$conv_crit)
-  expect_equal(fit$tol, sqrt(length(tau) * ncol(model.matrix(Y ~ X, dd)) + 3 * ctrl$nmix) * 0.1)
+  expect_equal(fit$tol, 1e-2)
   expect_true(is.numeric(fit$conv_criteria))
   expect_true(is.logical(fit$conv_converged))
   expect_true(is.numeric(fit$mix_n_iter))

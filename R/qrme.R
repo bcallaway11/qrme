@@ -19,7 +19,7 @@
 #' @export
 compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=NULL, start_mu=NULL,
                          start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
-                         ndraws_ll=1000L, conv_patience=1L, mcmc_draws=400, mcmc_burnin=200, proposal_sd=NULL, ncores=1,
+                         ndraws_ll=1000L, conv_patience=1L, mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL, ncores=1,
                          maxit=100, verbose=FALSE) {
   xformula <- formula
   xformula[[2]] <- NULL ## drop y variable
@@ -136,8 +136,8 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 #' @param conv_patience Integer. Consecutive iterations that must satisfy the
 #'  convergence criterion before stopping (default 1). Setting to 2 guards
 #'  against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.
-#' @param mcmc_draws Total number of MCMC draws per EM step (default 400)
-#' @param mcmc_burnin Number of MCMC draws to discard as burnin (default 200)
+#' @param mcmc_draws Total number of MCMC draws per EM step (default 200)
+#' @param mcmc_burnin Number of MCMC draws to discard as burnin (default 100)
 #' @param proposal_sd Standard deviation of the Metropolis-Hastings proposal
 #'  (random-walk step size) or the importance-sampling proposal. When
 #'  \code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
@@ -160,7 +160,7 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 #' @export
 qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=NULL, start_mu=NULL,
                  start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
-                 ndraws_ll=1000L, conv_patience=1L, mcmc_draws=400, mcmc_burnin=200, proposal_sd=NULL, ncores=1,
+                 ndraws_ll=1000L, conv_patience=1L, mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL, ncores=1,
                  maxit=100, se=FALSE, n_boot=100, verbose=FALSE) {
 
 

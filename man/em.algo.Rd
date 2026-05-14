@@ -19,8 +19,8 @@ em.algo(
   conv_crit = "params",
   ndraws_ll = 1000L,
   conv_patience = 1L,
-  mcmc_draws = 400,
-  mcmc_burnin = 200,
+  mcmc_draws = 200,
+  mcmc_burnin = 100,
   proposal_sd = NULL,
   ncores = 1,
   maxit = 100,
@@ -56,15 +56,18 @@ component (should have length equal to k)}
 in EM algorithm.  "MH" for MH, and "ImpSamp" for importance sampling.
 Default is MH.}
 
-\item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
-chosen automatically based on \code{conv_crit}: \code{sqrt(p) * 0.1} where
-\code{p = length(tau) * K + m * 3} and \code{K} is the number of columns
-in the model matrix for \code{"params"}, or \code{1e-2} for
-\code{"loglik"}.  See \code{conv_crit} for the scale of this parameter.}
+\item{tol}{Convergence tolerance.  When \code{NULL} (default), \code{1e-2}
+is used for both criteria.  For \code{"params"}, \code{tol} is compared
+against \code{max(|theta_new - theta_old| / (1 + |theta_old|))}, the
+maximum scaled parameter change across all parameters; this is
+dimensionless and application-invariant.  For \code{"loglik"}, it is
+compared against the relative log-likelihood change
+\code{|ll_new - ll_old| / |ll_old|}.  Tighten to \code{1e-3} or smaller
+for higher accuracy at the cost of more iterations.}
 
 \item{conv_crit}{Convergence criterion.  \code{"params"} (default) stops
-when the Euclidean norm of the change in all parameters falls below
-\code{tol}.  \code{"loglik"} stops when the relative change in the
+when the maximum scaled parameter change falls below \code{tol} (see
+\code{tol} above).  \code{"loglik"} stops when the relative change in the
 observed-data log-likelihood, \code{|ll_new - ll_old| / |ll_old|}, falls
 below \code{tol}; the log-likelihood is evaluated using Monte Carlo
 integration with \code{ndraws_ll} draws per outer iteration.}
@@ -80,9 +83,9 @@ satisfy the convergence criterion before the algorithm stops. Default is
 iterations below \code{tol}, guarding against false convergence caused by
 Monte Carlo noise in the log-likelihood or parameter updates.}
 
-\item{mcmc_draws}{Total number of MCMC draws per EM step (default 400)}
+\item{mcmc_draws}{Total number of MCMC draws per EM step (default 200)}
 
-\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 200)}
+\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 100)}
 
 \item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
 (random-walk step size) or the importance-sampling proposal. When

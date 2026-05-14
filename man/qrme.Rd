@@ -21,8 +21,8 @@ qrme(
   conv_crit = "params",
   ndraws_ll = 1000L,
   conv_patience = 1L,
-  mcmc_draws = 400,
-  mcmc_burnin = 200,
+  mcmc_draws = 200,
+  mcmc_burnin = 100,
   proposal_sd = NULL,
   ncores = 1,
   maxit = 100,
@@ -80,9 +80,9 @@ Ignored when \code{conv_crit = "params"}.}
 convergence criterion before stopping (default 1). Setting to 2 guards
 against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.}
 
-\item{mcmc_draws}{Total number of MCMC draws per EM step (default 400)}
+\item{mcmc_draws}{Total number of MCMC draws per EM step (default 200)}
 
-\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 200)}
+\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 100)}
 
 \item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
 (random-walk step size) or the importance-sampling proposal. When
