@@ -18,7 +18,7 @@ qr2me(
   Qtx,
   retFytxlist = FALSE,
   ndraws = 100,
-  messages = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -57,8 +57,11 @@ for every value of x in xdf
 \item{ndraws}{number of draws to use in MH algorithm to estimate first
 step quantile regressions (default 250)}
 
-\item{messages}{whether or not to report details of computation as they
-occur (default is \code{FALSE})}
+\item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
+suppresses progress output. If \code{TRUE} or \code{1}, reports major
+computational stages and EM convergence diagnostics. If \code{2} or larger,
+also reports detailed finite-mixture EM output and the no-measurement-error
+comparison copula step.}
 }
 \description{
 Estimates QR parameters in the case with measurement error

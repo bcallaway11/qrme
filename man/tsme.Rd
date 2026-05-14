@@ -32,7 +32,7 @@ tsme(
   mcmc_burnin = 200,
   proposal_sd = 4,
   ignore_me = FALSE,
-  messages = FALSE,
+  verbose = FALSE,
   se = FALSE,
   n_boot = 100,
   ncores = 1
@@ -113,8 +113,11 @@ convergence criterion before stopping (default 1).}
 \item{ignore_me}{whether or not to ignore measurement error (this is primarily
 a way to get speedy calculations using copula-based approach)}
 
-\item{messages}{whether or not to report details of computation as they
-occur (default is \code{FALSE})}
+\item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
+suppresses progress output. If \code{TRUE} or \code{1}, reports major
+computational stages and EM convergence diagnostics. If \code{2} or larger,
+also reports detailed finite-mixture EM output and the no-measurement-error
+comparison copula step.}
 
 \item{se}{whether or not to estimate standard errors using the boostrap
 (default is FALSE)}

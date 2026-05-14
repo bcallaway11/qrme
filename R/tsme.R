@@ -18,7 +18,7 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                          Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
                          ndraws_ll=1000L, conv_patience=1L, maxit=100L,
                          mcmc_draws=400, mcmc_burnin=200, proposal_sd=4, ignore_me=FALSE,
-                         messages=FALSE) {
+                         verbose=FALSE) {
   
   yname <- lhs.vars(Yformla)
   tname <- lhs.vars(Tformla)
@@ -28,16 +28,19 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
   meres <- NULL
   
   if (!ignore_me) {
+    qrme_progress(verbose, "tsme first stage: outcome measurement-error model")
     Qyx <- qrme(Yformla, data=data, tau=tau, me_dist=me_dist, nmix=Ynmix, mcmc_method=mcmc_method,
                 tol=tol, conv_crit=conv_crit, ndraws_ll=ndraws_ll, conv_patience=conv_patience,
                 mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd,
-                maxit=maxit, messages=messages, se=FALSE) # don't bootstrap these
+                maxit=maxit, verbose=verbose, se=FALSE) # don't bootstrap these
+    qrme_progress(verbose, "tsme first stage: treatment measurement-error model")
     Qtx  <- qrme(Tformla, data=data, tau=tau, me_dist=me_dist, nmix=Tnmix, mcmc_method=mcmc_method,
                  tol=tol, conv_crit=conv_crit, ndraws_ll=ndraws_ll, conv_patience=conv_patience,
                  mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd,
-                 maxit=maxit, messages=messages, se=FALSE)
+                 maxit=maxit, verbose=verbose, se=FALSE)
 
     # now get joint distribution
+    qrme_progress(verbose, "tsme second stage: measurement-error copula model")
     meres <- qr2me(yname=yname,
                    tname=tname,
                    xformla=Yformla,
@@ -51,7 +54,7 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                    Qtx=Qtx,
                    ndraws=ndraws,
                    retFytxlist=FALSE,
-                   messages=FALSE)
+                   verbose=verbose)
   }
   
  
@@ -69,7 +72,7 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                    tvals=tvals, xdf=xdf, ndraws=ndraws,
                    copula=copType, 
                    Qyx=rqyx, Qtx=rqtx, retFytxlist=FALSE,
-                   messages=FALSE)
+                   verbose=qrme_verbose_level(verbose) >= 2L)
 
 
 
@@ -129,6 +132,9 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
               conv_crit=c(Y=Qyx$conv_crit, T=Qtx$conv_crit),
               conv_criteria=c(Y=Qyx$conv_criteria, T=Qtx$conv_criteria),
               conv_converged=c(Y=Qyx$conv_converged, T=Qtx$conv_converged),
+              mix_n_iter=c(Y=Qyx$mix_n_iter, T=Qtx$mix_n_iter),
+              mix_loglik=c(Y=Qyx$mix_loglik, T=Qtx$mix_loglik),
+              mix_converged=c(Y=Qyx$mix_converged, T=Qtx$mix_converged),
               meQyx=Qyx, meQtx=Qtx, meresQ=meresQ, 
               nomeQyx=rqyx, nomeQtx=rqtx, nomeresQ=nomeresQ, 
               qrytxQ=qrytxQ, qrytx=qrytx,
@@ -194,8 +200,11 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #' @param proposal_sd standard deviation of the MH proposal
 #' @param ignore_me whether or not to ignore measurement error (this is primarily
 #'  a way to get speedy calculations using copula-based approach)
-#' @param messages whether or not to report details of computation as they
-#'  occur (default is \code{FALSE})
+#' @param verbose Logical or nonnegative integer. If \code{FALSE} (default),
+#'  suppresses progress output. If \code{TRUE} or \code{1}, reports major
+#'  computational stages and EM convergence diagnostics. If \code{2} or larger,
+#'  also reports detailed finite-mixture EM output and the no-measurement-error
+#'  comparison copula step.
 #' @param se whether or not to estimate standard errors using the boostrap
 #'  (default is FALSE)
 #' @param n_boot if computing standard errors, the number of bootstrap iterations
@@ -213,7 +222,7 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                  reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
                  Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
                  ndraws_ll=1000L, conv_patience=1L, maxit=100L,
-                 mcmc_draws=400, mcmc_burnin=200, proposal_sd=4, ignore_me=FALSE, messages=FALSE,
+                 mcmc_draws=400, mcmc_burnin=200, proposal_sd=4, ignore_me=FALSE, verbose=FALSE,
                  se=FALSE, n_boot=100, ncores=1) {
 
   res <- compute.tsme(data=data,
@@ -243,7 +252,7 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                       mcmc_burnin=mcmc_burnin,
                       proposal_sd=proposal_sd,
                       ignore_me=ignore_me,
-                      messages=messages)
+                      verbose=verbose)
   
 
   if (se) {
@@ -274,11 +283,11 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                             conv_crit=conv_crit,
                             ndraws_ll=ndraws_ll,
                             conv_patience=conv_patience,
-                            maxit=maxit,
-                            mcmc_draws=mcmc_draws,
-                            mcmc_burnin=mcmc_burnin,
-                            proposal_sd=proposal_sd,
-                            messages=messages)
+                              maxit=maxit,
+                              mcmc_draws=mcmc_draws,
+                              mcmc_burnin=mcmc_burnin,
+                              proposal_sd=proposal_sd,
+                              verbose=FALSE)
         out
       }, error=function(cond) {
         return(NULL) # use this as code for error on that bootstrap iteration

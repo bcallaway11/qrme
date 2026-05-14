@@ -19,7 +19,7 @@ em.algo.inner(
   mcmc_burnin = 200,
   proposal_sd = NULL,
   ncores = 1,
-  messages = FALSE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -63,8 +63,10 @@ override.}
 
 \item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
 
-\item{messages}{Whether or not to report details of estimation procedure
-(default is FALSE)}
+\item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
+suppresses progress output. If \code{TRUE} or \code{1}, reports major
+computational stages and EM convergence diagnostics. If \code{2} or larger,
+also reports detailed finite-mixture EM output from \code{normalmixEM()}.}
 }
 \value{
 A list of QR parameters and parameters for mixture of normals for

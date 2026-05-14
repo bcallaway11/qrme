@@ -20,7 +20,7 @@
 compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=NULL, start_mu=NULL,
                          start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
                          ndraws_ll=1000L, conv_patience=1L, mcmc_draws=400, mcmc_burnin=200, proposal_sd=NULL, ncores=1,
-                         maxit=100, messages=FALSE) {
+                         maxit=100, verbose=FALSE) {
   xformula <- formula
   xformula[[2]] <- NULL ## drop y variable
   x <- model.matrix(xformula, data)
@@ -65,7 +65,7 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
                  conv_crit=conv_crit, ndraws_ll=ndraws_ll,
                  conv_patience=conv_patience,
                  mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd, ncores=ncores,
-                 maxit=maxit, messages=messages)
+                 maxit=maxit, verbose=verbose)
 
 
   out <- makeRQS(res, formula, data, tau=tau)
@@ -85,6 +85,9 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
   out$conv_crit <- res$conv_crit
   out$conv_criteria <- res$conv_criteria
   out$conv_converged <- res$conv_converged
+  out$mix_n_iter <- res$mix_n_iter
+  out$mix_loglik <- res$mix_loglik
+  out$mix_converged <- res$mix_converged
   #out$Ystar <- res$Ystar
 
   out
@@ -146,8 +149,10 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 #' @param se Whether or not to compute standard errors using the bootstrap
 #'  (default is FALSE)
 #' @param n_boot Number of bootstrap iterations for standard errors (default 100)
-#' @param messages Whether or not to report details of estimation procedure
-#'  (default is FALSE)
+#' @param verbose Logical or nonnegative integer. If \code{FALSE} (default),
+#'  suppresses progress output. If \code{TRUE} or \code{1}, reports major
+#'  computational stages and EM convergence diagnostics. If \code{2} or larger,
+#'  also reports detailed finite-mixture EM output from \code{normalmixEM()}.
 #' 
 #' @return an object of class "merr". Supports \code{logLik()}, \code{AIC()},
 #'   and \code{BIC()} for comparing fits across different starting values.
@@ -156,7 +161,7 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, sta
 qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=NULL, start_mu=NULL,
                  start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
                  ndraws_ll=1000L, conv_patience=1L, mcmc_draws=400, mcmc_burnin=200, proposal_sd=NULL, ncores=1,
-                 maxit=100, se=FALSE, n_boot=100, messages=FALSE) {
+                 maxit=100, se=FALSE, n_boot=100, verbose=FALSE) {
 
 
 
@@ -179,7 +184,7 @@ qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=
                       proposal_sd=proposal_sd,
                       ncores=ncores,
                       maxit=maxit,
-                      messages=messages)
+                      verbose=verbose)
 
   if (se) {
     eachIter <- pbapply::pblapply(1:n_boot, function(b) {
@@ -202,10 +207,10 @@ qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=
                             ndraws_ll=ndraws_ll,
                             conv_patience=conv_patience,
                             mcmc_draws=mcmc_draws,
-                            mcmc_burnin=mcmc_burnin,
-                            proposal_sd=proposal_sd,
-                            ncores=1,
-                            maxit=maxit)
+                              mcmc_burnin=mcmc_burnin,
+                              proposal_sd=proposal_sd,
+                              ncores=1,
+                              maxit=maxit)
         out$Ystar=NULL ## just drop this because it takes up a lot of memory
         out
       }, error=function(cond) {
@@ -259,16 +264,20 @@ qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=3, start_beta=
 #' @inheritParams tsme
 #' @inheritParams qrme
 qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
-                  me_dist="gaussian", copula="gaussian",
-                  Qyx, Qtx, retFytxlist=FALSE,
-                  ndraws=100, messages=TRUE) {
+                    me_dist="gaussian", copula="gaussian",
+                    Qyx, Qtx, retFytxlist=FALSE,
+                    ndraws=100, verbose=FALSE) {
 
-  if (messages) {
-    cat("\nqr2me method...\n")
-    cat("----------------------")
-    cat("\nCitation: Callaway, Brantly, Tong Li, Irina Murtazashvili, and Emmanuel Tsyawo, Distributional Effects with Two-Sided Measurement Error: An Application to Intergenerational Income Mobility, Working Paper, 2025....\n")
-    cat("----------------------")
-    cat("\n")
+  if (qrme_verbose_level(verbose) >= 1L) {
+    message("qr2me method")
+    message("----------------------")
+    message(
+      "Citation: Callaway, Brantly, Tong Li, Irina Murtazashvili, ",
+      "and Emmanuel Tsyawo, Distributional Effects with Two-Sided ",
+      "Measurement Error: An Application to Intergenerational Income ",
+      "Mobility, Working Paper, 2025."
+    )
+    message("----------------------")
   }
   
   x <- model.matrix(xformla, data)
@@ -307,7 +316,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   ## fyx <- predict(Qyx, newdata=as.data.frame(x), type="fhat")
   ## ftx <- predict(Qyx, newdata=as.data.frame(x), type="fhat")
 
-  if (messages) cat("Step 1 of 3: Converting QR to conditional density estimates...\n")
+  qrme_progress(verbose, "Step 1 of 3: converting QR to conditional density estimates...")
   ##fyx1 <- pbsapply(unique(data[,yname]), fy.x, betmat=t(coef(Qyx)), XX=x, tau=tau)
   fyx1 <- fYXmatC(Y=unique(data[,yname]), betmat=t(coef(Qyx)), X=x, tau=tau)
   eps <- 1e-300 ##.Machine$double.eps
@@ -336,7 +345,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   }
 
   ################################################################
-  if (messages) cat("\nStep 2 of 3: Estimating copula parameter...\n")
+  qrme_progress(verbose, "Step 2 of 3: estimating copula parameter...")
   ################################################################
 
   if (copula=="frank") {
@@ -388,7 +397,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   # compute conditional distributions if values of the treatment are specified
   if (!is.null(tvals)) {
     
-    if (messages) cat("\nStep 3 of 3: Building conditional distributions...\n")
+    qrme_progress(verbose, "Step 3 of 3: building conditional distributions...")
     ## If you don't set particular values of X to compute,
     ## just set it equal to the average values of X in the dataset
     ##if (is.null(xdf)) xdf <- as.data.frame(t(apply(x,2,mean))) ##x, for all data
@@ -661,5 +670,3 @@ addplot <- function(obj, p, tau=c(.1,.5,.9)) {
                                              color=quantile))
   p
 }
-
-

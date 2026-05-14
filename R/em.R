@@ -8,6 +8,67 @@
 # Date created: 2026-05-07
 # =============================================================================
 
+qrme_verbose_level <- function(verbose) {
+  if (isTRUE(verbose)) {
+    return(1L)
+  }
+  if (isFALSE(verbose) || is.null(verbose)) {
+    return(0L)
+  }
+  level <- suppressWarnings(as.integer(verbose[1]))
+  if (is.na(level) || level < 0L) {
+    stop("verbose must be TRUE, FALSE, or a nonnegative integer")
+  }
+  level
+}
+
+qrme_progress <- function(verbose, ..., level = 1L) {
+  if (qrme_verbose_level(verbose) >= level) {
+    message(..., appendLF = TRUE)
+  }
+}
+
+fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
+  if (m == 1) {
+    return(list(
+      fit = list(m = 1, lambda = 1, mu = 0, sigma = sd(x)),
+      n_iter = 0L,
+      loglik = NA_real_,
+      converged = TRUE
+    ))
+  }
+
+  nm <- NULL
+  nm_output <- capture.output({
+    nm <- mixtools::normalmixEM(
+      x,
+      k = m,
+      epsilon = epsilon,
+      verb = qrme_verbose_level(verbose) >= 2L
+    )
+  })
+
+  if (qrme_verbose_level(verbose) >= 2L && length(nm_output) > 0L) {
+    message(paste(nm_output, collapse = "\n"))
+  }
+
+  not_converged <- any(grepl("NOT CONVERGENT", nm_output))
+  mix_iter <- max(length(nm$all.loglik) - 1L, 0L)
+  qrme_progress(
+    verbose,
+    "  finite mixture iterations: ", mix_iter,
+    "; log-likelihood: ", round(nm$loglik, 4),
+    "; converged: ", !not_converged
+  )
+
+  list(
+    fit = nm,
+    n_iter = mix_iter,
+    loglik = nm$loglik,
+    converged = !not_converged
+  )
+}
+
 
 #' @title em.algo
 #'
@@ -67,7 +128,7 @@ em.algo <- function(formula, data,
                     conv_crit = "params", ndraws_ll = 1000L,
                     conv_patience = 1L,
                     mcmc_draws = 400, mcmc_burnin = 200, proposal_sd = NULL, ncores = 1,
-                    maxit = 100, messages = FALSE) {
+                    maxit = 100, verbose = FALSE) {
     # some checks
     if (me_dist == "laplace" & mcmc_method != "MH") {
         stop("Laplace distribution only supported with MH algorithm")
@@ -111,6 +172,12 @@ em.algo <- function(formula, data,
     consec_count <- 0L   # consecutive iterations satisfying the convergence criterion
 
     add_convergence_info <- function(obj, n_iter, converged) {
+        if (isFALSE(obj$mix_converged)) {
+            warning(
+                "Finite mixture model did not converge in the final EM iteration",
+                call. = FALSE
+            )
+        }
         obj$n_iter <- n_iter
         obj$tol <- tol
         obj$conv_crit <- conv_crit
@@ -119,8 +186,15 @@ em.algo <- function(formula, data,
         obj
     }
 
+    qrme_progress(verbose, "QRME EM algorithm")
+    qrme_progress(verbose, "  convergence criterion: ", conv_crit)
+    qrme_progress(verbose, "  tolerance: ", signif(tol, 4))
+    qrme_progress(verbose, "  max iterations: ", maxit)
+    qrme_progress(verbose, "  MCMC draws: ", mcmc_draws, "; burnin: ", mcmc_burnin)
+
     # run em algorithm
     while (counter <= maxit) {
+        qrme_progress(verbose, "Iteration ", counter, "/", maxit)
         newone <- em.algo.inner(formula, data,
             betmatguess, tau,
             me_dist,
@@ -129,29 +203,29 @@ em.algo <- function(formula, data,
             mcmc_draws = mcmc_draws, mcmc_burnin = mcmc_burnin,
             proposal_sd = proposal_sd,
             ncores = ncores,
-            messages = messages
+            verbose = verbose
         )
         newbet <- newone$bet
         newpi <- newone$pi
         newmu <- newone$mu
         newsig <- newone$sig
 
-        if (messages) {
-            cat("\n\n\nIteration: ", counter, "\n pi: ", newpi, "\n mu: ", newmu, "\n sig: ", newsig, "\n\n")
-        }
+        qrme_progress(verbose, "  pi: ", paste(signif(newpi, 4), collapse = ", "))
+        qrme_progress(verbose, "  mu: ", paste(signif(newmu, 4), collapse = ", "))
+        qrme_progress(verbose, "  sig: ", paste(signif(newsig, 4), collapse = ", "))
 
         if (conv_crit == "loglik") {
             ll_new <- loglik_raw(y_for_ll, x_for_ll, newbet, tau,
                                  newpi, newmu, newsig, me_dist, ndraws = ndraws_ll)
-            if (messages) cat(" log-likelihood: ", round(ll_new, 4), "\n")
+            qrme_progress(verbose, "  log-likelihood: ", round(ll_new, 4))
             # Skip convergence check on first iteration (no ll_old yet)
             if (!is.null(ll_old)) {
                 criteria <- abs(ll_new - ll_old) / abs(ll_old)
-                if (messages) cat(" relative log-likelihood change: ", criteria, "\n\n")
+                qrme_progress(verbose, "  relative log-likelihood change: ", signif(criteria, 4))
                 if (criteria <= tol) {
                     consec_count <- consec_count + 1L
                     if (consec_count >= conv_patience) {
-                        if (messages) cat("\n algorithm converged\n")
+                        qrme_progress(verbose, "EM algorithm converged")
                         return(add_convergence_info(newone, counter, TRUE))
                     }
                 } else {
@@ -161,11 +235,11 @@ em.algo <- function(formula, data,
             ll_old <- ll_new
         } else {
             criteria <- sqrt(sum(c(newbet - betmatguess, newsig - sigguess, newpi - piguess, newmu - muguess)^2))
-            if (messages) cat(" convergence criteria: ", criteria, "\n\n")
+            qrme_progress(verbose, "  convergence criterion value: ", signif(criteria, 4))
             if (criteria <= tol) { ## Euclidean norm
                 consec_count <- consec_count + 1L
                 if (consec_count >= conv_patience) {
-                    if (messages) cat("\n algorithm converged\n")
+                    qrme_progress(verbose, "EM algorithm converged")
                     return(add_convergence_info(newone, counter, TRUE))
                 }
             } else {
@@ -179,7 +253,7 @@ em.algo <- function(formula, data,
         muguess <- newmu
         piguess <- newpi
     }
-    cat("\n algorithm failed to converge\n")
+    warning("EM algorithm failed to converge after ", maxit, " iterations", call. = FALSE)
     return(add_convergence_info(newone, maxit, FALSE))
 }
 
@@ -200,7 +274,7 @@ em.algo.inner <- function(formula, data,
                           me_dist = "gaussian",
                           m = 1, pi = 1, mu = 0, sig = 1,
                           mcmc_method = "MH",
-                          mcmc_draws = 400, mcmc_burnin = 200, proposal_sd = NULL, ncores = 1, messages = FALSE) {
+                          mcmc_draws = 400, mcmc_burnin = 200, proposal_sd = NULL, ncores = 1, verbose = FALSE) {
     xformula <- formula
     xformula[[2]] <- NULL # drop y variable
     X <- model.matrix(xformula, data)
@@ -208,9 +282,7 @@ em.algo.inner <- function(formula, data,
     Y <- data[, yname]
     k <- ncol(X) # number of x variables
     n <- length(Y)
-    if (messages) {
-        cat("\nSimulating measurement error...")
-    }
+    qrme_progress(verbose, "  simulating measurement error...")
 
     if (mcmc_method == "MH") {
         startval <- 0
@@ -232,9 +304,7 @@ em.algo.inner <- function(formula, data,
         # hist(acceptanceratio)
 
         # Note: this currently just works for one X; will need to update
-        if (messages) {
-            cat("\nEstimating QR including simulated measurement error...")
-        }
+        qrme_progress(verbose, "  fitting QR including simulated measurement error...")
         # newdta1 <- do.call(rbind.data.frame, newdta)
         colnames(newdta1) <- c(yname, colnames(X), "e")
 
@@ -255,14 +325,9 @@ em.algo.inner <- function(formula, data,
         )
         # this is part I am not sure about, once you have a new beta then estimate a new sigma??
         # also should probably restrict overall mean of measurement error term to be equal to 0
-        if (messages) {
-            cat("\nEstimating finite mixture model...")
-        }
-        if (m == 1) {
-            nm <- list(m = 1, lambda = 1, mu = 0, sigma = sd(newdta1$e))
-        } else {
-            nm <- mixtools::normalmixEM(newdta1$e, k = m, epsilon = 1e-03)
-        }
+        qrme_progress(verbose, "  fitting finite mixture model...")
+        nm_fit <- fit_normal_mixture(newdta1$e, m = m, epsilon = 1e-03, verbose = verbose)
+        nm <- nm_fit$fit
         nmorder <- order(nm$mu) # reorder results by mean of each component
         pi_ord  <- nm$lambda[nmorder]
         mu_ord  <- nm$mu[nmorder]
@@ -282,7 +347,12 @@ em.algo.inner <- function(formula, data,
         bet_out      <- t(coef(out))
         bet_out[, 1] <- bet_out[, 1] + delta  # column 1 is always the intercept
 
-        return(list(bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord))
+        return(list(
+            bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord,
+            mix_n_iter = nm_fit$n_iter,
+            mix_loglik = nm_fit$loglik,
+            mix_converged = nm_fit$converged
+        ))
     } else if (mcmc_method == "ImpSamp") {
         # importance sampling
         edraws <- rnorm((mcmc_draws * n), 0, proposal_sd)
@@ -299,9 +369,7 @@ em.algo.inner <- function(formula, data,
         newdta1$w <- sapply(1:length(edraws), function(i) max(1e-05, newdta1$w[i])) # drop negative weights (not many of these...)
         # run weighted quantile regression
         out <- quantreg::rq(formula, tau = tau, data = newdta1, method = "fn", weights = newdta1$w)
-        if (messages) {
-            cat("\nEstimating finite mixture model...")
-        }
+        qrme_progress(verbose, "  fitting finite mixture model...")
         ##
         # need to make actual draws here
         ##
@@ -313,11 +381,8 @@ em.algo.inner <- function(formula, data,
         Ystar <- c(t(X %*% coef(out)))
         # finally, recover draws of measurement error
         U <- Y[newids] - Ystar
-        if (m == 1) {
-            nm <- list(m = 1, lambda = 1, mu = 0, sigma = sd(U))
-        } else {
-            nm <- mixtools::normalmixEM(U, k = m, epsilon = 1e-03)
-        }
+        nm_fit <- fit_normal_mixture(U, m = m, epsilon = 1e-03, verbose = verbose)
+        nm <- nm_fit$fit
         nmorder <- order(nm$mu) # reorder results by mean of each component
         pi_ord  <- nm$lambda[nmorder]
         mu_ord  <- nm$mu[nmorder]
@@ -329,7 +394,12 @@ em.algo.inner <- function(formula, data,
         bet_out      <- t(coef(out))
         bet_out[, 1] <- bet_out[, 1] + delta
 
-        return(list(bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord))
+        return(list(
+            bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord,
+            mix_n_iter = nm_fit$n_iter,
+            mix_loglik = nm_fit$loglik,
+            mix_converged = nm_fit$converged
+        ))
     } else {
         stop("provided mcmc_method not supported")
     }

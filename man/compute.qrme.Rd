@@ -24,7 +24,7 @@ compute.qrme(
   proposal_sd = NULL,
   ncores = 1,
   maxit = 100,
-  messages = FALSE
+  verbose = FALSE
 )
 }
 \description{

@@ -51,7 +51,7 @@ test_that("qrme coefficients are close to true values", {
     conv_crit   = "params",
     maxit       = 100L,
     se          = FALSE,
-    messages    = FALSE
+    verbose     = FALSE
   )
 
   est   <- fit$bet                        # tau x 2 matrix: intercept, slope
@@ -80,7 +80,7 @@ test_that("qrme bootstrap runs and attaches SE fields", {
     maxit       = 20L,
     se          = TRUE,
     n_boot      = 3L,
-    messages    = FALSE
+    verbose     = FALSE
   )
 
   expect_true(!is.null(fit$sig.se))

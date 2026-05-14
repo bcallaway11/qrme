@@ -36,7 +36,7 @@ ctrl <- list(
   mcmc_burnin   = 50L,
   conv_crit     = "params",
   maxit         = 20L,
-  messages      = FALSE
+  verbose       = FALSE
 )
 
 # --- Test 1: qrme -------------------------------------------------------------
@@ -54,8 +54,61 @@ test_that("qrme runs and returns a well-formed merr object", {
   expect_equal(fit$tol, sqrt(length(tau) * ncol(model.matrix(Y ~ X, dd)) + 3 * ctrl$nmix) * 0.1)
   expect_true(is.numeric(fit$conv_criteria))
   expect_true(is.logical(fit$conv_converged))
+  expect_true(is.numeric(fit$mix_n_iter))
+  expect_true(is.logical(fit$mix_converged))
   expect_true(all(fit$sig > 0))
   expect_true(all(fit$pi  > 0) && abs(sum(fit$pi) - 1) < 1e-8)
+})
+
+test_that("qrme controls finite-mixture output and reports progress", {
+  fit <- NULL
+  expect_output(
+    fit <- qrme(
+      formula = Y ~ X,
+      data = dd,
+      tau = tau[c(2, 4)],
+      nmix = 2L,
+      tol = Inf,
+      maxit = 1L,
+      mcmc_draws = 40L,
+      mcmc_burnin = 20L,
+      verbose = FALSE
+    ),
+    NA
+  )
+  expect_s3_class(fit, "merr")
+  expect_true(is.numeric(fit$mix_n_iter))
+  expect_true(is.logical(fit$mix_converged))
+
+  expect_message(
+    qrme(
+      formula = Y ~ X,
+      data = dd,
+      tau = tau[c(2, 4)],
+      nmix = 1L,
+      tol = Inf,
+      maxit = 1L,
+      mcmc_draws = 40L,
+      mcmc_burnin = 20L,
+      verbose = TRUE
+    ),
+    "QRME EM algorithm"
+  )
+
+  expect_warning(
+    qrme(
+      formula = Y ~ X,
+      data = dd,
+      tau = tau[c(2, 4)],
+      nmix = 1L,
+      tol = 0,
+      maxit = 1L,
+      mcmc_draws = 40L,
+      mcmc_burnin = 20L,
+      verbose = FALSE
+    ),
+    "EM algorithm failed to converge"
+  )
 })
 
 # --- Test 2: tsme -------------------------------------------------------------
@@ -76,7 +129,7 @@ test_that("tsme runs and returns a well-formed result list", {
     mcmc_burnin = ctrl$mcmc_burnin,
     conv_crit = ctrl$conv_crit,
     se        = FALSE,
-    messages  = FALSE
+    verbose   = FALSE
   )
 
   expect_type(res, "list")
@@ -87,6 +140,8 @@ test_that("tsme runs and returns a well-formed result list", {
   expect_equal(res$conv_crit[["Y"]], ctrl$conv_crit)
   expect_true(is.numeric(res$conv_criteria))
   expect_true(is.logical(res$conv_converged))
+  expect_true(is.numeric(res$mix_n_iter))
+  expect_true(is.logical(res$mix_converged))
   expect_true(is.numeric(res$meCopParam))
   expect_true(res$meCopParam >= 0 && res$meCopParam <= 1)
   expect_true(is.matrix(res$meTmat))

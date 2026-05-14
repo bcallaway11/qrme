@@ -28,7 +28,7 @@ qrme(
   maxit = 100,
   se = FALSE,
   n_boot = 100,
-  messages = FALSE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -100,8 +100,10 @@ reached, the estimates from the final iteration are returned (default is 100)}
 
 \item{n_boot}{Number of bootstrap iterations for standard errors (default 100)}
 
-\item{messages}{Whether or not to report details of estimation procedure
-(default is FALSE)}
+\item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
+suppresses progress output. If \code{TRUE} or \code{1}, reports major
+computational stages and EM convergence diagnostics. If \code{2} or larger,
+also reports detailed finite-mixture EM output from \code{normalmixEM()}.}
 }
 \value{
 an object of class "merr". Supports \code{logLik()}, \code{AIC()},
