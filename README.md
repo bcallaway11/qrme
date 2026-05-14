@@ -95,6 +95,47 @@ res$meTmat
 copula to estimate joint distributions and mobility parameters such as
 quantile-on-quantile transition matrices and poverty measures.
 
+## Tuning parameters
+
+The EM algorithm involves several parameters with different roles. The
+table below groups them by the nature of their tradeoff.
+
+| Parameter       | Default       | Role                                                                                    |
+|-----------------|---------------|-----------------------------------------------------------------------------------------|
+| `tol`           | `1e-2`        | Pure speed–accuracy: loosen to converge faster, tighten for more precise estimates      |
+| `maxit`         | `100`         | Hard iteration cap; does not affect per-iteration cost                                  |
+| `conv_patience` | `1`           | Consecutive iterations below `tol` required; raise to 2 if using `conv_crit = "loglik"` |
+| `mcmc_draws`    | `200`         | **Fundamental tradeoff**: more draws = better E-step but slower per iteration           |
+| `mcmc_burnin`   | `100`         | Burn-in fraction of `mcmc_draws`; 30–50% is typical                                     |
+| `ndraws_ll`     | `100`         | MC draws for log-likelihood convergence check; ignored when `conv_crit = "params"`      |
+| `proposal_sd`   | adaptive      | MH step size; auto-updated each iteration to track the current ME scale                 |
+| `nmix`          | `1`           | Number of mixture components — a model choice, not a tuning parameter                   |
+| `start_beta`    | naive QR      | Defaults to QR ignoring ME, which is consistent under symmetric error                   |
+| `start_mu`      | data-informed | Evenly spaced over ±0.25 sd(Y) for nmix \> 1; 0 for nmix = 1                            |
+| `start_sigma`   | data-informed | Backed out so the mixture SD equals 0.5 sd(Y)                                           |
+| `start_pi`      | uniform       | Equal weights across components                                                         |
+
+**`mcmc_draws` and `mcmc_burnin`** are the most consequential
+parameters. Too few effective draws (= `mcmc_draws − mcmc_burnin`) per
+observation produces a noisy E-step, which can cause the outer EM to
+wander or fail to converge — this is a correctness problem, not just a
+speed problem. The defaults of 200/100 work well in most settings;
+reduce only for exploratory runs.
+
+**`proposal_sd`** controls the Metropolis–Hastings step size and
+determines the effective sample size of the MCMC chain. By default it is
+initialised from the starting ME parameters and updated each EM
+iteration to track the current ME distribution scale. A healthy
+acceptance rate is roughly 20–70%; the acceptance rate is printed at
+`verbose = 2` and a warning is issued if the final-iteration rate falls
+outside 10–90%. If the warning fires, pass `proposal_sd` explicitly to
+override the adaptive default.
+
+**`nmix`** is selected by model fit rather than tuned. Use `logLik()`,
+`AIC()`, and `BIC()` on fitted objects to compare across values;
+`nmix = 1` is the right default for classical additive Gaussian
+measurement error.
+
 ## References
 
 - Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2024).
