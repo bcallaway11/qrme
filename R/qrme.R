@@ -162,10 +162,10 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, sta
 #' @param mcmc_draws Total number of MCMC draws per EM step (default 200)
 #' @param mcmc_burnin Number of MCMC draws to discard as burnin (default 100)
 #' @param proposal_sd Standard deviation of the Metropolis-Hastings proposal
-#'  (random-walk step size). When \code{NULL} (default), set automatically
-#'  to \code{sqrt(var(y))}, scaling
-#'  the proposal to the spread of the outcome. Pass a positive numeric to
-#'  override.
+#'  (random-walk step size). When \code{NULL} (default), initialised to the
+#'  SD of the ME mixture from the starting parameters and updated after each
+#'  M-step to track the current ME scale. Pass a positive numeric to fix the
+#'  proposal at that value for all iterations.
 #' @param ncores Number of cores for parallel bootstrap computation (default 1)
 #' @param maxit Maximum number of EM outer iterations. If convergence is not
 #'  reached, the estimates from the final iteration are returned (default is 100)

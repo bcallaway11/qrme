@@ -38,15 +38,40 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
     ))
   }
 
-  nm <- NULL
-  nm_output <- capture.output({
-    nm <- mixtools::normalmixEM(
-      x,
-      k = m,
-      epsilon = epsilon,
-      verb = qrme_verbose_level(verbose) >= 3L
-    )
+  # normalmixEM can fail with "Too many tries!" on awkward data; catch it and
+  # return a data-informed fallback so the outer EM can continue.
+  result <- tryCatch({
+    nm_output <- capture.output({
+      nm <- mixtools::normalmixEM(
+        x,
+        k = m,
+        epsilon = epsilon,
+        verb = qrme_verbose_level(verbose) >= 3L
+      )
+    })
+    list(nm = nm, nm_output = nm_output, failed = FALSE)
+  }, error = function(e) {
+    list(nm = NULL, nm_output = character(0), failed = TRUE,
+         msg = conditionMessage(e))
   })
+
+  if (result$failed) {
+    warning("normalmixEM failed (", result$msg, "); ",
+            "using empirical fallback for mixture parameters.", call. = FALSE)
+    probs  <- seq(1 / (m + 1), m / (m + 1), length.out = m)
+    mu_fb  <- as.numeric(quantile(x, probs))
+    mu_fb  <- mu_fb - mean(mu_fb)
+    return(list(
+      fit = list(m = m, lambda = rep(1 / m, m), mu = mu_fb,
+                 sigma = rep(sd(x), m)),
+      n_iter = NA_integer_,
+      loglik = NA_real_,
+      converged = FALSE
+    ))
+  }
+
+  nm       <- result$nm
+  nm_output <- result$nm_output
 
   if (qrme_verbose_level(verbose) >= 3L && length(nm_output) > 0L) {
     message(paste(nm_output, collapse = "\n"))
@@ -115,10 +140,11 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
 #'  iterations below \code{tol}, guarding against false convergence caused by
 #'  Monte Carlo noise in the log-likelihood or parameter updates.
 #' @param proposal_sd Standard deviation of the Metropolis-Hastings proposal
-#'  (random-walk step size) or the importance-sampling proposal. When
-#'  \code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
-#'  the proposal to the spread of the outcome. Pass a positive numeric to
-#'  override.
+#'  (random-walk step size). When \code{NULL} (default), initialised to the
+#'  SD of the ME mixture from the starting parameters and updated after each
+#'  M-step to track the current ME scale:
+#'  \code{sqrt(sum(pi_k * (sig_k^2 + mu_k^2)))}. Pass a positive numeric to
+#'  fix the proposal at that value for all iterations.
 #' @inheritParams qrme
 #' @return QRME object
 #'
@@ -156,9 +182,15 @@ em.algo <- function(formula, data,
     yname <- as.character(formula[[2]])
     y_for_ll <- data[, yname]
 
-    # Set default proposal_sd if not provided by the user
-    if (is.null(proposal_sd)) {
-        proposal_sd <- sqrt(var(y_for_ll))
+    # When proposal_sd is not supplied, initialise it to the SD of the ME
+    # mixture implied by the starting parameters, then update it after each
+    # M-step to track the current ME scale. Each EM iteration starts a fresh
+    # chain, so the proposal should match the current ME distribution rather
+    # than a fixed value tied to the total outcome variance.
+    # Var[mixture] = sum_k pi_k*(sig_k^2 + mu_k^2) when sum(pi*mu)=0.
+    adapt_proposal_sd <- is.null(proposal_sd)
+    if (adapt_proposal_sd) {
+        proposal_sd <- sqrt(sum(piguess * (sigguess^2 + muguess^2)))
     }
 
     # Set default tol if not provided by the user
@@ -283,6 +315,11 @@ em.algo <- function(formula, data,
         sigguess <- newsig
         muguess <- newmu
         piguess <- newpi
+        if (adapt_proposal_sd) {
+            proposal_sd <- sqrt(sum(newpi * (newsig^2 + newmu^2)))
+            qrme_progress(verbose, "  proposal_sd (next iter): ",
+                signif(proposal_sd, 4), level = 2L)
+        }
     }
     warning("EM algorithm failed to converge after ", maxit, " iterations", call. = FALSE)
     return(add_convergence_info(newone, maxit, FALSE))
