@@ -270,6 +270,18 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                  mobility_copula_draws=100L, ignore_me=FALSE, verbose=FALSE,
                  se=FALSE, n_boot=100, ncores=1) {
 
+  if (qrme_verbose_level(verbose) >= 1L) {
+    message("tsme method")
+    message("----------------------")
+    message(
+      "Citation: Callaway, Brantly, Tong Li, Irina Murtazashvili, ",
+      "and Emmanuel Tsyawo, Distributional Effects with Two-Sided ",
+      "Measurement Error: An Application to Intergenerational Income ",
+      "Mobility, Working Paper, 2025."
+    )
+    message("----------------------")
+  }
+
   res <- compute.tsme(data=data,
                       Yformla=Yformla,
                       Tformla=Tformla,

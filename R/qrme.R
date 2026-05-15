@@ -302,15 +302,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
                     verbose=FALSE) {
 
   if (qrme_verbose_level(verbose) >= 1L) {
-    message("qr2me method")
-    message("----------------------")
-    message(
-      "Citation: Callaway, Brantly, Tong Li, Irina Murtazashvili, ",
-      "and Emmanuel Tsyawo, Distributional Effects with Two-Sided ",
-      "Measurement Error: An Application to Intergenerational Income ",
-      "Mobility, Working Paper, 2025."
-    )
-    message("----------------------")
+    message("qr2me second-stage copula model")
   }
   
   x <- model.matrix(xformla, data)
