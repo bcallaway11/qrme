@@ -1,6 +1,11 @@
-#-----------------------------------------------------------------------------
-# functions for nonlinear models with measurement error
-#-----------------------------------------------------------------------------
+# =============================================================================
+# Title: Two-Sided Measurement Error Models
+# Description: Functions for nonlinear models with two-sided measurement error
+#   via copula (tsme) and its internal workhorse (compute.tsme).
+# Author: Brant Callaway
+# Last update: 2026-05-14
+# Date created: 2026-05-14
+# =============================================================================
 
 #' @title compute.tsme
 #' @description does the heavy lifting for computing nonlinear models with measurement error
@@ -18,6 +23,8 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                          Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
                          ndraws_ll=100L, conv_patience=1L, maxit=100L,
                          mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL,
+                         start_sigma_Y=NULL, start_mu_Y=NULL, start_pi_Y=NULL,
+                         start_sigma_T=NULL, start_mu_T=NULL, start_pi_T=NULL,
                          mobility_copula_draws=100L, ignore_me=FALSE,
                          verbose=FALSE) {
   
@@ -33,11 +40,13 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
     Qyx <- qrme(Yformla, data=data, tau=tau, me_dist=me_dist, nmix=Ynmix, mcmc_method=mcmc_method,
                 tol=tol, conv_crit=conv_crit, ndraws_ll=ndraws_ll, conv_patience=conv_patience,
                 mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd,
+                start_sigma=start_sigma_Y, start_mu=start_mu_Y, start_pi=start_pi_Y,
                 maxit=maxit, verbose=verbose, se=FALSE) # don't bootstrap these
     qrme_progress(verbose, "tsme first stage: treatment measurement-error model")
     Qtx  <- qrme(Tformla, data=data, tau=tau, me_dist=me_dist, nmix=Tnmix, mcmc_method=mcmc_method,
                  tol=tol, conv_crit=conv_crit, ndraws_ll=ndraws_ll, conv_patience=conv_patience,
                  mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd,
+                 start_sigma=start_sigma_T, start_mu=start_mu_T, start_pi=start_pi_T,
                  maxit=maxit, verbose=verbose, se=FALSE)
 
     # now get joint distribution
@@ -183,10 +192,14 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #' @param povline value of the poverty line (default log(20000))
 #' @param reportQ quantiles of child's income as a function of parents' income
 #'  to report (default is .1,.5,.9)
-#' @param Ynmix number of mixture components for outcome measurement error
-#'  model
-#' @param Tnmix number of mixture components for treatment measurement error
-#'  model
+#' @param Ynmix Number of Gaussian mixture components for the outcome (Y)
+#'   measurement error distribution. Default is 1 (single Gaussian). Use
+#'   \code{logLik()}, \code{AIC()}, and \code{BIC()} on a fitted
+#'   \code{qrme()} object to select the appropriate value. \code{Ynmix} and
+#'   \code{Tnmix} can differ — it is valid and common to use different
+#'   complexity for each equation.
+#' @param Tnmix Number of Gaussian mixture components for the treatment (T)
+#'   measurement error distribution. Default is 1. See \code{Ynmix}.
 #' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
 #'  chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
 #'  for details.
@@ -205,6 +218,22 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  first-stage \code{\link{qrme}} calls. When \code{NULL} (default), each
 #'  first stage uses its own automatic scale, \code{sqrt(var(Y))} or
 #'  \code{sqrt(var(T))}.
+#' @param start_sigma_Y Starting value(s) for the ME standard deviation(s) in
+#'  the outcome (Y) \code{\link{qrme}} call. A vector of length \code{Ynmix}.
+#'  When \code{NULL} (default), \code{qrme} chooses its own starting value.
+#' @param start_mu_Y Starting value(s) for the ME mean(s) in the outcome (Y)
+#'  \code{\link{qrme}} call. A vector of length \code{Ynmix}. \code{NULL}
+#'  uses the \code{qrme} default.
+#' @param start_pi_Y Starting mixture weight(s) for the outcome (Y)
+#'  \code{\link{qrme}} call. A vector of length \code{Ynmix} that sums to 1.
+#'  \code{NULL} uses the \code{qrme} default.
+#' @param start_sigma_T Starting value(s) for the ME standard deviation(s) in
+#'  the treatment (T) \code{\link{qrme}} call. A vector of length \code{Tnmix}.
+#'  \code{NULL} uses the \code{qrme} default.
+#' @param start_mu_T Starting value(s) for the ME mean(s) in the treatment (T)
+#'  \code{\link{qrme}} call. \code{NULL} uses the \code{qrme} default.
+#' @param start_pi_T Starting mixture weight(s) for the treatment (T)
+#'  \code{\link{qrme}} call. \code{NULL} uses the \code{qrme} default.
 #' @param mobility_copula_draws Number of copula draws per covariate row used
 #'  to compute mobility summaries such as transition matrices and rank
 #'  correlations (default 100).
@@ -236,6 +265,8 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                  Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
                  ndraws_ll=100L, conv_patience=1L, maxit=100L,
                  mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL,
+                 start_sigma_Y=NULL, start_mu_Y=NULL, start_pi_Y=NULL,
+                 start_sigma_T=NULL, start_mu_T=NULL, start_pi_T=NULL,
                  mobility_copula_draws=100L, ignore_me=FALSE, verbose=FALSE,
                  se=FALSE, n_boot=100, ncores=1) {
 
@@ -265,6 +296,12 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                       mcmc_draws=mcmc_draws,
                       mcmc_burnin=mcmc_burnin,
                       proposal_sd=proposal_sd,
+                      start_sigma_Y=start_sigma_Y,
+                      start_mu_Y=start_mu_Y,
+                      start_pi_Y=start_pi_Y,
+                      start_sigma_T=start_sigma_T,
+                      start_mu_T=start_mu_T,
+                      start_pi_T=start_pi_T,
                       mobility_copula_draws=mobility_copula_draws,
                       ignore_me=ignore_me,
                       verbose=verbose)
@@ -298,12 +335,18 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
                             conv_crit=conv_crit,
                             ndraws_ll=ndraws_ll,
                             conv_patience=conv_patience,
-                              maxit=maxit,
-                              mcmc_draws=mcmc_draws,
-                              mcmc_burnin=mcmc_burnin,
-                              proposal_sd=proposal_sd,
-                              mobility_copula_draws=mobility_copula_draws,
-                              verbose=FALSE)
+                            maxit=maxit,
+                            mcmc_draws=mcmc_draws,
+                            mcmc_burnin=mcmc_burnin,
+                            proposal_sd=proposal_sd,
+                            start_sigma_Y=start_sigma_Y,
+                            start_mu_Y=start_mu_Y,
+                            start_pi_Y=start_pi_Y,
+                            start_sigma_T=start_sigma_T,
+                            start_mu_T=start_mu_T,
+                            start_pi_T=start_pi_T,
+                            mobility_copula_draws=mobility_copula_draws,
+                            verbose=FALSE)
         out
       }, error=function(cond) {
         return(NULL) # use this as code for error on that bootstrap iteration
