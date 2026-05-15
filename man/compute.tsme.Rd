@@ -31,6 +31,12 @@ compute.tsme(
   mcmc_draws = 200,
   mcmc_burnin = 100,
   proposal_sd = NULL,
+  start_sigma_Y = NULL,
+  start_mu_Y = NULL,
+  start_pi_Y = NULL,
+  start_sigma_T = NULL,
+  start_mu_T = NULL,
+  start_pi_T = NULL,
   mobility_copula_draws = 100L,
   ignore_me = FALSE,
   verbose = FALSE
@@ -57,7 +63,7 @@ parameters for}
  default and supports a mixture of normals.  "laplace" is also supported}
 
 \item{copType}{what type of copula to use in second step.  Options are
-"gaussian" (the default), "clayton", or "gumbel"}
+"gaussian" (the default), "clayton", "gumbel", or "frank"}
 
 \item{mcmc_method}{simulation step to use in the EM algorithm. Currently
 only \code{"MH"} is supported.}
@@ -80,11 +86,15 @@ the poverty line as a function of parents' income}
 \item{reportQ}{quantiles of child's income as a function of parents' income
 to report (default is .1,.5,.9)}
 
-\item{Ynmix}{number of mixture components for outcome measurement error
-model}
+\item{Ynmix}{Number of Gaussian mixture components for the outcome (Y)
+measurement error distribution. Default is 1 (single Gaussian). Use
+\code{logLik()}, \code{AIC()}, and \code{BIC()} on a fitted
+\code{qrme()} object to select the appropriate value. \code{Ynmix} and
+\code{Tnmix} can differ — it is valid and common to use different
+complexity for each equation.}
 
-\item{Tnmix}{number of mixture components for treatment measurement error
-model}
+\item{Tnmix}{Number of Gaussian mixture components for the treatment (T)
+measurement error distribution. Default is 1. See \code{Ynmix}.}
 
 \item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
 chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
@@ -111,6 +121,28 @@ convergence criterion before stopping (default 1).}
 first-stage \code{\link{qrme}} calls. When \code{NULL} (default), each
 first stage uses its own automatic scale, \code{sqrt(var(Y))} or
 \code{sqrt(var(T))}.}
+
+\item{start_sigma_Y}{Starting value(s) for the ME standard deviation(s) in
+the outcome (Y) \code{\link{qrme}} call. A vector of length \code{Ynmix}.
+When \code{NULL} (default), \code{qrme} chooses its own starting value.}
+
+\item{start_mu_Y}{Starting value(s) for the ME mean(s) in the outcome (Y)
+\code{\link{qrme}} call. A vector of length \code{Ynmix}. \code{NULL}
+uses the \code{qrme} default.}
+
+\item{start_pi_Y}{Starting mixture weight(s) for the outcome (Y)
+\code{\link{qrme}} call. A vector of length \code{Ynmix} that sums to 1.
+\code{NULL} uses the \code{qrme} default.}
+
+\item{start_sigma_T}{Starting value(s) for the ME standard deviation(s) in
+the treatment (T) \code{\link{qrme}} call. A vector of length \code{Tnmix}.
+\code{NULL} uses the \code{qrme} default.}
+
+\item{start_mu_T}{Starting value(s) for the ME mean(s) in the treatment (T)
+\code{\link{qrme}} call. \code{NULL} uses the \code{qrme} default.}
+
+\item{start_pi_T}{Starting mixture weight(s) for the treatment (T)
+\code{\link{qrme}} call. \code{NULL} uses the \code{qrme} default.}
 
 \item{mobility_copula_draws}{Number of copula draws per covariate row used
 to compute mobility summaries such as transition matrices and rank

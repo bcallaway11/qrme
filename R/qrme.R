@@ -5,7 +5,7 @@
 #              via the pseudo-EM algorithm in em.R. Also includes qr2me() for
 #              two-sided measurement error and supporting S3 methods.
 # Author: Brant Callaway
-# Last update: 2026-05-14
+# Last update: 2026-05-15
 # Date created: 2026-05-07
 # =============================================================================
 
@@ -279,7 +279,8 @@ qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, start_beta=
 #'  of Y given X and T
 #' @param me_dist which type of measurement error distribution to use (default is "gaussian"), 
 #'  "laplace" is also supported
-#' @param copula which type of copula to use (default is "gaussian")
+#' @param copula which type of copula to use.  Options are "gaussian" (the
+#'  default), "clayton", "gumbel", or "frank"
 #' @param Qyx quantile regression estimates (can be adjusted for measurement
 #'  error) of Y on X
 #' @param Qtx quantile regression estimates (can be adjusted for measurement
@@ -502,6 +503,29 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
           num <- dgenerator_gumbel(Ftx[[i]](tt), thet)
           denom <- dgenerator_gumbel( gumbel::invphigumbel( gumbel::phigumbel(Ftx[[i]](tt), thet) + gumbel::phigumbel(Fyx[[i]](yvals),thet), thet) , thet )
           num/denom
+        })
+        FytXmat[,,j] <- do.call("rbind", this.Fytx)
+      }
+    }
+
+    if (copula == "frank") {
+      thet <- delt[1]
+      FytXmat <- array(dim = c(nrow(xdf), length(yvals), length(tvals)))
+      # Conditional CDF: partial derivative of Frank copula C(u,v) w.r.t. v.
+      # C2(u,v,theta) = (e^{-theta*u} - 1) * e^{-theta*v} /
+      #   ((e^{-theta} - 1) + (e^{-theta*u} - 1)(e^{-theta*v} - 1))
+      C2_frank <- function(u, v, thet) {
+        u <- pmax(pmin(u, 1 - 1e-10), 1e-10)
+        v <- pmax(pmin(v, 1 - 1e-10), 1e-10)
+        A <- exp(-thet) - 1
+        B <- exp(-thet * u) - 1
+        D <- exp(-thet * v)
+        B * D / (A + B * (D - 1))
+      }
+      for (j in seq_along(tvals)) {
+        tt <- tvals[j]
+        this.Fytx <- lapply(1:nrow(xdf), function(i) {
+          C2_frank(Fyx[[i]](yvals), Ftx[[i]](tt), thet)
         })
         FytXmat[,,j] <- do.call("rbind", this.Fytx)
       }

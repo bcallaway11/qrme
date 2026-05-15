@@ -43,7 +43,8 @@ of Y given X and T}
 \item{me_dist}{which type of measurement error distribution to use (default is "gaussian"), 
 "laplace" is also supported}
 
-\item{copula}{which type of copula to use (default is "gaussian")}
+\item{copula}{which type of copula to use.  Options are "gaussian" (the
+default), "clayton", "gumbel", or "frank"}
 
 \item{Qyx}{quantile regression estimates (can be adjusted for measurement
 error) of Y on X}

@@ -44,14 +44,18 @@ NULL and in this case, the starting values are set to be the QR
 coefficients coming from QR that ignores measurment error)}
 
 \item{start_mu}{A vector of length nmix of starting values for the mean
-of the mixture of normals distribution for the measurment error (default
-is NULL and in this case, the starting values are basically set to be
-equally spaced from -nmix to nmix but forced to have mean 0)}
+of each mixture component. When \code{NULL} (default), set to 0 for
+\code{nmix = 1} and to evenly-spaced values on
+\code{[-0.25 * sd(y), 0.25 * sd(y)]} for \code{nmix > 1}, mean-centered
+to satisfy the mean-zero ME constraint.}
 
 \item{start_sigma}{A vector of length nmix of starting values for the
-standard deviation of the mixture of normals distribution for the
-measurement error (default is NULL and in this case, the starting values
-are all set to be 1)}
+standard deviation of each mixture component. When \code{NULL} (default),
+backed out from the mixture variance identity assuming equal weights and
+equal component SDs targeting a mixture SD of \code{0.5 * sd(y)}:
+\code{sigma = sqrt(max(target^2 - mean(start_mu^2), (target/sqrt(nmix))^2))}.
+This gives \code{0.5 * sd(y)} for \code{nmix = 1} and slightly larger
+values for \code{nmix > 1} (since the component means absorb some variance).}
 
 \item{start_pi}{A vector of length nmix of starting values for the fraction
 of observations in each component of the mixture of normals distribution
@@ -82,10 +86,10 @@ against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.}
 \item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 100)}
 
 \item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
-(random-walk step size). When \code{NULL} (default), set automatically
-to \code{sqrt(var(y))}, scaling
-the proposal to the spread of the outcome. Pass a positive numeric to
-override.}
+(random-walk step size). When \code{NULL} (default), initialised to the
+SD of the ME mixture from the starting parameters and updated after each
+M-step to track the current ME scale. Pass a positive numeric to fix the
+proposal at that value for all iterations.}
 
 \item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
 

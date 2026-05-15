@@ -3,7 +3,7 @@
 # Description: Functions for nonlinear models with two-sided measurement error
 #   via copula (tsme) and its internal workhorse (compute.tsme).
 # Author: Brant Callaway
-# Last update: 2026-05-14
+# Last update: 2026-05-15
 # Date created: 2026-05-14
 # =============================================================================
 
@@ -178,7 +178,7 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #' #' @param me_dist the distribution of the measurement error.  "gaussian" is the
 #'  default and supports a mixture of normals.  "laplace" is also supported
 #' @param copType what type of copula to use in second step.  Options are
-#'  "gaussian" (the default), "clayton", or "gumbel"
+#'  "gaussian" (the default), "clayton", "gumbel", or "frank"
 #' @param mcmc_method simulation step to use in the EM algorithm. Currently
 #'  only \code{"MH"} is supported.
 #' @param copula_me_draws Number of measurement-error draws used in the

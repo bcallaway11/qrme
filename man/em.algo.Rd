@@ -87,10 +87,11 @@ Monte Carlo noise in the log-likelihood or parameter updates.}
 \item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 100)}
 
 \item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
-(random-walk step size) or the importance-sampling proposal. When
-\code{NULL} (default), set automatically to \code{sqrt(var(y))}, scaling
-the proposal to the spread of the outcome. Pass a positive numeric to
-override.}
+(random-walk step size). When \code{NULL} (default), initialised to the
+SD of the ME mixture from the starting parameters and updated after each
+M-step to track the current ME scale:
+\code{sqrt(sum(pi_k * (sig_k^2 + mu_k^2)))}. Pass a positive numeric to
+fix the proposal at that value for all iterations.}
 
 \item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
 
