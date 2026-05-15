@@ -478,7 +478,9 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     if (copula=="clayton") {
       thet <- delt[1]
       FytXmat <- array(dim=c(nrow(xdf), length(yvals), length(tvals)))
-      C2 <- function(u,v,thet) {
+      C2 <- function(u, v, thet) {
+        u <- pmax(u, 1e-6)
+        v <- pmax(v, 1e-6)
         (u^(-thet) + v^(-thet) - 1)^(-(1/thet)-1) * v^(-thet-1)
       }
       for (j in 1:length(tvals)) {
