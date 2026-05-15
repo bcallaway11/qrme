@@ -325,6 +325,17 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
 
   if (se) {
 
+    # Warm-start ME parameters from full-data estimates so each bootstrap draw
+    # begins near the solution. For n_mix=1 this eliminates cold-start noise;
+    # for n_mix>1 it also reduces label-switching since the EM stays near the
+    # ordered full-data solution.
+    boot_start_sigma_y <- res$meQyx$sig
+    boot_start_mu_y    <- res$meQyx$mu
+    boot_start_pi_y    <- res$meQyx$pi
+    boot_start_sigma_t <- res$meQtx$sig
+    boot_start_mu_t    <- res$meQtx$mu
+    boot_start_pi_t    <- res$meQtx$pi
+
     eachIter <- pbapply::pblapply(1:n_boot, function(b) {
       n <- nrow(data)
       brows <- sample(1:n, size=n, replace=TRUE)
@@ -345,6 +356,7 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
                             report_upward_mobility=report_upward_mobility,
                             report_poverty=report_poverty,
                             pov_line=pov_line,
+                            report_quantiles=report_quantiles,
                             y_n_mix=y_n_mix,
                             t_n_mix=t_n_mix,
                             tol=tol,
@@ -355,69 +367,70 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
                             mcmc_draws=mcmc_draws,
                             mcmc_burn_in=mcmc_burn_in,
                             proposal_sd=proposal_sd,
-                            start_sigma_y=start_sigma_y,
-                            start_mu_y=start_mu_y,
-                            start_pi_y=start_pi_y,
-                            start_sigma_t=start_sigma_t,
-                            start_mu_t=start_mu_t,
-                            start_pi_t=start_pi_t,
+                            start_sigma_y=boot_start_sigma_y,
+                            start_mu_y=boot_start_mu_y,
+                            start_pi_y=boot_start_pi_y,
+                            start_sigma_t=boot_start_sigma_t,
+                            start_mu_t=boot_start_mu_t,
+                            start_pi_t=boot_start_pi_t,
                             n_copula_draws=n_copula_draws,
                             verbose=FALSE)
         out
       }, error=function(cond) {
         return(NULL) # use this as code for error on that bootstrap iteration
-        #return(cond)
       })
     }, cl=n_cores)
 
-    
     # drop list elements where bootstrap failed
     eachIter <- eachIter[!sapply(eachIter, is.null)]
 
-    # first step estimators
-    # outcome
+    # first step estimators — outcome
     res$meQyx$sig.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$sig)), 2, sd)
-    res$meQyx$mu.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$mu)), 2, sd)
-    res$meQyx$pi.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$pi)), 2, sd)
+    res$meQyx$mu.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$mu)),  2, sd)
+    res$meQyx$pi.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$pi)),  2, sd)
     res$meQyx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) e$meQyx$bet)), 1:2, sd)
-    # treatment
+    # first step estimators — treatment
     res$meQtx$sig.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$sig)), 2, sd)
-    res$meQtx$mu.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$mu)), 2, sd)
-    res$meQtx$pi.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$pi)), 2, sd)
+    res$meQtx$mu.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$mu)),  2, sd)
+    res$meQtx$pi.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$pi)),  2, sd)
     res$meQtx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) e$meQtx$bet)), 1:2, sd)
     # qr
     res$qrytx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) coef(e$qrytx))), 1:2, sd)
-    # nome
-    res$nomeQyt$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nomeQyx)))), 1:2, sd)
+    # no-ME first stage
+    res$nomeQyx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nomeQyx)))), 1:2, sd)
     res$nomeQtx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nomeQtx)))), 1:2, sd)
-    
-    # transition matrix
-    res$meTmat.se <- apply(simplify2array(lapply(eachIter, function(e) e$meTmat)), 1:2, sd)
-    res$nomeTmat.se <- apply(simplify2array(lapply(eachIter, function(e) e$nomeTmat)), 1:2, sd)
-    res$obsTmat.se <- apply(simplify2array(lapply(eachIter, function(e) e$obsTmat)), 1:2, sd)
 
-    # spearmans rho
-    res$mePs.se <- sd(sapply(eachIter, function(e) e$mePs))
+    # copula parameters
+    res$meCopParam.se   <- sd(sapply(eachIter, function(e) e$meCopParam))
+    res$nomeCopParam.se <- sd(sapply(eachIter, function(e) e$nomeCopParam))
+
+    # transition matrix
+    res$meTmat.se   <- apply(simplify2array(lapply(eachIter, function(e) e$meTmat)),   1:2, sd)
+    res$nomeTmat.se <- apply(simplify2array(lapply(eachIter, function(e) e$nomeTmat)), 1:2, sd)
+    res$obsTmat.se  <- apply(simplify2array(lapply(eachIter, function(e) e$obsTmat)),  1:2, sd)
+
+    # spearman's rho
+    res$mePs.se   <- sd(sapply(eachIter, function(e) e$mePs))
     res$nomePs.se <- sd(sapply(eachIter, function(e) e$nomePs))
-    res$obsPs.se <- sd(sapply(eachIter, function(e) e$obsPs))
+    res$obsPs.se  <- sd(sapply(eachIter, function(e) e$obsPs))
 
     # upward mobility
-    res$meUm.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meUm)), 2, sd)
+    res$meUm.se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$meUm)),   2, sd)
     res$nomeUm.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$nomeUm)), 2, sd)
-    res$obsUm.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$obsUm)), 2, sd)
+    res$obsUm.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$obsUm)),  2, sd)
 
     # poverty rate
-    res$mePovrate.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$mePovrate)), 2, sd)
+    res$mePovrate.se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$mePovrate)),   2, sd)
     res$nomePovrate.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$nomePovrate)), 2, sd)
-    res$qrPovrate.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$qrPovrate)), 2, sd)
+    res$qrPovrate.se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$qrPovrate)),   2, sd)
 
-    # quantiles
-    res$meresQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$meresQ)), 1:2, sd)
+    # conditional quantile curves
+    res$meresQ.se   <- apply(simplify2array(lapply(eachIter, function(e) e$meresQ)),   1:2, sd)
     res$nomeresQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$nomeresQ)), 1:2, sd)
-    res$qrytxQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$qrytxQ)), 1:2, sd)
+    res$qrytxQ.se   <- apply(simplify2array(lapply(eachIter, function(e) e$qrytxQ)),   1:2, sd)
 
     res$n_boot <- length(eachIter)
-    
+
   }
 
   res
