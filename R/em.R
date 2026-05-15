@@ -4,7 +4,7 @@
 #              mixture-of-normals measurement error. em.algo() is the outer
 #              loop; em.algo.inner() does one E+M step.
 # Author: Brant Callaway
-# Last update: 2026-05-07
+# Last update: 2026-05-15
 # Date created: 2026-05-07
 # =============================================================================
 
@@ -395,6 +395,26 @@ em.algo.inner <- function(formula, data,
         )
         # this is part I am not sure about, once you have a new beta then estimate a new sigma??
         # also should probably restrict overall mean of measurement error term to be equal to 0
+        if (me_dist == "laplace") {
+            # Laplace M-step: MLE of scale parameter with mu fixed to 0 is
+            # mean(|epsilon|). Fitting a normal mixture here would be wrong
+            # because it recovers the SD (~b*sqrt(2)) rather than the Laplace
+            # scale (b), causing the EM to inflate sigma each iteration.
+            qrme_progress(verbose, "  fitting Laplace scale (MLE)...")
+            pi_ord  <- 1
+            mu_ord  <- 0
+            sig_ord <- mean(abs(newdta1$e))
+            qrme_progress(verbose, "  sig: ", signif(sig_ord, 4), level = 2L)
+            bet_out <- t(coef(out))
+            return(list(
+                bet = bet_out, m = m, pi = pi_ord, mu = mu_ord, sig = sig_ord,
+                mix_n_iter = NA_integer_,
+                mix_loglik = NA_real_,
+                mix_converged = TRUE,
+                accept_rate = accept_rate
+            ))
+        }
+
         qrme_progress(verbose, "  fitting finite mixture model...")
         nm_fit <- fit_normal_mixture(newdta1$e, m = m, epsilon = 1e-03, verbose = verbose)
         nm <- nm_fit$fit
