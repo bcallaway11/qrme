@@ -7,10 +7,10 @@
 mh_mcmc_innerC(
   startval,
   mcmc_draws,
-  mcmc_burnin,
+  mcmc_burn_in,
   proposal_sd,
   betmat,
-  me_dist,
+  me_distribution,
   m,
   pi,
   mu,
@@ -25,14 +25,14 @@ mh_mcmc_innerC(
 
 \item{mcmc_draws}{total number of Monte Carlo draws}
 
-\item{mcmc_burnin}{number of initial draws to discard as burnin}
+\item{mcmc_burn_in}{number of initial draws to discard as burnin}
 
 \item{proposal_sd}{standard deviation of the random-walk MH proposal
 MH algorithm}
 
 \item{betmat}{matrix of QR parameters}
 
-\item{me_dist}{the distribution of the measurement error.  "gaussian" is the
+\item{me_distribution}{the distribution of the measurement error.  "gaussian" is the
 default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{number of mixture components for measurement error}

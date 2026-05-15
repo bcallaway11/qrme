@@ -103,7 +103,7 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
 #'  an LxK matrix where L is the number of quantiles and K is the dimension
 #'  of the covariates
 #' @param tau An L-vector indicating which quantiles have been estimated
-#' @param me_dist The distribution of the measurement error.  "gaussian" is the
+#' @param me_distribution The distribution of the measurement error.  "gaussian" is the
 #'  default and supports a mixture of normals.  "laplace" is also supported.
 #' @param m The number of components of the mixture distribution for the
 #'  measurement error
@@ -114,7 +114,7 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
 #'  component (should have length equal to k)
 #' @param mcmc_method Simulation step to use in the EM algorithm. Currently
 #'  only \code{"MH"} is supported.
-#' @param maxit Maximum number of EM outer iterations. If convergence is not
+#' @param max_em_iters Maximum number of EM outer iterations. If convergence is not
 #'  reached, the estimates from the final iteration are returned (default is 100)
 #' @param tol Convergence tolerance.  When \code{NULL} (default), \code{1e-2}
 #'  is used for both criteria.  For \code{"params"}, \code{tol} is compared
@@ -124,14 +124,14 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
 #'  compared against the relative log-likelihood change
 #'  \code{|ll_new - ll_old| / |ll_old|}.  Tighten to \code{1e-3} or smaller
 #'  for higher accuracy at the cost of more iterations.
-#' @param conv_crit Convergence criterion.  \code{"params"} (default) stops
+#' @param conv_criterion Convergence criterion.  \code{"params"} (default) stops
 #'  when the maximum scaled parameter change falls below \code{tol} (see
 #'  \code{tol} above).  \code{"loglik"} stops when the relative change in the
 #'  observed-data log-likelihood, \code{|ll_new - ll_old| / |ll_old|}, falls
 #'  below \code{tol}; the log-likelihood is evaluated using Monte Carlo
-#'  integration with \code{ndraws_ll} draws per outer iteration.
-#' @param ndraws_ll Number of Monte Carlo draws used to evaluate the
-#'  log-likelihood at each outer EM iteration when \code{conv_crit = "loglik"}.
+#'  integration with \code{loglik_draws} draws per outer iteration.
+#' @param loglik_draws Number of Monte Carlo draws used to evaluate the
+#'  log-likelihood at each outer EM iteration when \code{conv_criterion = "loglik"}.
 #'  More draws reduce noise in the convergence check at the cost of speed.
 #'  Default is 100.
 #' @param conv_patience Integer. Number of consecutive iterations that must
@@ -151,18 +151,18 @@ fit_normal_mixture <- function(x, m, epsilon = 1e-03, verbose = FALSE) {
 #' @export
 em.algo <- function(formula, data,
                     betmatguess, tau,
-                    me_dist = "gaussian",
+                    me_distribution = "gaussian",
                     m = 1, piguess = 1, muguess = 0,
                     sigguess = 1, mcmc_method = "MH", tol = NULL,
-                    conv_crit = "params", ndraws_ll = 100L,
+                    conv_criterion = "params", loglik_draws = 100L,
                     conv_patience = 1L,
-                    mcmc_draws = 200, mcmc_burnin = 100, proposal_sd = NULL, ncores = 1,
-                    maxit = 100, verbose = FALSE) {
+                    mcmc_draws = 200, mcmc_burn_in = 100, proposal_sd = NULL, n_cores = 1,
+                    max_em_iters = 100, verbose = FALSE) {
     # some checks
-    if (me_dist == "laplace" & mcmc_method != "MH") {
+    if (me_distribution == "laplace" & mcmc_method != "MH") {
         stop("Laplace distribution only supported with MH algorithm")
     }
-    if (me_dist == "laplace" & m > 1) {
+    if (me_distribution == "laplace" & m > 1) {
         stop("Laplace distribution only supported with m=1")
     }
     if (mcmc_method == "ImpSamp") {
@@ -171,16 +171,16 @@ em.algo <- function(formula, data,
     if (mcmc_method != "MH") {
         stop('mcmc_method must be "MH"', call. = FALSE)
     }
-    if (!conv_crit %in% c("params", "loglik")) {
-        stop('conv_crit must be "params" or "loglik"')
+    if (!conv_criterion %in% c("params", "loglik")) {
+        stop('conv_criterion must be "params" or "loglik"')
     }
 
     # Extract y and x once; needed for default tol computation and/or loglik criterion
     xformula_rhs <- formula
     xformula_rhs[[2]] <- NULL
     x_for_ll <- model.matrix(xformula_rhs, data)
-    yname <- as.character(formula[[2]])
-    y_for_ll <- data[, yname]
+    y_name <- as.character(formula[[2]])
+    y_for_ll <- data[, y_name]
 
     # When proposal_sd is not supplied, initialise it to the SD of the ME
     # mixture implied by the starting parameters, then update it after each
@@ -195,7 +195,7 @@ em.algo <- function(formula, data,
 
     # Set default tol if not provided by the user
     if (is.null(tol)) {
-        if (conv_crit == "loglik") {
+        if (conv_criterion == "loglik") {
             # Relative log-likelihood change; 1e-2 is deliberately loose as a starting point
             tol <- 1e-2
         } else {
@@ -207,7 +207,7 @@ em.algo <- function(formula, data,
 
     counter <- 1
     criteria <- NA_real_
-    ll_old <- NULL        # used only when conv_crit == "loglik"
+    ll_old <- NULL        # used only when conv_criterion == "loglik"
     consec_count <- 0L    # consecutive iterations satisfying the convergence criterion
     last_accept_rate <- NA_real_  # updated each iteration; checked at exit
 
@@ -238,29 +238,29 @@ em.algo <- function(formula, data,
         }
         obj$n_iter <- n_iter
         obj$tol <- tol
-        obj$conv_crit <- conv_crit
+        obj$conv_criterion <- conv_criterion
         obj$conv_criteria <- criteria
         obj$conv_converged <- converged
         obj
     }
 
     qrme_progress(verbose, "QRME EM algorithm")
-    qrme_progress(verbose, "  convergence criterion: ", conv_crit)
+    qrme_progress(verbose, "  convergence criterion: ", conv_criterion)
     qrme_progress(verbose, "  tolerance: ", signif(tol, 4), level = 2L)
-    qrme_progress(verbose, "  max iterations: ", maxit, level = 2L)
-    qrme_progress(verbose, "  MCMC draws: ", mcmc_draws, "; burnin: ", mcmc_burnin, level = 2L)
+    qrme_progress(verbose, "  max iterations: ", max_em_iters, level = 2L)
+    qrme_progress(verbose, "  MCMC draws: ", mcmc_draws, "; burnin: ", mcmc_burn_in, level = 2L)
 
     # run em algorithm
-    while (counter <= maxit) {
+    while (counter <= max_em_iters) {
         qrme_progress(verbose, "EM iteration ", counter)
         newone <- em.algo.inner(formula, data,
             betmatguess, tau,
-            me_dist,
+            me_distribution,
             m, piguess, muguess,
             sigguess, mcmc_method,
-            mcmc_draws = mcmc_draws, mcmc_burnin = mcmc_burnin,
+            mcmc_draws = mcmc_draws, mcmc_burn_in = mcmc_burn_in,
             proposal_sd = proposal_sd,
-            ncores = ncores,
+            n_cores = n_cores,
             verbose = verbose
         )
         newbet <- newone$bet
@@ -275,9 +275,9 @@ em.algo <- function(formula, data,
         qrme_progress(verbose, "  mu: ", paste(signif(newmu, 4), collapse = ", "), level = 2L)
         qrme_progress(verbose, "  sig: ", paste(signif(newsig, 4), collapse = ", "), level = 2L)
 
-        if (conv_crit == "loglik") {
+        if (conv_criterion == "loglik") {
             ll_new <- loglik_raw(y_for_ll, x_for_ll, newbet, tau,
-                                 newpi, newmu, newsig, me_dist, ndraws = ndraws_ll)
+                                 newpi, newmu, newsig, me_distribution, ndraws = loglik_draws)
             qrme_progress(verbose, "  log-likelihood: ", round(ll_new, 4), level = 2L)
             # Skip convergence check on first iteration (no ll_old yet)
             if (!is.null(ll_old)) {
@@ -321,8 +321,8 @@ em.algo <- function(formula, data,
                 signif(proposal_sd, 4), level = 2L)
         }
     }
-    warning("EM algorithm failed to converge after ", maxit, " iterations", call. = FALSE)
-    return(add_convergence_info(newone, maxit, FALSE))
+    warning("EM algorithm failed to converge after ", max_em_iters, " iterations", call. = FALSE)
+    return(add_convergence_info(newone, max_em_iters, FALSE))
 }
 
 #' @title Inner part of EM-algorithm for QR with measurement error
@@ -339,15 +339,15 @@ em.algo <- function(formula, data,
 #' @export
 em.algo.inner <- function(formula, data,
                           betmat, tau,
-                          me_dist = "gaussian",
+                          me_distribution = "gaussian",
                           m = 1, pi = 1, mu = 0, sig = 1,
                           mcmc_method = "MH",
-                          mcmc_draws = 200, mcmc_burnin = 100, proposal_sd = NULL, ncores = 1, verbose = FALSE) {
+                          mcmc_draws = 200, mcmc_burn_in = 100, proposal_sd = NULL, n_cores = 1, verbose = FALSE) {
     xformula <- formula
     xformula[[2]] <- NULL # drop y variable
     X <- model.matrix(xformula, data)
-    yname <- as.character(formula[[2]])
-    Y <- data[, yname]
+    y_name <- as.character(formula[[2]])
+    Y <- data[, y_name]
     k <- ncol(X) # number of x variables
     n <- length(Y)
     qrme_progress(verbose, "  simulating measurement error...")
@@ -356,14 +356,14 @@ em.algo.inner <- function(formula, data,
         startval <- 0
 
         edraws <- mh_mcmcC(Y, X,
-            startval = startval, mcmc_draws = mcmc_draws, mcmc_burnin = mcmc_burnin,
-            proposal_sd = proposal_sd, betmat = betmat, me_dist = me_dist, m = m,
+            startval = startval, mcmc_draws = mcmc_draws, mcmc_burn_in = mcmc_burn_in,
+            proposal_sd = proposal_sd, betmat = betmat, me_distribution = me_distribution, m = m,
             pi = pi, mu = mu, sig = sig, tau = tau
         )
 
         # Average per-observation MH acceptance rate from post-burnin draws.
         # Consecutive equal values indicate a rejection.
-        n_kept <- mcmc_draws - mcmc_burnin
+        n_kept <- mcmc_draws - mcmc_burn_in
         accept_rate <- mean(vapply(seq_len(n), function(i) {
             draws_i <- edraws[((i - 1L) * n_kept + 1L):(i * n_kept)]
             mean(diff(draws_i) != 0)
@@ -376,7 +376,7 @@ em.algo.inner <- function(formula, data,
         # Note: this currently just works for one X; will need to update
         qrme_progress(verbose, "  fitting QR including simulated measurement error...")
         # newdta1 <- do.call(rbind.data.frame, newdta)
-        colnames(newdta1) <- c(yname, colnames(X), "e")
+        colnames(newdta1) <- c(y_name, colnames(X), "e")
 
         # thetime <- Sys.time()
         # out  <- quantreg::rq(formla, tau=tau, data=newdta1, method="fn")
@@ -395,7 +395,7 @@ em.algo.inner <- function(formula, data,
         )
         # this is part I am not sure about, once you have a new beta then estimate a new sigma??
         # also should probably restrict overall mean of measurement error term to be equal to 0
-        if (me_dist == "laplace") {
+        if (me_distribution == "laplace") {
             # Laplace M-step: MLE of scale parameter with mu fixed to 0 is
             # mean(|epsilon|). Fitting a normal mixture here would be wrong
             # because it recovers the SD (~b*sqrt(2)) rather than the Laplace
@@ -614,7 +614,7 @@ fv <- function(v, m = 1, pi = 1, mu = 0, sig = 1) {
 #'
 #' @param startval The first value in the markov chain
 #' @param mcmc_draws The total number of measurement error draws to make
-#' @param mcmc_burnin The number of draws to drop
+#' @param mcmc_burn_in The number of draws to drop
 #' @param proposal_sd Standard deviation of the random-walk MH proposal. Passed
 #'  from \code{em.algo} after automatic scaling; see \code{\link{em.algo}}.
 #' @inheritParams fv.yx
@@ -622,7 +622,7 @@ fv <- function(v, m = 1, pi = 1, mu = 0, sig = 1) {
 #' @param x particular value of x
 #' @return vector of draws of measurement error
 #' @export
-mh_mcmc <- function(startval = 0, mcmc_draws = 200, mcmc_burnin = 100, proposal_sd = NULL, betmat, m, pi, mu, sig, y, x, tau) {
+mh_mcmc <- function(startval = 0, mcmc_draws = 200, mcmc_burn_in = 100, proposal_sd = NULL, betmat, m, pi, mu, sig, y, x, tau) {
     x <- t(x)
     out <- rep(NA, mcmc_draws)
     out[1] <- startval
@@ -640,5 +640,5 @@ mh_mcmc <- function(startval = 0, mcmc_draws = 200, mcmc_burnin = 100, proposal_
             }
         }
     }
-    return(tail(out, mcmc_draws - mcmc_burnin))
+    return(tail(out, mcmc_draws - mcmc_burn_in))
 }

@@ -6,38 +6,38 @@
 \usage{
 compute.tsme(
   data,
-  Yformla,
-  Tformla,
+  y_formula,
+  t_formula,
   tau,
-  tvals,
-  xdf = NULL,
-  me_dist = me_dist,
-  copType = "gaussian",
+  t_values,
+  x_data = NULL,
+  me_distribution = "gaussian",
+  copula = "gaussian",
   mcmc_method = "MH",
-  copula_me_draws = 100L,
-  reportTmat = TRUE,
-  reportSP = TRUE,
-  reportUM = TRUE,
-  reportPov = TRUE,
-  povline = log(20000),
-  reportQ = c(0.1, 0.5, 0.9),
-  Ynmix = 1,
-  Tnmix = 1,
+  n_copula_me_draws = 100L,
+  report_transition_matrix = TRUE,
+  report_spearman = TRUE,
+  report_upward_mobility = TRUE,
+  report_poverty = TRUE,
+  pov_line = log(20000),
+  report_quantiles = c(0.1, 0.5, 0.9),
+  y_n_mix = 1,
+  t_n_mix = 1,
   tol = NULL,
-  conv_crit = "params",
-  ndraws_ll = 100L,
+  conv_criterion = "params",
+  loglik_draws = 100L,
   conv_patience = 1L,
-  maxit = 100L,
+  max_em_iters = 100L,
   mcmc_draws = 200,
-  mcmc_burnin = 100,
+  mcmc_burn_in = 100,
   proposal_sd = NULL,
-  start_sigma_Y = NULL,
-  start_mu_Y = NULL,
-  start_pi_Y = NULL,
-  start_sigma_T = NULL,
-  start_mu_T = NULL,
-  start_pi_T = NULL,
-  mobility_copula_draws = 100L,
+  start_sigma_y = NULL,
+  start_mu_y = NULL,
+  start_pi_y = NULL,
+  start_sigma_t = NULL,
+  start_mu_t = NULL,
+  start_pi_t = NULL,
+  n_copula_draws = 100L,
   ignore_me = FALSE,
   verbose = FALSE
 )
@@ -45,106 +45,106 @@ compute.tsme(
 \arguments{
 \item{data}{data.frame}
 
-\item{Yformla}{formula for outcome model}
+\item{y_formula}{formula for outcome model}
 
-\item{Tformla}{formula for treatment model}
+\item{t_formula}{formula for treatment model}
 
 \item{tau}{values of tau to estimate first step quantile regressions for}
 
-\item{tvals}{values of the treatment to compute conditional distribution-type
+\item{t_values}{values of the treatment to compute conditional distribution-type
 parameters for}
 
-\item{xdf}{matrix of values of covariates to average over for conditional
+\item{x_data}{matrix of values of covariates to average over for conditional
  distribution-type parameters.   The default is NULL and in this case
  all covariates in the data will be averaged over.  A main alternative
  would be to pass in a single row with particular values of covariates
  of interest.
-#' @param me_dist the distribution of the measurement error.  "gaussian" is the
+#' @param me_distribution the distribution of the measurement error.  "gaussian" is the
  default and supports a mixture of normals.  "laplace" is also supported}
 
-\item{copType}{what type of copula to use in second step.  Options are
+\item{copula}{what type of copula to use in second step.  Options are
 "gaussian" (the default), "clayton", "gumbel", or "frank"}
 
 \item{mcmc_method}{simulation step to use in the EM algorithm. Currently
 only \code{"MH"} is supported.}
 
-\item{copula_me_draws}{Number of measurement-error draws used in the
+\item{n_copula_me_draws}{Number of measurement-error draws used in the
 second-stage copula likelihood (default 100). Increase this for a less
 noisy copula likelihood at the cost of speed.}
 
-\item{reportTmat}{whether or not to report a transition matrix}
+\item{report_transition_matrix}{whether or not to report a transition matrix}
 
-\item{reportSP}{whether or not to report Spearman's rho (rank-rank correlation)}
+\item{report_spearman}{whether or not to report Spearman's rho (rank-rank correlation)}
 
-\item{reportUM}{whether or not to report upward mobility parameters}
+\item{report_upward_mobility}{whether or not to report upward mobility parameters}
 
-\item{reportPov}{whether or not to report fraction of population below
+\item{report_poverty}{whether or not to report fraction of population below
 the poverty line as a function of parents' income}
 
-\item{povline}{value of the poverty line (default log(20000))}
+\item{pov_line}{value of the poverty line (default log(20000))}
 
-\item{reportQ}{quantiles of child's income as a function of parents' income
+\item{report_quantiles}{quantiles of child's income as a function of parents' income
 to report (default is .1,.5,.9)}
 
-\item{Ynmix}{Number of Gaussian mixture components for the outcome (Y)
+\item{y_n_mix}{Number of Gaussian mixture components for the outcome (Y)
 measurement error distribution. Default is 1 (single Gaussian). Use
 \code{logLik()}, \code{AIC()}, and \code{BIC()} on a fitted
-\code{qrme()} object to select the appropriate value. \code{Ynmix} and
-\code{Tnmix} can differ — it is valid and common to use different
+\code{qrme()} object to select the appropriate value. \code{y_n_mix} and
+\code{t_n_mix} can differ — it is valid and common to use different
 complexity for each equation.}
 
-\item{Tnmix}{Number of Gaussian mixture components for the treatment (T)
-measurement error distribution. Default is 1. See \code{Ynmix}.}
+\item{t_n_mix}{Number of Gaussian mixture components for the treatment (T)
+measurement error distribution. Default is 1. See \code{y_n_mix}.}
 
 \item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
-chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+chosen automatically based on \code{conv_criterion}.  See \code{\link{em.algo}}
 for details.}
 
-\item{conv_crit}{Convergence criterion passed to \code{\link{qrme}}:
+\item{conv_criterion}{Convergence criterion passed to \code{\link{qrme}}:
 \code{"params"} (default) or \code{"loglik"}.  See \code{\link{em.algo}}.}
 
-\item{ndraws_ll}{Number of Monte Carlo draws for the log-likelihood
-convergence check when \code{conv_crit = "loglik"} (default 100).
-Ignored when \code{conv_crit = "params"}.}
+\item{loglik_draws}{Number of Monte Carlo draws for the log-likelihood
+convergence check when \code{conv_criterion = "loglik"} (default 100).
+Ignored when \code{conv_criterion = "params"}.}
 
 \item{conv_patience}{Integer. Consecutive iterations that must satisfy the
 convergence criterion before stopping (default 1).}
 
-\item{maxit}{Maximum number of EM outer iterations per \code{qrme} call
+\item{max_em_iters}{Maximum number of EM outer iterations per \code{qrme} call
 (default 100).}
 
 \item{mcmc_draws}{total number of MCMC draws per EM step (default 200)}
 
-\item{mcmc_burnin}{number of MCMC draws to discard as burnin (default 100)}
+\item{mcmc_burn_in}{number of MCMC draws to discard as burnin (default 100)}
 
 \item{proposal_sd}{Standard deviation of the MH proposal used in the two
 first-stage \code{\link{qrme}} calls. When \code{NULL} (default), each
 first stage uses its own automatic scale, \code{sqrt(var(Y))} or
 \code{sqrt(var(T))}.}
 
-\item{start_sigma_Y}{Starting value(s) for the ME standard deviation(s) in
-the outcome (Y) \code{\link{qrme}} call. A vector of length \code{Ynmix}.
+\item{start_sigma_y}{Starting value(s) for the ME standard deviation(s) in
+the outcome (Y) \code{\link{qrme}} call. A vector of length \code{y_n_mix}.
 When \code{NULL} (default), \code{qrme} chooses its own starting value.}
 
-\item{start_mu_Y}{Starting value(s) for the ME mean(s) in the outcome (Y)
-\code{\link{qrme}} call. A vector of length \code{Ynmix}. \code{NULL}
+\item{start_mu_y}{Starting value(s) for the ME mean(s) in the outcome (Y)
+\code{\link{qrme}} call. A vector of length \code{y_n_mix}. \code{NULL}
 uses the \code{qrme} default.}
 
-\item{start_pi_Y}{Starting mixture weight(s) for the outcome (Y)
-\code{\link{qrme}} call. A vector of length \code{Ynmix} that sums to 1.
+\item{start_pi_y}{Starting mixture weight(s) for the outcome (Y)
+\code{\link{qrme}} call. A vector of length \code{y_n_mix} that sums to 1.
 \code{NULL} uses the \code{qrme} default.}
 
-\item{start_sigma_T}{Starting value(s) for the ME standard deviation(s) in
-the treatment (T) \code{\link{qrme}} call. A vector of length \code{Tnmix}.
+\item{start_sigma_t}{Starting value(s) for the ME standard deviation(s) in
+the treatment (T) \code{\link{qrme}} call. A vector of length \code{t_n_mix}.
 \code{NULL} uses the \code{qrme} default.}
 
-\item{start_mu_T}{Starting value(s) for the ME mean(s) in the treatment (T)
+\item{start_mu_t}{Starting value(s) for the ME mean(s) in the treatment (T)
 \code{\link{qrme}} call. \code{NULL} uses the \code{qrme} default.}
 
-\item{start_pi_T}{Starting mixture weight(s) for the treatment (T)
+\item{start_pi_t}{Starting mixture weight(s) for the treatment (T)
 \code{\link{qrme}} call. \code{NULL} uses the \code{qrme} default.}
 
-\item{mobility_copula_draws}{Number of copula draws per covariate row used
+\item{n_copula_draws}{Number of copula draws per covariate row used
 to compute mobility summaries such as transition matrices and rank
 correlations (default 100).}
 

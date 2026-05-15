@@ -26,30 +26,30 @@ BEGIN_RCPP
 END_RCPP
 }
 // fvC
-double fvC(double v, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig);
-RcppExport SEXP _qrme_fvC(SEXP vSEXP, SEXP me_distSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP) {
+double fvC(double v, std::string me_distribution, int m, NumericVector pi, NumericVector mu, NumericVector sig);
+RcppExport SEXP _qrme_fvC(SEXP vSEXP, SEXP me_distributionSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type v(vSEXP);
-    Rcpp::traits::input_parameter< std::string >::type me_dist(me_distSEXP);
+    Rcpp::traits::input_parameter< std::string >::type me_distribution(me_distributionSEXP);
     Rcpp::traits::input_parameter< int >::type m(mSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type pi(piSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type sig(sigSEXP);
-    rcpp_result_gen = Rcpp::wrap(fvC(v, me_dist, m, pi, mu, sig));
+    rcpp_result_gen = Rcpp::wrap(fvC(v, me_distribution, m, pi, mu, sig));
     return rcpp_result_gen;
 END_RCPP
 }
 // fvyxC
-double fvyxC(double v, arma::mat betmat, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig, double y, arma::colvec x, NumericVector tau);
-RcppExport SEXP _qrme_fvyxC(SEXP vSEXP, SEXP betmatSEXP, SEXP me_distSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP, SEXP ySEXP, SEXP xSEXP, SEXP tauSEXP) {
+double fvyxC(double v, arma::mat betmat, std::string me_distribution, int m, NumericVector pi, NumericVector mu, NumericVector sig, double y, arma::colvec x, NumericVector tau);
+RcppExport SEXP _qrme_fvyxC(SEXP vSEXP, SEXP betmatSEXP, SEXP me_distributionSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP, SEXP ySEXP, SEXP xSEXP, SEXP tauSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type v(vSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type betmat(betmatSEXP);
-    Rcpp::traits::input_parameter< std::string >::type me_dist(me_distSEXP);
+    Rcpp::traits::input_parameter< std::string >::type me_distribution(me_distributionSEXP);
     Rcpp::traits::input_parameter< int >::type m(mSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type pi(piSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
@@ -57,22 +57,22 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type y(ySEXP);
     Rcpp::traits::input_parameter< arma::colvec >::type x(xSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type tau(tauSEXP);
-    rcpp_result_gen = Rcpp::wrap(fvyxC(v, betmat, me_dist, m, pi, mu, sig, y, x, tau));
+    rcpp_result_gen = Rcpp::wrap(fvyxC(v, betmat, me_distribution, m, pi, mu, sig, y, x, tau));
     return rcpp_result_gen;
 END_RCPP
 }
 // mh_mcmc_innerC
-NumericVector mh_mcmc_innerC(double startval, int mcmc_draws, int mcmc_burnin, double proposal_sd, arma::mat betmat, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig, double y, arma::mat x, NumericVector tau);
-RcppExport SEXP _qrme_mh_mcmc_innerC(SEXP startvalSEXP, SEXP mcmc_drawsSEXP, SEXP mcmc_burninSEXP, SEXP proposal_sdSEXP, SEXP betmatSEXP, SEXP me_distSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP, SEXP ySEXP, SEXP xSEXP, SEXP tauSEXP) {
+NumericVector mh_mcmc_innerC(double startval, int mcmc_draws, int mcmc_burn_in, double proposal_sd, arma::mat betmat, std::string me_distribution, int m, NumericVector pi, NumericVector mu, NumericVector sig, double y, arma::mat x, NumericVector tau);
+RcppExport SEXP _qrme_mh_mcmc_innerC(SEXP startvalSEXP, SEXP mcmc_drawsSEXP, SEXP mcmc_burn_inSEXP, SEXP proposal_sdSEXP, SEXP betmatSEXP, SEXP me_distributionSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP, SEXP ySEXP, SEXP xSEXP, SEXP tauSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type startval(startvalSEXP);
     Rcpp::traits::input_parameter< int >::type mcmc_draws(mcmc_drawsSEXP);
-    Rcpp::traits::input_parameter< int >::type mcmc_burnin(mcmc_burninSEXP);
+    Rcpp::traits::input_parameter< int >::type mcmc_burn_in(mcmc_burn_inSEXP);
     Rcpp::traits::input_parameter< double >::type proposal_sd(proposal_sdSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type betmat(betmatSEXP);
-    Rcpp::traits::input_parameter< std::string >::type me_dist(me_distSEXP);
+    Rcpp::traits::input_parameter< std::string >::type me_distribution(me_distributionSEXP);
     Rcpp::traits::input_parameter< int >::type m(mSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type pi(piSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
@@ -80,13 +80,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type y(ySEXP);
     Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type tau(tauSEXP);
-    rcpp_result_gen = Rcpp::wrap(mh_mcmc_innerC(startval, mcmc_draws, mcmc_burnin, proposal_sd, betmat, me_dist, m, pi, mu, sig, y, x, tau));
+    rcpp_result_gen = Rcpp::wrap(mh_mcmc_innerC(startval, mcmc_draws, mcmc_burn_in, proposal_sd, betmat, me_distribution, m, pi, mu, sig, y, x, tau));
     return rcpp_result_gen;
 END_RCPP
 }
 // imp_sampC
-NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, int mcmc_draws, double proposal_sd, arma::mat betmat, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau);
-RcppExport SEXP _qrme_imp_sampC(SEXP YSEXP, SEXP XSEXP, SEXP VSEXP, SEXP mcmc_drawsSEXP, SEXP proposal_sdSEXP, SEXP betmatSEXP, SEXP me_distSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP, SEXP tauSEXP) {
+NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, int mcmc_draws, double proposal_sd, arma::mat betmat, std::string me_distribution, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau);
+RcppExport SEXP _qrme_imp_sampC(SEXP YSEXP, SEXP XSEXP, SEXP VSEXP, SEXP mcmc_drawsSEXP, SEXP proposal_sdSEXP, SEXP betmatSEXP, SEXP me_distributionSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP, SEXP tauSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -96,19 +96,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type mcmc_draws(mcmc_drawsSEXP);
     Rcpp::traits::input_parameter< double >::type proposal_sd(proposal_sdSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type betmat(betmatSEXP);
-    Rcpp::traits::input_parameter< std::string >::type me_dist(me_distSEXP);
+    Rcpp::traits::input_parameter< std::string >::type me_distribution(me_distributionSEXP);
     Rcpp::traits::input_parameter< int >::type m(mSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type pi(piSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type sig(sigSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type tau(tauSEXP);
-    rcpp_result_gen = Rcpp::wrap(imp_sampC(Y, X, V, mcmc_draws, proposal_sd, betmat, me_dist, m, pi, mu, sig, tau));
+    rcpp_result_gen = Rcpp::wrap(imp_sampC(Y, X, V, mcmc_draws, proposal_sd, betmat, me_distribution, m, pi, mu, sig, tau));
     return rcpp_result_gen;
 END_RCPP
 }
 // mh_mcmcC
-std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int mcmc_draws, int mcmc_burnin, double proposal_sd, arma::mat betmat, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau);
-RcppExport SEXP _qrme_mh_mcmcC(SEXP YSEXP, SEXP XSEXP, SEXP startvalSEXP, SEXP mcmc_drawsSEXP, SEXP mcmc_burninSEXP, SEXP proposal_sdSEXP, SEXP betmatSEXP, SEXP me_distSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP, SEXP tauSEXP) {
+std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int mcmc_draws, int mcmc_burn_in, double proposal_sd, arma::mat betmat, std::string me_distribution, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau);
+RcppExport SEXP _qrme_mh_mcmcC(SEXP YSEXP, SEXP XSEXP, SEXP startvalSEXP, SEXP mcmc_drawsSEXP, SEXP mcmc_burn_inSEXP, SEXP proposal_sdSEXP, SEXP betmatSEXP, SEXP me_distributionSEXP, SEXP mSEXP, SEXP piSEXP, SEXP muSEXP, SEXP sigSEXP, SEXP tauSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -116,16 +116,16 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
     Rcpp::traits::input_parameter< double >::type startval(startvalSEXP);
     Rcpp::traits::input_parameter< int >::type mcmc_draws(mcmc_drawsSEXP);
-    Rcpp::traits::input_parameter< int >::type mcmc_burnin(mcmc_burninSEXP);
+    Rcpp::traits::input_parameter< int >::type mcmc_burn_in(mcmc_burn_inSEXP);
     Rcpp::traits::input_parameter< double >::type proposal_sd(proposal_sdSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type betmat(betmatSEXP);
-    Rcpp::traits::input_parameter< std::string >::type me_dist(me_distSEXP);
+    Rcpp::traits::input_parameter< std::string >::type me_distribution(me_distributionSEXP);
     Rcpp::traits::input_parameter< int >::type m(mSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type pi(piSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type sig(sigSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type tau(tauSEXP);
-    rcpp_result_gen = Rcpp::wrap(mh_mcmcC(Y, X, startval, mcmc_draws, mcmc_burnin, proposal_sd, betmat, me_dist, m, pi, mu, sig, tau));
+    rcpp_result_gen = Rcpp::wrap(mh_mcmcC(Y, X, startval, mcmc_draws, mcmc_burn_in, proposal_sd, betmat, me_distribution, m, pi, mu, sig, tau));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -172,19 +172,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // computeFytXC
-arma::cube computeFytXC(NumericVector yvals, NumericVector tvals, arma::mat Qyxpreds, arma::mat Ftxpreds, std::vector<double> tau, CharacterVector copula, double copParam);
-RcppExport SEXP _qrme_computeFytXC(SEXP yvalsSEXP, SEXP tvalsSEXP, SEXP QyxpredsSEXP, SEXP FtxpredsSEXP, SEXP tauSEXP, SEXP copulaSEXP, SEXP copParamSEXP) {
+arma::cube computeFytXC(NumericVector yvals, NumericVector t_values, arma::mat Qyxpreds, arma::mat Ftxpreds, std::vector<double> tau, CharacterVector copula, double copParam);
+RcppExport SEXP _qrme_computeFytXC(SEXP yvalsSEXP, SEXP t_valuesSEXP, SEXP QyxpredsSEXP, SEXP FtxpredsSEXP, SEXP tauSEXP, SEXP copulaSEXP, SEXP copParamSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type yvals(yvalsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type tvals(tvalsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type t_values(t_valuesSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Qyxpreds(QyxpredsSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Ftxpreds(FtxpredsSEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type copula(copulaSEXP);
     Rcpp::traits::input_parameter< double >::type copParam(copParamSEXP);
-    rcpp_result_gen = Rcpp::wrap(computeFytXC(yvals, tvals, Qyxpreds, Ftxpreds, tau, copula, copParam));
+    rcpp_result_gen = Rcpp::wrap(computeFytXC(yvals, t_values, Qyxpreds, Ftxpreds, tau, copula, copParam));
     return rcpp_result_gen;
 END_RCPP
 }

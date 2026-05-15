@@ -1,11 +1,11 @@
 # Internal helper: compute observed-data log-likelihood from raw parameters via
 # Monte Carlo integration. Called by logLik.merr (ndraws=500) and by em.algo
 # at each outer iteration for convergence checking (ndraws=100).
-loglik_raw <- function(y, x, betmat, tau, pi, mu, sig, me_dist, ndraws = 100L) {
+loglik_raw <- function(y, x, betmat, tau, pi, mu, sig, me_distribution, ndraws = 100L) {
   m <- length(sig)
   n <- length(y)
 
-  if (me_dist == "laplace") {
+  if (me_distribution == "laplace") {
     vdraws <- rlaplace(ndraws, mu = 0, sigma = sig[1])
   } else {
     comp   <- sample(seq_len(m), ndraws, replace = TRUE, prob = pi)
@@ -44,11 +44,11 @@ logLik.merr <- function(object, ndraws = 500, ...) {
   pi      <- object$pi
   mu      <- object$mu
   sig     <- object$sig
-  me_dist <- object$me_dist
+  me_distribution <- object$me_distribution
   m       <- length(sig)
   n       <- length(y)
 
-  ll_val <- loglik_raw(y, x, betmat, tau, pi, mu, sig, me_dist, ndraws = ndraws)
+  ll_val <- loglik_raw(y, x, betmat, tau, pi, mu, sig, me_distribution, ndraws = ndraws)
 
   ## df: L*K (beta) + (m-1) (pi, sums-to-1) + (m-1) (mu, mean-zero) + m (sigma)
   L  <- length(tau)

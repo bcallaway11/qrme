@@ -4,12 +4,12 @@
 \alias{computeFytXC}
 \title{computeFytXC}
 \usage{
-computeFytXC(yvals, tvals, Qyxpreds, Ftxpreds, tau, copula, copParam)
+computeFytXC(yvals, t_values, Qyxpreds, Ftxpreds, tau, copula, copParam)
 }
 \arguments{
 \item{yvals}{values to compute conditional distribution for}
 
-\item{tvals}{values of treatment to compute conditional distribution for}
+\item{t_values}{values of treatment to compute conditional distribution for}
 
 \item{Qyxpreds}{matrix of quantile regression predictions}
 

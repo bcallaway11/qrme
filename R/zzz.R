@@ -1,1 +1,1 @@
-utils::globalVariables(c("value","tvals"))
+utils::globalVariables(c("value","t_values"))

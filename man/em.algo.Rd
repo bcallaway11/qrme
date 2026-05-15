@@ -9,21 +9,21 @@ em.algo(
   data,
   betmatguess,
   tau,
-  me_dist = "gaussian",
+  me_distribution = "gaussian",
   m = 1,
   piguess = 1,
   muguess = 0,
   sigguess = 1,
   mcmc_method = "MH",
   tol = NULL,
-  conv_crit = "params",
-  ndraws_ll = 100L,
+  conv_criterion = "params",
+  loglik_draws = 100L,
   conv_patience = 1L,
   mcmc_draws = 200,
-  mcmc_burnin = 100,
+  mcmc_burn_in = 100,
   proposal_sd = NULL,
-  ncores = 1,
-  maxit = 100,
+  n_cores = 1,
+  max_em_iters = 100,
   verbose = FALSE
 )
 }
@@ -38,7 +38,7 @@ of the covariates}
 
 \item{tau}{An L-vector indicating which quantiles have been estimated}
 
-\item{me_dist}{The distribution of the measurement error.  "gaussian" is the
+\item{me_distribution}{The distribution of the measurement error.  "gaussian" is the
 default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{The number of components of the mixture distribution for the
@@ -64,15 +64,15 @@ compared against the relative log-likelihood change
 \code{|ll_new - ll_old| / |ll_old|}.  Tighten to \code{1e-3} or smaller
 for higher accuracy at the cost of more iterations.}
 
-\item{conv_crit}{Convergence criterion.  \code{"params"} (default) stops
+\item{conv_criterion}{Convergence criterion.  \code{"params"} (default) stops
 when the maximum scaled parameter change falls below \code{tol} (see
 \code{tol} above).  \code{"loglik"} stops when the relative change in the
 observed-data log-likelihood, \code{|ll_new - ll_old| / |ll_old|}, falls
 below \code{tol}; the log-likelihood is evaluated using Monte Carlo
-integration with \code{ndraws_ll} draws per outer iteration.}
+integration with \code{loglik_draws} draws per outer iteration.}
 
-\item{ndraws_ll}{Number of Monte Carlo draws used to evaluate the
-log-likelihood at each outer EM iteration when \code{conv_crit = "loglik"}.
+\item{loglik_draws}{Number of Monte Carlo draws used to evaluate the
+log-likelihood at each outer EM iteration when \code{conv_criterion = "loglik"}.
 More draws reduce noise in the convergence check at the cost of speed.
 Default is 100.}
 
@@ -84,7 +84,7 @@ Monte Carlo noise in the log-likelihood or parameter updates.}
 
 \item{mcmc_draws}{Total number of MCMC draws per EM step (default 200)}
 
-\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 100)}
+\item{mcmc_burn_in}{Number of MCMC draws to discard as burnin (default 100)}
 
 \item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
 (random-walk step size). When \code{NULL} (default), initialised to the
@@ -93,9 +93,9 @@ M-step to track the current ME scale:
 \code{sqrt(sum(pi_k * (sig_k^2 + mu_k^2)))}. Pass a positive numeric to
 fix the proposal at that value for all iterations.}
 
-\item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
+\item{n_cores}{Number of cores for parallel bootstrap computation (default 1)}
 
-\item{maxit}{Maximum number of EM outer iterations. If convergence is not
+\item{max_em_iters}{Maximum number of EM outer iterations. If convergence is not
 reached, the estimates from the final iteration are returned (default is 100)}
 
 \item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),

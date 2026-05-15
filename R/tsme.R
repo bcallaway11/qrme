@@ -14,22 +14,22 @@
 #'
 #' @keywords internal
 #' @export
-compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
-                         me_dist=me_dist, copType="gaussian",
-                         mcmc_method="MH", copula_me_draws=100L,
-                         reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
-                         reportPov=TRUE,
-                         povline=log(20000), reportQ=c(.1,.5,.9),
-                         Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
-                         ndraws_ll=100L, conv_patience=1L, maxit=100L,
-                         mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL,
-                         start_sigma_Y=NULL, start_mu_Y=NULL, start_pi_Y=NULL,
-                         start_sigma_T=NULL, start_mu_T=NULL, start_pi_T=NULL,
-                         mobility_copula_draws=100L, ignore_me=FALSE,
+compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
+                         me_distribution="gaussian", copula="gaussian",
+                         mcmc_method="MH", n_copula_me_draws=100L,
+                         report_transition_matrix=TRUE, report_spearman=TRUE, report_upward_mobility=TRUE,
+                         report_poverty=TRUE,
+                         pov_line=log(20000), report_quantiles=c(.1,.5,.9),
+                         y_n_mix=1, t_n_mix=1, tol=NULL, conv_criterion="params",
+                         loglik_draws=100L, conv_patience=1L, max_em_iters=100L,
+                         mcmc_draws=200, mcmc_burn_in=100, proposal_sd=NULL,
+                         start_sigma_y=NULL, start_mu_y=NULL, start_pi_y=NULL,
+                         start_sigma_t=NULL, start_mu_t=NULL, start_pi_t=NULL,
+                         n_copula_draws=100L, ignore_me=FALSE,
                          verbose=FALSE) {
   
-  yname <- lhs.vars(Yformla)
-  tname <- lhs.vars(Tformla)
+  y_name <- lhs.vars(y_formula)
+  t_name <- lhs.vars(t_formula)
 
   Qyx <- NULL
   Qtx <- NULL
@@ -37,83 +37,83 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
   
   if (!ignore_me) {
     qrme_progress(verbose, "tsme first stage: outcome measurement-error model")
-    Qyx <- qrme(Yformla, data=data, tau=tau, me_dist=me_dist, nmix=Ynmix, mcmc_method=mcmc_method,
-                tol=tol, conv_crit=conv_crit, ndraws_ll=ndraws_ll, conv_patience=conv_patience,
-                mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd,
-                start_sigma=start_sigma_Y, start_mu=start_mu_Y, start_pi=start_pi_Y,
-                maxit=maxit, verbose=verbose, se=FALSE) # don't bootstrap these
+    Qyx <- qrme(y_formula, data=data, tau=tau, me_distribution=me_distribution, n_mix=y_n_mix, mcmc_method=mcmc_method,
+                tol=tol, conv_criterion=conv_criterion, loglik_draws=loglik_draws, conv_patience=conv_patience,
+                mcmc_draws=mcmc_draws, mcmc_burn_in=mcmc_burn_in, proposal_sd=proposal_sd,
+                start_sigma=start_sigma_y, start_mu=start_mu_y, start_pi=start_pi_y,
+                max_em_iters=max_em_iters, verbose=verbose, se=FALSE) # don't bootstrap these
     qrme_progress(verbose, "tsme first stage: treatment measurement-error model")
-    Qtx  <- qrme(Tformla, data=data, tau=tau, me_dist=me_dist, nmix=Tnmix, mcmc_method=mcmc_method,
-                 tol=tol, conv_crit=conv_crit, ndraws_ll=ndraws_ll, conv_patience=conv_patience,
-                 mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd,
-                 start_sigma=start_sigma_T, start_mu=start_mu_T, start_pi=start_pi_T,
-                 maxit=maxit, verbose=verbose, se=FALSE)
+    Qtx  <- qrme(t_formula, data=data, tau=tau, me_distribution=me_distribution, n_mix=t_n_mix, mcmc_method=mcmc_method,
+                 tol=tol, conv_criterion=conv_criterion, loglik_draws=loglik_draws, conv_patience=conv_patience,
+                 mcmc_draws=mcmc_draws, mcmc_burn_in=mcmc_burn_in, proposal_sd=proposal_sd,
+                 start_sigma=start_sigma_t, start_mu=start_mu_t, start_pi=start_pi_t,
+                 max_em_iters=max_em_iters, verbose=verbose, se=FALSE)
 
     # now get joint distribution
     qrme_progress(verbose, "tsme second stage: measurement-error copula model")
-    meres <- qr2me(yname=yname,
-                   tname=tname,
-                   xformla=Yformla,
+    meres <- qr2me(y_name=y_name,
+                   t_name=t_name,
+                   x_formula=y_formula,
                    tau=tau,
                    data=data,
-                   tvals=tvals,
-                   xdf=xdf,
-                   me_dist=me_dist,
-                   copula=copType,
+                   t_values=t_values,
+                   x_data=x_data,
+                   me_distribution=me_distribution,
+                   copula=copula,
                    Qyx=Qyx,
                    Qtx=Qtx,
-                   copula_me_draws=copula_me_draws,
-                   mobility_copula_draws=mobility_copula_draws,
-                   retFytxlist=FALSE,
+                   n_copula_me_draws=n_copula_me_draws,
+                   n_copula_draws=n_copula_draws,
+                   return_fytx_list=FALSE,
                    verbose=verbose)
   }
   
  
  
   # get results without measurement error
-  rqyx <- rq(Yformla, tau=tau, data=data)
-  rqtx <- rq(Tformla, tau=tau, data=data)
+  rqyx <- rq(y_formula, tau=tau, data=data)
+  rqtx <- rq(t_formula, tau=tau, data=data)
   class(rqyx) <- c("merr", "rqs")
   class(rqtx) <- c("merr", "rqs")
   rqyx$pi <- rqtx$pi <- 1
   rqyx$mu <- rqtx$mu <- 0
   rqyx$sig <- rqtx$sig <- 0
 
-  nomeres <- qr2me(yname, tname, Yformla, tau=tau, data=data,
-                   tvals=tvals, xdf=xdf, copula_me_draws=copula_me_draws,
-                   mobility_copula_draws=mobility_copula_draws,
-                   copula=copType, 
-                   Qyx=rqyx, Qtx=rqtx, retFytxlist=FALSE,
+  nomeres <- qr2me(y_name, t_name, y_formula, tau=tau, data=data,
+                   t_values=t_values, x_data=x_data, n_copula_me_draws=n_copula_me_draws,
+                   n_copula_draws=n_copula_draws,
+                   copula=copula, 
+                   Qyx=rqyx, Qtx=rqtx, return_fytx_list=FALSE,
                    verbose=qrme_verbose_level(verbose) >= 2L)
 
 
 
-  if (reportTmat) {
+  if (report_transition_matrix) {
     meTmat <- meres$t_mat#tmat(Qyx$Ystar, Qtx$Ystar)
-    obsTmat <- tmat(data[,yname], data[,tname])
+    obsTmat <- tmat(data[,y_name], data[,t_name])
     nomeTmat <- nomeres$t_mat
   }
 
-  if (reportSP) {
+  if (report_spearman) {
     mePs <- meres$Ps
     nomePs <- nomeres$Ps
-    obsPs  <- cor(data[,yname], data[,tname], method="spearman")
+    obsPs  <- cor(data[,y_name], data[,t_name], method="spearman")
   }
 
-  if (reportUM) {
+  if (report_upward_mobility) {
     meUm <- meres$up_mob
     nomeUm <- nomeres$up_mob
-    obsUm <- upMob(data[,yname], data[,tname])
+    obsUm <- upMob(data[,y_name], data[,t_name])
   }
 
 
   # results just using quantile regression
   tau <- seq(0,1,length.out=100)
-  qrformla <- toformula(yname, c(tname, rhs.vars(Yformla)))
-  qrytx <- rq(qrformla, tau=tau, data=data)
-  qrytx$Fyt <- lapply(1:length(tvals), function(i) {
-    if (is.null(xdf)) newdta <- data else newdta <- xdf
-    newdta[,tname] <- tvals[i]
+  qr_formula <- toformula(y_name, c(t_name, rhs.vars(y_formula)))
+  qrytx <- rq(qr_formula, tau=tau, data=data)
+  qrytx$Fyt <- lapply(1:length(t_values), function(i) {
+    if (is.null(x_data)) newdta <- data else newdta <- x_data
+    newdta[,t_name] <- t_values[i]
     if (nrow(newdta) == 1) {
       Qytx <- predict(qrytx, newdata=newdta)
       Fytx <- BMisc::makeDist(Qytx[1,], tau, rearrange=TRUE, method="linear")
@@ -121,27 +121,27 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
     } else {
       Fytx <- predict(qrytx, newdata=newdta, type="Fhat", stepfun=TRUE)
       Fytx <- rearrange(Fytx)
-      combineDfs(seq(min(data[,yname]), max(data[,yname]), length.out=500), Fytx)
+      combineDfs(seq(min(data[,y_name]), max(data[,y_name]), length.out=500), Fytx)
     }
   })
   
-  if (reportPov) {
-    if (ignore_me) mePovrate <- NULL else mePovrate <- sapply(1:(length(meres$tvals)), function(i) meres$Fyt[[i]](povline))
-    nomePovrate <- sapply(1:(length(nomeres$tvals)), function(i) nomeres$Fyt[[i]](povline))
-    qrPovrate <- sapply(1:(length(nomeres$tvals)), function(i) qrytx$Fyt[[i]](povline))
+  if (report_poverty) {
+    if (ignore_me) mePovrate <- NULL else mePovrate <- sapply(1:(length(meres$t_values)), function(i) meres$Fyt[[i]](pov_line))
+    nomePovrate <- sapply(1:(length(nomeres$t_values)), function(i) nomeres$Fyt[[i]](pov_line))
+    qrPovrate <- sapply(1:(length(nomeres$t_values)), function(i) qrytx$Fyt[[i]](pov_line))
   }
 
-  meresQ <- if(ignore_me) meresQ <- NULL else meresQ <-  sapply(meres$Fyt, function(Fy) quantile(Fy, type=1, probs=reportQ))
-  nomeresQ <- sapply(nomeres$Fyt, function(Fy) quantile(Fy, type=1, probs=reportQ))
-  qrytxQ <- sapply(qrytx$Fyt, function(Fy) quantile(Fy, type=1, probs=reportQ))
+  meresQ <- if(ignore_me) meresQ <- NULL else meresQ <-  sapply(meres$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
+  nomeresQ <- sapply(nomeres$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
+  qrytxQ <- sapply(qrytx$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
 
   meCopParam <- meres$cop.param
   nomeCopParam <- nomeres$cop.param
   
-  out <- list(Yformla=Yformla, Tformla=Tformla, tau=tau, tvals=tvals, copType=copType,
-              meCopParam=meCopParam, nomeCopParam=nomeCopParam, Ynmix=Ynmix, Tnmix=Tnmix, reportQ=reportQ,
+  out <- list(y_formula=y_formula, t_formula=t_formula, tau=tau, t_values=t_values, copula=copula,
+              meCopParam=meCopParam, nomeCopParam=nomeCopParam, y_n_mix=y_n_mix, t_n_mix=t_n_mix, report_quantiles=report_quantiles,
               tol=c(Y=Qyx$tol, T=Qtx$tol),
-              conv_crit=c(Y=Qyx$conv_crit, T=Qtx$conv_crit),
+              conv_criterion=c(Y=Qyx$conv_criterion, T=Qtx$conv_criterion),
               conv_criteria=c(Y=Qyx$conv_criteria, T=Qtx$conv_criteria),
               conv_converged=c(Y=Qyx$conv_converged, T=Qtx$conv_converged),
               mix_n_iter=c(Y=Qyx$mix_n_iter, T=Qtx$mix_n_iter),
@@ -165,76 +165,76 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #' @description function to compute nonlinear models with two sided measurement error
 #' 
 #' @param data data.frame
-#' @param Yformla formula for outcome model
-#' @param Tformla formula for treatment model
+#' @param y_formula formula for outcome model
+#' @param t_formula formula for treatment model
 #' @param tau values of tau to estimate first step quantile regressions for
-#' @param tvals values of the treatment to compute conditional distribution-type
+#' @param t_values values of the treatment to compute conditional distribution-type
 #'  parameters for
-#' @param xdf matrix of values of covariates to average over for conditional
+#' @param x_data matrix of values of covariates to average over for conditional
 #'  distribution-type parameters.   The default is NULL and in this case
 #'  all covariates in the data will be averaged over.  A main alternative
 #'  would be to pass in a single row with particular values of covariates
 #'  of interest.
-#' #' @param me_dist the distribution of the measurement error.  "gaussian" is the
+#' #' @param me_distribution the distribution of the measurement error.  "gaussian" is the
 #'  default and supports a mixture of normals.  "laplace" is also supported
-#' @param copType what type of copula to use in second step.  Options are
+#' @param copula what type of copula to use in second step.  Options are
 #'  "gaussian" (the default), "clayton", "gumbel", or "frank"
 #' @param mcmc_method simulation step to use in the EM algorithm. Currently
 #'  only \code{"MH"} is supported.
-#' @param copula_me_draws Number of measurement-error draws used in the
+#' @param n_copula_me_draws Number of measurement-error draws used in the
 #'  second-stage copula likelihood (default 100). Increase this for a less
 #'  noisy copula likelihood at the cost of speed.
-#' @param reportTmat whether or not to report a transition matrix
-#' @param reportSP whether or not to report Spearman's rho (rank-rank correlation)
-#' @param reportUM whether or not to report upward mobility parameters
-#' @param reportPov whether or not to report fraction of population below
+#' @param report_transition_matrix whether or not to report a transition matrix
+#' @param report_spearman whether or not to report Spearman's rho (rank-rank correlation)
+#' @param report_upward_mobility whether or not to report upward mobility parameters
+#' @param report_poverty whether or not to report fraction of population below
 #'  the poverty line as a function of parents' income
-#' @param povline value of the poverty line (default log(20000))
-#' @param reportQ quantiles of child's income as a function of parents' income
+#' @param pov_line value of the poverty line (default log(20000))
+#' @param report_quantiles quantiles of child's income as a function of parents' income
 #'  to report (default is .1,.5,.9)
-#' @param Ynmix Number of Gaussian mixture components for the outcome (Y)
+#' @param y_n_mix Number of Gaussian mixture components for the outcome (Y)
 #'   measurement error distribution. Default is 1 (single Gaussian). Use
 #'   \code{logLik()}, \code{AIC()}, and \code{BIC()} on a fitted
-#'   \code{qrme()} object to select the appropriate value. \code{Ynmix} and
-#'   \code{Tnmix} can differ — it is valid and common to use different
+#'   \code{qrme()} object to select the appropriate value. \code{y_n_mix} and
+#'   \code{t_n_mix} can differ — it is valid and common to use different
 #'   complexity for each equation.
-#' @param Tnmix Number of Gaussian mixture components for the treatment (T)
-#'   measurement error distribution. Default is 1. See \code{Ynmix}.
+#' @param t_n_mix Number of Gaussian mixture components for the treatment (T)
+#'   measurement error distribution. Default is 1. See \code{y_n_mix}.
 #' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
-#'  chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+#'  chosen automatically based on \code{conv_criterion}.  See \code{\link{em.algo}}
 #'  for details.
-#' @param conv_crit Convergence criterion passed to \code{\link{qrme}}:
+#' @param conv_criterion Convergence criterion passed to \code{\link{qrme}}:
 #'  \code{"params"} (default) or \code{"loglik"}.  See \code{\link{em.algo}}.
-#' @param ndraws_ll Number of Monte Carlo draws for the log-likelihood
-#'  convergence check when \code{conv_crit = "loglik"} (default 100).
-#'  Ignored when \code{conv_crit = "params"}.
+#' @param loglik_draws Number of Monte Carlo draws for the log-likelihood
+#'  convergence check when \code{conv_criterion = "loglik"} (default 100).
+#'  Ignored when \code{conv_criterion = "params"}.
 #' @param conv_patience Integer. Consecutive iterations that must satisfy the
 #'  convergence criterion before stopping (default 1).
-#' @param maxit Maximum number of EM outer iterations per \code{qrme} call
+#' @param max_em_iters Maximum number of EM outer iterations per \code{qrme} call
 #'  (default 100).
 #' @param mcmc_draws total number of MCMC draws per EM step (default 200)
-#' @param mcmc_burnin number of MCMC draws to discard as burnin (default 100)
+#' @param mcmc_burn_in number of MCMC draws to discard as burnin (default 100)
 #' @param proposal_sd Standard deviation of the MH proposal used in the two
 #'  first-stage \code{\link{qrme}} calls. When \code{NULL} (default), each
 #'  first stage uses its own automatic scale, \code{sqrt(var(Y))} or
 #'  \code{sqrt(var(T))}.
-#' @param start_sigma_Y Starting value(s) for the ME standard deviation(s) in
-#'  the outcome (Y) \code{\link{qrme}} call. A vector of length \code{Ynmix}.
+#' @param start_sigma_y Starting value(s) for the ME standard deviation(s) in
+#'  the outcome (Y) \code{\link{qrme}} call. A vector of length \code{y_n_mix}.
 #'  When \code{NULL} (default), \code{qrme} chooses its own starting value.
-#' @param start_mu_Y Starting value(s) for the ME mean(s) in the outcome (Y)
-#'  \code{\link{qrme}} call. A vector of length \code{Ynmix}. \code{NULL}
+#' @param start_mu_y Starting value(s) for the ME mean(s) in the outcome (Y)
+#'  \code{\link{qrme}} call. A vector of length \code{y_n_mix}. \code{NULL}
 #'  uses the \code{qrme} default.
-#' @param start_pi_Y Starting mixture weight(s) for the outcome (Y)
-#'  \code{\link{qrme}} call. A vector of length \code{Ynmix} that sums to 1.
+#' @param start_pi_y Starting mixture weight(s) for the outcome (Y)
+#'  \code{\link{qrme}} call. A vector of length \code{y_n_mix} that sums to 1.
 #'  \code{NULL} uses the \code{qrme} default.
-#' @param start_sigma_T Starting value(s) for the ME standard deviation(s) in
-#'  the treatment (T) \code{\link{qrme}} call. A vector of length \code{Tnmix}.
+#' @param start_sigma_t Starting value(s) for the ME standard deviation(s) in
+#'  the treatment (T) \code{\link{qrme}} call. A vector of length \code{t_n_mix}.
 #'  \code{NULL} uses the \code{qrme} default.
-#' @param start_mu_T Starting value(s) for the ME mean(s) in the treatment (T)
+#' @param start_mu_t Starting value(s) for the ME mean(s) in the treatment (T)
 #'  \code{\link{qrme}} call. \code{NULL} uses the \code{qrme} default.
-#' @param start_pi_T Starting mixture weight(s) for the treatment (T)
+#' @param start_pi_t Starting mixture weight(s) for the treatment (T)
 #'  \code{\link{qrme}} call. \code{NULL} uses the \code{qrme} default.
-#' @param mobility_copula_draws Number of copula draws per covariate row used
+#' @param n_copula_draws Number of copula draws per covariate row used
 #'  to compute mobility summaries such as transition matrices and rank
 #'  correlations (default 100).
 #' @param ignore_me whether or not to ignore measurement error (this is primarily
@@ -251,24 +251,24 @@ compute.tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
 #'  (default is FALSE)
 #' @param n_boot if computing standard errors, the number of bootstrap iterations
 #'  to use (default is 100)
-#' @param ncores allows for parallel processing in computing standard errors using
+#' @param n_cores allows for parallel processing in computing standard errors using
 #'  the bootstrap (the default is 1)
 #'
 #' @return list of nonlinear measures of intergenerational income mobility
 #'  adjusted for measurement error
 #' @export
-tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
-                 me_dist="gaussian", copType="gaussian",
-                 mcmc_method="MH", copula_me_draws=100L,
-                 reportTmat=TRUE, reportSP=TRUE, reportUM=TRUE,
-                 reportPov=TRUE, povline=log(20000), reportQ=c(.1,.5,.9),
-                 Ynmix=1, Tnmix=1, tol=NULL, conv_crit="params",
-                 ndraws_ll=100L, conv_patience=1L, maxit=100L,
-                 mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL,
-                 start_sigma_Y=NULL, start_mu_Y=NULL, start_pi_Y=NULL,
-                 start_sigma_T=NULL, start_mu_T=NULL, start_pi_T=NULL,
-                 mobility_copula_draws=100L, ignore_me=FALSE, verbose=FALSE,
-                 se=FALSE, n_boot=100, ncores=1) {
+tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
+                 me_distribution="gaussian", copula="gaussian",
+                 mcmc_method="MH", n_copula_me_draws=100L,
+                 report_transition_matrix=TRUE, report_spearman=TRUE, report_upward_mobility=TRUE,
+                 report_poverty=TRUE, pov_line=log(20000), report_quantiles=c(.1,.5,.9),
+                 y_n_mix=1, t_n_mix=1, tol=NULL, conv_criterion="params",
+                 loglik_draws=100L, conv_patience=1L, max_em_iters=100L,
+                 mcmc_draws=200, mcmc_burn_in=100, proposal_sd=NULL,
+                 start_sigma_y=NULL, start_mu_y=NULL, start_pi_y=NULL,
+                 start_sigma_t=NULL, start_mu_t=NULL, start_pi_t=NULL,
+                 n_copula_draws=100L, ignore_me=FALSE, verbose=FALSE,
+                 se=FALSE, n_boot=100, n_cores=1) {
 
   if (qrme_verbose_level(verbose) >= 1L) {
     message("tsme method")
@@ -283,38 +283,38 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
   }
 
   res <- compute.tsme(data=data,
-                      Yformla=Yformla,
-                      Tformla=Tformla,
+                      y_formula=y_formula,
+                      t_formula=t_formula,
                       tau=tau,
-                      tvals=tvals,
-                      xdf=xdf,
-                      me_dist=me_dist,
-                      copType=copType,
+                      t_values=t_values,
+                      x_data=x_data,
+                      me_distribution=me_distribution,
+                      copula=copula,
                       mcmc_method=mcmc_method,
-                      copula_me_draws=copula_me_draws,
-                      reportTmat=reportTmat,
-                      reportSP=reportSP,
-                      reportUM=reportUM,
-                      reportPov=reportPov,
-                      povline=povline,
-                      reportQ=reportQ,
-                      Ynmix=Ynmix,
-                      Tnmix=Tnmix,
+                      n_copula_me_draws=n_copula_me_draws,
+                      report_transition_matrix=report_transition_matrix,
+                      report_spearman=report_spearman,
+                      report_upward_mobility=report_upward_mobility,
+                      report_poverty=report_poverty,
+                      pov_line=pov_line,
+                      report_quantiles=report_quantiles,
+                      y_n_mix=y_n_mix,
+                      t_n_mix=t_n_mix,
                       tol=tol,
-                      conv_crit=conv_crit,
-                      ndraws_ll=ndraws_ll,
+                      conv_criterion=conv_criterion,
+                      loglik_draws=loglik_draws,
                       conv_patience=conv_patience,
-                      maxit=maxit,
+                      max_em_iters=max_em_iters,
                       mcmc_draws=mcmc_draws,
-                      mcmc_burnin=mcmc_burnin,
+                      mcmc_burn_in=mcmc_burn_in,
                       proposal_sd=proposal_sd,
-                      start_sigma_Y=start_sigma_Y,
-                      start_mu_Y=start_mu_Y,
-                      start_pi_Y=start_pi_Y,
-                      start_sigma_T=start_sigma_T,
-                      start_mu_T=start_mu_T,
-                      start_pi_T=start_pi_T,
-                      mobility_copula_draws=mobility_copula_draws,
+                      start_sigma_y=start_sigma_y,
+                      start_mu_y=start_mu_y,
+                      start_pi_y=start_pi_y,
+                      start_sigma_t=start_sigma_t,
+                      start_mu_t=start_mu_t,
+                      start_pi_t=start_pi_t,
+                      n_copula_draws=n_copula_draws,
                       ignore_me=ignore_me,
                       verbose=verbose)
   
@@ -327,44 +327,44 @@ tsme <- function(data, Yformla, Tformla, tau, tvals, xdf=NULL,
       bdata <- data[brows,]
       tryCatch({
         out <- compute.tsme(data=bdata,
-                            Yformla=Yformla,
-                            Tformla=Tformla,
+                            y_formula=y_formula,
+                            t_formula=t_formula,
                             tau=tau,
-                            tvals=tvals,
-                            xdf=xdf,
-                            me_dist=me_dist,
-                            copType=copType,
+                            t_values=t_values,
+                            x_data=x_data,
+                            me_distribution=me_distribution,
+                            copula=copula,
                             mcmc_method=mcmc_method,
-                            copula_me_draws=copula_me_draws,
-                            reportTmat=reportTmat,
-                            reportSP=reportSP,
-                            reportUM=reportUM,
-                            reportPov=reportPov,
-                            povline=povline,
-                            Ynmix=Ynmix,
-                            Tnmix=Tnmix,
+                            n_copula_me_draws=n_copula_me_draws,
+                            report_transition_matrix=report_transition_matrix,
+                            report_spearman=report_spearman,
+                            report_upward_mobility=report_upward_mobility,
+                            report_poverty=report_poverty,
+                            pov_line=pov_line,
+                            y_n_mix=y_n_mix,
+                            t_n_mix=t_n_mix,
                             tol=tol,
-                            conv_crit=conv_crit,
-                            ndraws_ll=ndraws_ll,
+                            conv_criterion=conv_criterion,
+                            loglik_draws=loglik_draws,
                             conv_patience=conv_patience,
-                            maxit=maxit,
+                            max_em_iters=max_em_iters,
                             mcmc_draws=mcmc_draws,
-                            mcmc_burnin=mcmc_burnin,
+                            mcmc_burn_in=mcmc_burn_in,
                             proposal_sd=proposal_sd,
-                            start_sigma_Y=start_sigma_Y,
-                            start_mu_Y=start_mu_Y,
-                            start_pi_Y=start_pi_Y,
-                            start_sigma_T=start_sigma_T,
-                            start_mu_T=start_mu_T,
-                            start_pi_T=start_pi_T,
-                            mobility_copula_draws=mobility_copula_draws,
+                            start_sigma_y=start_sigma_y,
+                            start_mu_y=start_mu_y,
+                            start_pi_y=start_pi_y,
+                            start_sigma_t=start_sigma_t,
+                            start_mu_t=start_mu_t,
+                            start_pi_t=start_pi_t,
+                            n_copula_draws=n_copula_draws,
                             verbose=FALSE)
         out
       }, error=function(cond) {
         return(NULL) # use this as code for error on that bootstrap iteration
         #return(cond)
       })
-    }, cl=ncores)
+    }, cl=n_cores)
 
     
     # drop list elements where bootstrap failed

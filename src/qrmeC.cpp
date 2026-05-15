@@ -76,7 +76,7 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
 //'  a mixture of normals distribution
 //'
 //' @param v value to estimate the density at
-//' @param me_dist the distribution of the measurement error.  "gaussian" is the
+//' @param me_distribution the distribution of the measurement error.  "gaussian" is the
 //'  default and supports a mixture of normals.  "laplace" is also supported.
 //' @param m number of mixture components
 //' @param pi vector of mixture probabilities
@@ -85,11 +85,11 @@ double fyxC(double y, arma::mat betmat, arma::colvec X, NumericVector tau) {
 //'
 //' @return estimated density of measurement error at v
 // [[Rcpp::export]]
-double fvC(double v, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig) {
+double fvC(double v, std::string me_distribution, int m, NumericVector pi, NumericVector mu, NumericVector sig) {
 
   double out = 0;
 
-  if (me_dist == "laplace") {
+  if (me_distribution == "laplace") {
     // Laplace distribution
     double b = sig[0] / sqrt(2);
     out = exp(-abs(v) / b) / (2 * b);
@@ -117,11 +117,11 @@ double fvC(double v, std::string me_dist, int m, NumericVector pi, NumericVector
 //'
 //' @return estimate of density of measurement error conditional on y and x
 // [[Rcpp::export]]
-double fvyxC(double v, arma::mat betmat, std::string me_dist,
+double fvyxC(double v, arma::mat betmat, std::string me_distribution,
         int m, NumericVector pi, NumericVector mu, NumericVector sig,
 	      double y, arma::colvec x, NumericVector tau) {
 
-  return fyxC(y - v, betmat, x, tau) * fvC(v,me_dist,m,pi,mu,sig);
+  return fyxC(y - v, betmat, x, tau) * fvC(v,me_distribution,m,pi,mu,sig);
 }
 
 
@@ -135,9 +135,9 @@ double fvyxC(double v, arma::mat betmat, std::string me_dist,
 //'
 //' @return vector of MCMC draws of measurement error
 // [[Rcpp::export]]
-NumericVector mh_mcmc_innerC(double startval, int mcmc_draws, int mcmc_burnin,
+NumericVector mh_mcmc_innerC(double startval, int mcmc_draws, int mcmc_burn_in,
 		       double proposal_sd, arma::mat betmat,
-           std::string me_dist,
+           std::string me_distribution,
 		       int m, NumericVector pi, NumericVector mu,
 		       NumericVector sig, double y, arma::mat x,
 		       NumericVector tau) {
@@ -146,9 +146,9 @@ NumericVector mh_mcmc_innerC(double startval, int mcmc_draws, int mcmc_burnin,
   out[0] = startval;
   for (int i = 1; i < mcmc_draws; i++) {
     double trialval = out[i-1] + rnorm(1,0,proposal_sd)[0];
-    double fvold = fvyxC(out[i-1], betmat=betmat, me_dist=me_dist, m=m, pi=pi, mu=mu,
+    double fvold = fvyxC(out[i-1], betmat=betmat, me_distribution=me_distribution, m=m, pi=pi, mu=mu,
     			 sig=sig, y=y, x=x, tau=tau);
-    double fvnew = fvyxC(trialval, betmat=betmat, me_dist=me_dist, m=m, pi=pi, mu=mu,
+    double fvnew = fvyxC(trialval, betmat=betmat, me_distribution=me_distribution, m=m, pi=pi, mu=mu,
     			 sig=sig, y=y, x=x, tau=tau);
     if (fvnew > fvold) {
       out[i] = trialval;
@@ -160,7 +160,7 @@ NumericVector mh_mcmc_innerC(double startval, int mcmc_draws, int mcmc_burnin,
       }
     }
   }
-  return out[Rcpp::Range((mcmc_burnin), (out.size()-1))];
+  return out[Rcpp::Range((mcmc_burn_in), (out.size()-1))];
 }
 
 
@@ -175,7 +175,7 @@ NumericVector mh_mcmc_innerC(double startval, int mcmc_draws, int mcmc_burnin,
 //'
 //' @return vector of weights to be used in importance sampling
 // [[Rcpp::export]]
-NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, int mcmc_draws, double proposal_sd, arma::mat betmat, std::string me_dist, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
+NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, int mcmc_draws, double proposal_sd, arma::mat betmat, std::string me_distribution, int m, NumericVector pi, NumericVector mu, NumericVector sig, NumericVector tau) {
   int n = Y.size(); // n includes measurement error so is greater than true number of observations
   double y;
   double v;
@@ -193,7 +193,7 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, int mcmc_
    v = V[i];
    x = X.rows(i,i); // this gets the i-th row
    x = x.t();
-   w1 = fvyxC(v, betmat=betmat, me_dist="gaussian", m=m, pi=pi, mu=mu,
+   w1 = fvyxC(v, betmat=betmat, me_distribution="gaussian", m=m, pi=pi, mu=mu,
     			 sig=sig, y=y, x=x, tau=tau);
    w2 = denW[i];
    weights[i] = w1/w2;
@@ -208,11 +208,11 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, int mcmc_
 //' @param X matrix of covariates
 //' @param startval starting value for the markov chain
 //' @param mcmc_draws total number of Monte Carlo draws
-//' @param mcmc_burnin number of initial draws to discard as burnin
+//' @param mcmc_burn_in number of initial draws to discard as burnin
 //' @param proposal_sd standard deviation of the random-walk MH proposal
 //'  MH algorithm
 //' @param betmat matrix of QR parameters
-//' @param me_dist the distribution of the measurement error.  "gaussian" is the
+//' @param me_distribution the distribution of the measurement error.  "gaussian" is the
 //'  default and supports a mixture of normals.  "laplace" is also supported.
 //' @param m number of mixture components for measurement error
 //' @param pi mixture probabilities
@@ -221,13 +221,13 @@ NumericVector imp_sampC(NumericVector Y, arma::mat X, NumericVector V, int mcmc_
 //' @param tau which values QR's have been estimated for
 // [[Rcpp::export]]
 std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int mcmc_draws,
-		   int mcmc_burnin, double proposal_sd, arma::mat betmat,
-       std::string me_dist,
+		   int mcmc_burn_in, double proposal_sd, arma::mat betmat,
+       std::string me_distribution,
 		   int m, NumericVector pi, NumericVector mu,
 		   NumericVector sig, NumericVector tau) {
 
   int n = Y.size();
-  int n_draws = mcmc_draws-mcmc_burnin;
+  int n_draws = mcmc_draws-mcmc_burn_in;
   NumericVector e;
   double y;
   arma::mat x;
@@ -238,9 +238,9 @@ std::vector<double> mh_mcmcC(NumericVector Y, arma::mat X, double startval, int 
    y = Y[i];
    x = X.rows(i,i); // this gets the i-th row
    x = x.t();
-   e = mh_mcmc_innerC(startval=startval, mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin,
+   e = mh_mcmc_innerC(startval=startval, mcmc_draws=mcmc_draws, mcmc_burn_in=mcmc_burn_in,
     		      proposal_sd=proposal_sd, betmat=betmat,
-              me_dist=me_dist,
+              me_distribution=me_distribution,
     		      m=m, pi=pi, mu=mu, sig=sig, y=y, x=x, tau=tau);
    ee.insert(ee.end(), e.begin(), e.end());
   }
@@ -416,7 +416,7 @@ NumericVector interpolateMatC(std::vector<double> x, arma::mat ymat,
 //' for a Gumbel copula.
 //'
 //' @param yvals values to compute conditional distribution for
-//' @param tvals values of treatment to compute conditional distribution for
+//' @param t_values values of treatment to compute conditional distribution for
 //' @param Qyxpreds matrix of quantile regression predictions
 //' @param Ftxpreds matrix of conditional distribution (T conditional on X)
 //'  predictions
@@ -428,7 +428,7 @@ NumericVector interpolateMatC(std::vector<double> x, arma::mat ymat,
 //' @return cube corresponding to conditional distribution as a function
 //'  of y, t, and each row of X in the data
 // [[Rcpp::export]]
-arma::cube computeFytXC(NumericVector yvals, NumericVector tvals,
+arma::cube computeFytXC(NumericVector yvals, NumericVector t_values,
 			   arma::mat Qyxpreds, arma::mat Ftxpreds,
 			   std::vector<double> tau, CharacterVector copula,
 			   double copParam) {
@@ -446,7 +446,7 @@ arma::cube computeFytXC(NumericVector yvals, NumericVector tvals,
 
   int n = Qyxpreds.n_rows;
   int numy = yvals.size();
-  int numt = tvals.size();
+  int numt = t_values.size();
   NumericVector x3, interpval;
   arma::mat x1, interpval1;
   NumericMatrix x2;
@@ -469,7 +469,7 @@ arma::cube computeFytXC(NumericVector yvals, NumericVector tvals,
       y = yvals[j];
 
       for (int k = 0; k < numt; k++) {
-	t = tvals[k];
+	t = t_values[k];
 	//NumericMatrix Ftx1 = wrap(Ftxpreds.cols(k,k));
 	//NumericVector Ftx2 = Ftx1(_,0);
 	//std::vector<double> Ftx = as< std::vector<double> >(Ftx2);

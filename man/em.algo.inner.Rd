@@ -9,16 +9,16 @@ em.algo.inner(
   data,
   betmat,
   tau,
-  me_dist = "gaussian",
+  me_distribution = "gaussian",
   m = 1,
   pi = 1,
   mu = 0,
   sig = 1,
   mcmc_method = "MH",
   mcmc_draws = 200,
-  mcmc_burnin = 100,
+  mcmc_burn_in = 100,
   proposal_sd = NULL,
-  ncores = 1,
+  n_cores = 1,
   verbose = FALSE
 )
 }
@@ -32,7 +32,7 @@ and K the dimension of the covariates}
 
 \item{tau}{An L-vector indicating which quantiles have been estimated}
 
-\item{me_dist}{The distribution of the measurement error.  "gaussian" is the
+\item{me_distribution}{The distribution of the measurement error.  "gaussian" is the
 default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{The number of components of the mixture distribution for the
@@ -52,7 +52,7 @@ only \code{"MH"} is supported.}
 
 \item{mcmc_draws}{Total number of MCMC draws per EM step (default 200)}
 
-\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 100)}
+\item{mcmc_burn_in}{Number of MCMC draws to discard as burnin (default 100)}
 
 \item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
 (random-walk step size). When \code{NULL} (default), initialised to the
@@ -61,7 +61,7 @@ M-step to track the current ME scale:
 \code{sqrt(sum(pi_k * (sig_k^2 + mu_k^2)))}. Pass a positive numeric to
 fix the proposal at that value for all iterations.}
 
-\item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
+\item{n_cores}{Number of cores for parallel bootstrap computation (default 1)}
 
 \item{verbose}{Logical or nonnegative integer. If \code{FALSE} (default),
 suppresses progress output. If \code{TRUE} or \code{1}, reports major

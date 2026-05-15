@@ -66,12 +66,12 @@ Key arguments:
 | Argument      | Default    | Description                                               |
 |---------------|------------|-----------------------------------------------------------|
 | `tau`         | `0.5`      | Quantile(s) to estimate                                   |
-| `nmix`        | `1`        | Number of Gaussian mixture components for ME distribution |
-| `conv_crit`   | `"params"` | Convergence criterion: `"params"` or `"loglik"`           |
+| `n_mix`        | `1`        | Number of Gaussian mixture components for ME distribution |
+| `conv_criterion`   | `"params"` | Convergence criterion: `"params"` or `"loglik"`           |
 | `tol`         | `1e-2`     | Convergence tolerance                                     |
-| `maxit`       | `100`      | Maximum EM iterations                                     |
+| `max_em_iters`       | `100`      | Maximum EM iterations                                     |
 | `mcmc_draws`  | `200`      | MCMC draws per EM E-step                                  |
-| `mcmc_burnin` | `100`      | MCMC burn-in draws                                        |
+| `mcmc_burn_in` | `100`      | MCMC burn-in draws                                        |
 | `se`          | `FALSE`    | Compute bootstrap standard errors                         |
 | `verbose`     | `FALSE`    | Print progress (numeric levels 0–3)                       |
 
@@ -80,11 +80,11 @@ Key arguments:
 ``` r
 res <- tsme(
   data     = dd,
-  Yformla  = Y ~ X,
-  Tformla  = T ~ X,
+  y_formula  = Y ~ X,
+  t_formula  = T ~ X,
   tau      = c(0.25, 0.5, 0.75),
-  tvals    = mean(dd$T),
-  povline  = quantile(dd$Y, 0.2)
+  t_values    = mean(dd$T),
+  pov_line  = quantile(dd$Y, 0.2)
 )
 
 # Transition matrix (distributional mobility summary)
@@ -103,20 +103,20 @@ table below groups them by the nature of their tradeoff.
 | Parameter       | Default       | Role                                                                                    |
 |-----------------|---------------|-----------------------------------------------------------------------------------------|
 | `tol`           | `1e-2`        | Pure speed–accuracy: loosen to converge faster, tighten for more precise estimates      |
-| `maxit`         | `100`         | Hard iteration cap; does not affect per-iteration cost                                  |
-| `conv_patience` | `1`           | Consecutive iterations below `tol` required; raise to 2 if using `conv_crit = "loglik"` |
+| `max_em_iters`         | `100`         | Hard iteration cap; does not affect per-iteration cost                                  |
+| `conv_patience` | `1`           | Consecutive iterations below `tol` required; raise to 2 if using `conv_criterion = "loglik"` |
 | `mcmc_draws`    | `200`         | **Fundamental tradeoff**: more draws = better E-step but slower per iteration           |
-| `mcmc_burnin`   | `100`         | Burn-in fraction of `mcmc_draws`; 30–50% is typical                                     |
-| `ndraws_ll`     | `100`         | MC draws for log-likelihood convergence check; ignored when `conv_crit = "params"`      |
+| `mcmc_burn_in`   | `100`         | Burn-in fraction of `mcmc_draws`; 30–50% is typical                                     |
+| `loglik_draws`     | `100`         | MC draws for log-likelihood convergence check; ignored when `conv_criterion = "params"`      |
 | `proposal_sd`   | adaptive      | MH step size; auto-updated each iteration to track the current ME scale                 |
-| `nmix`          | `1`           | Number of mixture components — a model choice, not a tuning parameter                   |
+| `n_mix`          | `1`           | Number of mixture components — a model choice, not a tuning parameter                   |
 | `start_beta`    | naive QR      | Defaults to QR ignoring ME, which is consistent under symmetric error                   |
-| `start_mu`      | data-informed | Evenly spaced over ±0.25 sd(Y) for nmix \> 1; 0 for nmix = 1                            |
+| `start_mu`      | data-informed | Evenly spaced over ±0.25 sd(Y) for n_mix \> 1; 0 for n_mix = 1                            |
 | `start_sigma`   | data-informed | Backed out so the mixture SD equals 0.5 sd(Y)                                           |
 | `start_pi`      | uniform       | Equal weights across components                                                         |
 
-**`mcmc_draws` and `mcmc_burnin`** are the most consequential
-parameters. Too few effective draws (= `mcmc_draws − mcmc_burnin`) per
+**`mcmc_draws` and `mcmc_burn_in`** are the most consequential
+parameters. Too few effective draws (= `mcmc_draws − mcmc_burn_in`) per
 observation produces a noisy E-step, which can cause the outer EM to
 wander or fail to converge — this is a correctness problem, not just a
 speed problem. The defaults of 200/100 work well in most settings;
@@ -131,9 +131,9 @@ acceptance rate is roughly 20–70%; the acceptance rate is printed at
 outside 10–90%. If the warning fires, pass `proposal_sd` explicitly to
 override the adaptive default.
 
-**`nmix`** is selected by model fit rather than tuned. Use `logLik()`,
+**`n_mix`** is selected by model fit rather than tuned. Use `logLik()`,
 `AIC()`, and `BIC()` on fitted objects to compare across values;
-`nmix = 1` is the right default for classical additive Gaussian
+`n_mix = 1` is the right default for classical additive Gaussian
 measurement error.
 
 ## References

@@ -8,22 +8,22 @@ qrme(
   formula,
   tau = 0.5,
   data,
-  me_dist = "gaussian",
-  nmix = 1,
+  me_distribution = "gaussian",
+  n_mix = 1,
   start_beta = NULL,
   start_mu = NULL,
   start_sigma = NULL,
   start_pi = NULL,
   mcmc_method = "MH",
   tol = NULL,
-  conv_crit = "params",
-  ndraws_ll = 100L,
+  conv_criterion = "params",
+  loglik_draws = 100L,
   conv_patience = 1L,
   mcmc_draws = 200,
-  mcmc_burnin = 100,
+  mcmc_burn_in = 100,
   proposal_sd = NULL,
-  ncores = 1,
-  maxit = 100,
+  n_cores = 1,
+  max_em_iters = 100,
   se = FALSE,
   n_boot = 100,
   verbose = FALSE
@@ -36,7 +36,7 @@ qrme(
 
 \item{data}{a data.frame that contains y and x}
 
-\item{nmix}{The number of mixture components of the measurement error
+\item{n_mix}{The number of mixture components of the measurement error
 (default 1). Increase this for more flexible measurement-error
 distributions.}
 
@@ -45,39 +45,39 @@ L is the dimension of tau and K is the number of covariates (default is
 NULL and in this case, the starting values are set to be the QR
 coefficients coming from QR that ignores measurment error)}
 
-\item{start_mu}{A vector of length nmix of starting values for the mean
+\item{start_mu}{A vector of length n_mix of starting values for the mean
 of each mixture component. When \code{NULL} (default), set to 0 for
-\code{nmix = 1} and to evenly-spaced values on
-\code{[-0.25 * sd(y), 0.25 * sd(y)]} for \code{nmix > 1}, mean-centered
+\code{n_mix = 1} and to evenly-spaced values on
+\code{[-0.25 * sd(y), 0.25 * sd(y)]} for \code{n_mix > 1}, mean-centered
 to satisfy the mean-zero ME constraint.}
 
-\item{start_sigma}{A vector of length nmix of starting values for the
+\item{start_sigma}{A vector of length n_mix of starting values for the
 standard deviation of each mixture component. When \code{NULL} (default),
 backed out from the mixture variance identity assuming equal weights and
 equal component SDs targeting a mixture SD of \code{0.5 * sd(y)}:
-\code{sigma = sqrt(max(target^2 - mean(start_mu^2), (target/sqrt(nmix))^2))}.
-This gives \code{0.5 * sd(y)} for \code{nmix = 1} and slightly larger
-values for \code{nmix > 1} (since the component means absorb some variance).}
+\code{sigma = sqrt(max(target^2 - mean(start_mu^2), (target/sqrt(n_mix))^2))}.
+This gives \code{0.5 * sd(y)} for \code{n_mix = 1} and slightly larger
+values for \code{n_mix > 1} (since the component means absorb some variance).}
 
-\item{start_pi}{A vector of length nmix of starting values for the fraction
+\item{start_pi}{A vector of length n_mix of starting values for the fraction
 of observations in each component of the mixture of normals distribution
 for the measurement error (default is NULL and in this case, the starting
-values are all set to be 1/nmix)}
+values are all set to be 1/n_mix)}
 
 \item{mcmc_method}{The type of simulation step to use in the EM algorithm.
 Currently only \code{"MH"} for Metropolis-Hastings is supported.}
 
 \item{tol}{Convergence tolerance.  When \code{NULL} (default), a value is
-chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+chosen automatically based on \code{conv_criterion}.  See \code{\link{em.algo}}
 for details.}
 
-\item{conv_crit}{Convergence criterion: \code{"params"} (default) uses the
+\item{conv_criterion}{Convergence criterion: \code{"params"} (default) uses the
 Euclidean norm of parameter changes; \code{"loglik"} uses the relative
 change in the observed-data log-likelihood.  See \code{\link{em.algo}}.}
 
-\item{ndraws_ll}{Number of Monte Carlo draws for the log-likelihood
-convergence check when \code{conv_crit = "loglik"} (default 100).
-Ignored when \code{conv_crit = "params"}.}
+\item{loglik_draws}{Number of Monte Carlo draws for the log-likelihood
+convergence check when \code{conv_criterion = "loglik"} (default 100).
+Ignored when \code{conv_criterion = "params"}.}
 
 \item{conv_patience}{Integer. Consecutive iterations that must satisfy the
 convergence criterion before stopping (default 1). Setting to 2 guards
@@ -85,7 +85,7 @@ against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.}
 
 \item{mcmc_draws}{Total number of MCMC draws per EM step (default 200)}
 
-\item{mcmc_burnin}{Number of MCMC draws to discard as burnin (default 100)}
+\item{mcmc_burn_in}{Number of MCMC draws to discard as burnin (default 100)}
 
 \item{proposal_sd}{Standard deviation of the Metropolis-Hastings proposal
 (random-walk step size). When \code{NULL} (default), initialised to the
@@ -93,9 +93,9 @@ SD of the ME mixture from the starting parameters and updated after each
 M-step to track the current ME scale. Pass a positive numeric to fix the
 proposal at that value for all iterations.}
 
-\item{ncores}{Number of cores for parallel bootstrap computation (default 1)}
+\item{n_cores}{Number of cores for parallel bootstrap computation (default 1)}
 
-\item{maxit}{Maximum number of EM outer iterations. If convergence is not
+\item{max_em_iters}{Maximum number of EM outer iterations. If convergence is not
 reached, the estimates from the final iteration are returned (default is 100)}
 
 \item{se}{Whether or not to compute standard errors using the bootstrap

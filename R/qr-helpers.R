@@ -79,10 +79,10 @@ betfun.inner <- function(betvec, tau, isconst=FALSE) {
 ## #' @return list of parameters
 ## #'
 ## #' @export
-## getParams <- function(optout, formla, data, tau, nmix) {
-##     xformla <- formla
-##     xformla[[2]] <- NULL ## drop y variable
-##     x <- model.matrix(xformla, data)
+## getParams <- function(optout, formla, data, tau, n_mix) {
+##     x_formula <- formla
+##     x_formula[[2]] <- NULL ## drop y variable
+##     x <- model.matrix(x_formula, data)
 ##     kx <- ncol(x)*length(tau)
 ##     if (class(optout) == "numeric") {
 ##         par <- optout
@@ -94,8 +94,8 @@ betfun.inner <- function(betvec, tau, isconst=FALSE) {
 ##     n <- nrow(x)
 ##     ktau <- length(tau)
 ##     bet <- split(bet,ceiling(seq_along(bet)/k))
-##     kmu <- nmix-1
-##     if (nmix > 1) {
+##     kmu <- n_mix-1
+##     if (n_mix > 1) {
 ##         pi1 <- par[(kx+1):(kx+kmu)]
 ##         mu1 <- par[(kx+kmu+1):(kx+kmu+kmu)]
 ##         pi <- c(pi1, 1-sum(pi1))
@@ -104,7 +104,7 @@ betfun.inner <- function(betvec, tau, isconst=FALSE) {
 ##         pi <- 1
 ##         mu <- 0
 ##     }
-##     ksig <- nmix
+##     ksig <- n_mix
 ##     sig <- par[(kx+kmu+kmu+1):(kx+kmu+kmu+ksig)]
 ##     out <- list(bet=bet, pi=pi, mu=mu, sig=sig)
 ##     class(out) <- "PARAM"
@@ -135,9 +135,9 @@ betfun.inner <- function(betvec, tau, isconst=FALSE) {
 #'
 #' @export
 makeRQS <- function(params, formla, data, tau) {
-    xformla <- formla
-    xformla[[2]] <- NULL ## drop y variable
-    x <- model.matrix(xformla, data)
+    x_formula <- formla
+    x_formula[[2]] <- NULL ## drop y variable
+    x <- model.matrix(x_formula, data)
     optout <- list()
     class(optout) <- c("rqs")
     optout$terms <- terms(formla)

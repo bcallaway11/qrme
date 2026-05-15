@@ -17,17 +17,17 @@
 #'
 #' @keywords internal
 #' @export
-compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, start_beta=NULL, start_mu=NULL,
-                         start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
-                         ndraws_ll=100L, conv_patience=1L, mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL, ncores=1,
-                         maxit=100, verbose=FALSE) {
+compute.qrme <- function(formula, tau=0.5, data, me_distribution="gaussian", n_mix=1, start_beta=NULL, start_mu=NULL,
+                         start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_criterion="params",
+                         loglik_draws=100L, conv_patience=1L, mcmc_draws=200, mcmc_burn_in=100, proposal_sd=NULL, n_cores=1,
+                         max_em_iters=100, verbose=FALSE) {
   xformula <- formula
   xformula[[2]] <- NULL ## drop y variable
   x <- model.matrix(xformula, data)
-  yname <- as.character(formula[[2]])
-  y <- data[,yname]
+  y_name <- as.character(formula[[2]])
+  y <- data[, y_name]
   k <- ncol(x) ## number of x variables
-  m <- nmix
+  m <- n_mix
   if (is.null(start_beta)) {
     ## this defaults the start values of the beta_0 to be
     ## the observed quantiles of the outcome and the other
@@ -77,13 +77,13 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, sta
   ## Estimate QR model with measurement error using EM algorithm
   res <- em.algo(formula, data,
                  betmatguess=betvals, tau=tau,
-                 me_dist=me_dist,
+                 me_distribution=me_distribution,
                  m=m, piguess=pivals, muguess=muvals,
                  sigguess=sigvals, mcmc_method=mcmc_method, tol=tol,
-                 conv_crit=conv_crit, ndraws_ll=ndraws_ll,
+                 conv_criterion=conv_criterion, loglik_draws=loglik_draws,
                  conv_patience=conv_patience,
-                 mcmc_draws=mcmc_draws, mcmc_burnin=mcmc_burnin, proposal_sd=proposal_sd, ncores=ncores,
-                 maxit=maxit, verbose=verbose)
+                 mcmc_draws=mcmc_draws, mcmc_burn_in=mcmc_burn_in, proposal_sd=proposal_sd, n_cores=n_cores,
+                 max_em_iters=max_em_iters, verbose=verbose)
 
 
   out <- makeRQS(res, formula, data, tau=tau)
@@ -97,10 +97,10 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, sta
   out$sig <- res$sig
   out$x <- x
   out$y <- y
-  out$me_dist <- me_dist
+  out$me_distribution <- me_distribution
   out$n_iter <- res$n_iter
   out$tol <- res$tol
-  out$conv_crit <- res$conv_crit
+  out$conv_criterion <- res$conv_criterion
   out$conv_criteria <- res$conv_criteria
   out$conv_converged <- res$conv_converged
   out$mix_n_iter <- res$mix_n_iter
@@ -122,52 +122,52 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, sta
 #' @param formula y ~ x
 #' @param tau vector for which quantiles to compute quantile regression
 #' @param data a data.frame that contains y and x
-#' @param nmix The number of mixture components of the measurement error
+#' @param n_mix The number of mixture components of the measurement error
 #'  (default 1). Increase this for more flexible measurement-error
 #'  distributions.
 #' @param start_beta an LxK matrix of starting values for beta where
 #'  L is the dimension of tau and K is the number of covariates (default is
 #'  NULL and in this case, the starting values are set to be the QR
 #'  coefficients coming from QR that ignores measurment error)
-#' @param start_mu A vector of length nmix of starting values for the mean
+#' @param start_mu A vector of length n_mix of starting values for the mean
 #'  of each mixture component. When \code{NULL} (default), set to 0 for
-#'  \code{nmix = 1} and to evenly-spaced values on
-#'  \code{[-0.25 * sd(y), 0.25 * sd(y)]} for \code{nmix > 1}, mean-centered
+#'  \code{n_mix = 1} and to evenly-spaced values on
+#'  \code{[-0.25 * sd(y), 0.25 * sd(y)]} for \code{n_mix > 1}, mean-centered
 #'  to satisfy the mean-zero ME constraint.
-#' @param start_sigma A vector of length nmix of starting values for the
+#' @param start_sigma A vector of length n_mix of starting values for the
 #'  standard deviation of each mixture component. When \code{NULL} (default),
 #'  backed out from the mixture variance identity assuming equal weights and
 #'  equal component SDs targeting a mixture SD of \code{0.5 * sd(y)}:
-#'  \code{sigma = sqrt(max(target^2 - mean(start_mu^2), (target/sqrt(nmix))^2))}.
-#'  This gives \code{0.5 * sd(y)} for \code{nmix = 1} and slightly larger
-#'  values for \code{nmix > 1} (since the component means absorb some variance).
-#' @param start_pi A vector of length nmix of starting values for the fraction
+#'  \code{sigma = sqrt(max(target^2 - mean(start_mu^2), (target/sqrt(n_mix))^2))}.
+#'  This gives \code{0.5 * sd(y)} for \code{n_mix = 1} and slightly larger
+#'  values for \code{n_mix > 1} (since the component means absorb some variance).
+#' @param start_pi A vector of length n_mix of starting values for the fraction
 #'  of observations in each component of the mixture of normals distribution
 #'  for the measurement error (default is NULL and in this case, the starting
-#'  values are all set to be 1/nmix)
+#'  values are all set to be 1/n_mix)
 #' @param mcmc_method The type of simulation step to use in the EM algorithm.
 #'  Currently only \code{"MH"} for Metropolis-Hastings is supported.
 #' @param tol Convergence tolerance.  When \code{NULL} (default), a value is
-#'  chosen automatically based on \code{conv_crit}.  See \code{\link{em.algo}}
+#'  chosen automatically based on \code{conv_criterion}.  See \code{\link{em.algo}}
 #'  for details.
-#' @param conv_crit Convergence criterion: \code{"params"} (default) uses the
+#' @param conv_criterion Convergence criterion: \code{"params"} (default) uses the
 #'  Euclidean norm of parameter changes; \code{"loglik"} uses the relative
 #'  change in the observed-data log-likelihood.  See \code{\link{em.algo}}.
-#' @param ndraws_ll Number of Monte Carlo draws for the log-likelihood
-#'  convergence check when \code{conv_crit = "loglik"} (default 100).
-#'  Ignored when \code{conv_crit = "params"}.
+#' @param loglik_draws Number of Monte Carlo draws for the log-likelihood
+#'  convergence check when \code{conv_criterion = "loglik"} (default 100).
+#'  Ignored when \code{conv_criterion = "params"}.
 #' @param conv_patience Integer. Consecutive iterations that must satisfy the
 #'  convergence criterion before stopping (default 1). Setting to 2 guards
 #'  against false convergence from Monte Carlo noise. See \code{\link{em.algo}}.
 #' @param mcmc_draws Total number of MCMC draws per EM step (default 200)
-#' @param mcmc_burnin Number of MCMC draws to discard as burnin (default 100)
+#' @param mcmc_burn_in Number of MCMC draws to discard as burnin (default 100)
 #' @param proposal_sd Standard deviation of the Metropolis-Hastings proposal
 #'  (random-walk step size). When \code{NULL} (default), initialised to the
 #'  SD of the ME mixture from the starting parameters and updated after each
 #'  M-step to track the current ME scale. Pass a positive numeric to fix the
 #'  proposal at that value for all iterations.
-#' @param ncores Number of cores for parallel bootstrap computation (default 1)
-#' @param maxit Maximum number of EM outer iterations. If convergence is not
+#' @param n_cores Number of cores for parallel bootstrap computation (default 1)
+#' @param max_em_iters Maximum number of EM outer iterations. If convergence is not
 #'  reached, the estimates from the final iteration are returned (default is 100)
 #' @param se Whether or not to compute standard errors using the bootstrap
 #'  (default is FALSE)
@@ -184,32 +184,32 @@ compute.qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, sta
 #'   and \code{BIC()} for comparing fits across different starting values.
 #'
 #' @export
-qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, start_beta=NULL, start_mu=NULL,
-                 start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_crit="params",
-                 ndraws_ll=100L, conv_patience=1L, mcmc_draws=200, mcmc_burnin=100, proposal_sd=NULL, ncores=1,
-                 maxit=100, se=FALSE, n_boot=100, verbose=FALSE) {
+qrme <- function(formula, tau=0.5, data, me_distribution="gaussian", n_mix=1, start_beta=NULL, start_mu=NULL,
+                 start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_criterion="params",
+                 loglik_draws=100L, conv_patience=1L, mcmc_draws=200, mcmc_burn_in=100, proposal_sd=NULL, n_cores=1,
+                 max_em_iters=100, se=FALSE, n_boot=100, verbose=FALSE) {
 
 
 
   res <- compute.qrme(formula=formula,
                       tau=tau,
                       data=data,
-                      me_dist=me_dist,
-                      nmix=nmix,
+                      me_distribution=me_distribution,
+                      n_mix=n_mix,
                       start_beta=start_beta,
                       start_mu=start_mu,
                       start_sigma=start_sigma,
                       start_pi=start_pi,
                       mcmc_method=mcmc_method,
                       tol=tol,
-                      conv_crit=conv_crit,
-                      ndraws_ll=ndraws_ll,
+                      conv_criterion=conv_criterion,
+                      loglik_draws=loglik_draws,
                       conv_patience=conv_patience,
                       mcmc_draws=mcmc_draws,
-                      mcmc_burnin=mcmc_burnin,
+                      mcmc_burn_in=mcmc_burn_in,
                       proposal_sd=proposal_sd,
-                      ncores=ncores,
-                      maxit=maxit,
+                      n_cores=n_cores,
+                      max_em_iters=max_em_iters,
                       verbose=verbose)
 
   if (se) {
@@ -221,28 +221,28 @@ qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, start_beta=
         out <- compute.qrme(formula=formula,
                             tau=tau,
                             data=bdata,
-                            me_dist=me_dist,
-                            nmix=nmix,
+                            me_distribution=me_distribution,
+                            n_mix=n_mix,
                             start_beta=res$bet,
                             start_mu=res$mu,
                             start_sigma=res$sig,
                             start_pi=res$pi,
                             mcmc_method=mcmc_method,
                             tol=tol,
-                            conv_crit=conv_crit,
-                            ndraws_ll=ndraws_ll,
+                            conv_criterion=conv_criterion,
+                            loglik_draws=loglik_draws,
                             conv_patience=conv_patience,
                             mcmc_draws=mcmc_draws,
-                              mcmc_burnin=mcmc_burnin,
+                              mcmc_burn_in=mcmc_burn_in,
                               proposal_sd=proposal_sd,
-                              ncores=1,
-                              maxit=maxit)
+                              n_cores=1,
+                              max_em_iters=max_em_iters)
         out$Ystar=NULL ## just drop this because it takes up a lot of memory
         out
       }, error=function(cond) {
         return(NULL)
       })
-    }, cl=ncores)
+    }, cl=n_cores)
 
     ## drop list elements where bootstrap failed
     eachIter <- eachIter[!sapply(eachIter, is.null)]
@@ -267,17 +267,17 @@ qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, start_beta=
 #'  in the outcome and measurement error in a particular continuous "treatment"
 #'  variable.
 #'
-#' @param yname name of the outcome in the passed in data
-#' @param tname name of the treatment in the passed in data
-#' @param xformla a one-sided formula for additional covariates (assumed
+#' @param y_name name of the outcome in the passed in data
+#' @param t_name name of the treatment in the passed in data
+#' @param x_formula a one-sided formula for additional covariates (assumed
 #'  not to be measured with error)
 #' @param tau a vector containing particular quantiles that have been estimated ??
 #' @param data a data.frame containing the data used for estimation
-#' @param xdf If you want conditional distributions to be returned, pass in the value of the distribution here;
+#' @param x_data If you want conditional distributions to be returned, pass in the value of the distribution here;
 #'  otherwise the default behavior is to return a single distribution that averages over all values of X in the dataset
-#' @param tvals a vector of values of the treatment variable at which to compute the conditional distribution 
+#' @param t_values a vector of values of the treatment variable at which to compute the conditional distribution 
 #'  of Y given X and T
-#' @param me_dist which type of measurement error distribution to use (default is "gaussian"), 
+#' @param me_distribution which type of measurement error distribution to use (default is "gaussian"), 
 #'  "laplace" is also supported
 #' @param copula which type of copula to use.  Options are "gaussian" (the
 #'  default), "clayton", "gumbel", or "frank"
@@ -285,28 +285,28 @@ qrme <- function(formula, tau=0.5, data, me_dist="gaussian", nmix=1, start_beta=
 #'  error) of Y on X
 #' @param Qtx quantile regression estimates (can be adjusted for measurement
 #'  error) of T on X
-#' @param retFytxlist whether or not to return the conditional distribution
-#'  for every value of x in xdf
+#' @param return_fytx_list whether or not to return the conditional distribution
+#'  for every value of x in x_data
 #'  (default is FALSE because this can take up a lot of room in memory)
-#' @param copula_me_draws Number of measurement-error draws used in the
+#' @param n_copula_me_draws Number of measurement-error draws used in the
 #'  second-stage copula likelihood (default 100). Increase this for a less
 #'  noisy copula likelihood at the cost of speed.
-#' @param mobility_copula_draws Number of copula draws per covariate row used
+#' @param n_copula_draws Number of copula draws per covariate row used
 #'  to compute mobility summaries such as transition matrices and rank
 #'  correlations (default 100).
 #' @inheritParams tsme
 #' @inheritParams qrme
-qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
-                    me_dist="gaussian", copula="gaussian",
-                    Qyx, Qtx, retFytxlist=FALSE,
-                    copula_me_draws=100L, mobility_copula_draws=100L,
+qr2me <- function(y_name, t_name, x_formula, tau, data, x_data=NULL, t_values=NULL,
+                    me_distribution="gaussian", copula="gaussian",
+                    Qyx, Qtx, return_fytx_list=FALSE,
+                    n_copula_me_draws=100L, n_copula_draws=100L,
                     verbose=FALSE) {
 
   if (qrme_verbose_level(verbose) >= 1L) {
     message("qr2me second-stage copula model")
   }
   
-  x <- model.matrix(xformla, data)
+  x <- model.matrix(x_formula, data)
   n <-  nrow(data)
 
   # Internal numerical grid for turning sparse QR estimates into CDF objects.
@@ -344,19 +344,19 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   ## ftx <- predict(Qyx, newdata=as.data.frame(x), type="fhat")
 
   qrme_progress(verbose, "Step 1 of 3: converting QR to conditional density estimates...")
-  ##fyx1 <- pbsapply(unique(data[,yname]), fy.x, betmat=t(coef(Qyx)), XX=x, tau=tau)
-  fyx1 <- fYXmatC(Y=unique(data[,yname]), betmat=t(coef(Qyx)), X=x, tau=tau)
+  ##fyx1 <- pbsapply(unique(data[, y_name]), fy.x, betmat=t(coef(Qyx)), XX=x, tau=tau)
+  fyx1 <- fYXmatC(Y=unique(data[, y_name]), betmat=t(coef(Qyx)), X=x, tau=tau)
   eps <- .Machine$double.eps
-  fyx <- apply(fyx1, 1, FUN=function(y) approxfun(x=unique(data[,yname]), y=y, yleft=eps, yright=eps))
-  ##ftx1 <- pbsapply(unique(data[,tname]), fy.x, betmat=t(coef(Qtx)), XX=x, tau=tau)
-  ftx1 <- fYXmatC(Y=unique(data[,tname]), betmat=t(coef(Qtx)), X=x, tau=tau)
-  ftx <- apply(ftx1, 1, FUN=function(y) approxfun(x=unique(data[,tname]), y=y, yleft=eps, yright=eps))
+  fyx <- apply(fyx1, 1, FUN=function(y) approxfun(x=unique(data[, y_name]), y=y, yleft=eps, yright=eps))
+  ##ftx1 <- pbsapply(unique(data[, t_name]), fy.x, betmat=t(coef(Qtx)), XX=x, tau=tau)
+  ftx1 <- fYXmatC(Y=unique(data[, t_name]), betmat=t(coef(Qtx)), X=x, tau=tau)
+  ftx <- apply(ftx1, 1, FUN=function(y) approxfun(x=unique(data[, t_name]), y=y, yleft=eps, yright=eps))
 
   
   ## make draws from the measurement error distribution
-  if (me_dist == "laplace") {
-    Us <- rlaplace(copula_me_draws, mu=0, sigma=Qyx$sig)
-    Vs <- rlaplace(copula_me_draws, mu=0, sigma=Qtx$sig)
+  if (me_distribution == "laplace") {
+    Us <- rlaplace(n_copula_me_draws, mu=0, sigma=Qyx$sig)
+    Vs <- rlaplace(n_copula_me_draws, mu=0, sigma=Qtx$sig)
   } else { # gaussian
     Usig <- Qyx$sig
     Upi <- Qyx$pi
@@ -365,10 +365,10 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
     Vpi <- Qtx$pi
     Vmu <- Qtx$mu
     ksig <- length(Usig)
-    Ucomponents <- sample(1:length(Usig), copula_me_draws, replace=TRUE, prob=Upi)
-    Us <- rnorm(copula_me_draws, Umu[Ucomponents], Usig[Ucomponents])
-    Vcomponents <- sample(1:length(Vsig), copula_me_draws, replace=TRUE, prob=Vpi)
-    Vs <- rnorm(copula_me_draws, Vmu[Vcomponents], Vsig[Vcomponents])
+    Ucomponents <- sample(1:length(Usig), n_copula_me_draws, replace=TRUE, prob=Upi)
+    Us <- rnorm(n_copula_me_draws, Umu[Ucomponents], Usig[Ucomponents])
+    Vcomponents <- sample(1:length(Vsig), n_copula_me_draws, replace=TRUE, prob=Vpi)
+    Vs <- rnorm(n_copula_me_draws, Vmu[Vcomponents], Vsig[Vcomponents])
   }
 
   ################################################################
@@ -389,7 +389,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
   # estimation with maximum likelihood 
   res <- optimize(ll, c(0,1), maximum=TRUE, 
-                  y=data[,yname], t=data[,tname], x=x, copula=copula,
+                  y=data[, y_name], t=data[, t_name], x=x, copula=copula,
                   Fyx=Fyx, Ftx=Ftx, fyx=fyx, ftx=ftx,
                   Us=Us, Vs=Vs)
 
@@ -399,7 +399,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   # estimate copula-type parameters
   cop <- copula::setTheta(cop, delt[1])
   Ystar_Tstar_inner <- lapply(1:nrow(x), function(i) {
-    cop_draws <- copula::rCopula(mobility_copula_draws, cop)
+    cop_draws <- copula::rCopula(n_copula_draws, cop)
     eY <- cop_draws[,1]
     eT <- cop_draws[,2]
     Y_xb <- as.numeric(t(as.matrix(x[i,]))%*%as.matrix(coef(Qyx)))
@@ -422,22 +422,22 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
   up_mob <- upMob(Ystar, Tstar)
   
   # compute conditional distributions if values of the treatment are specified
-  if (!is.null(tvals)) {
+  if (!is.null(t_values)) {
     
     qrme_progress(verbose, "Step 3 of 3: building conditional distributions...")
     ## If you don't set particular values of X to compute,
     ## just set it equal to the average values of X in the dataset
-    ##if (is.null(xdf)) xdf <- as.data.frame(t(apply(x,2,mean))) ##x, for all data
+    ##if (is.null(x_data)) x_data <- as.data.frame(t(apply(x,2,mean))) ##x, for all data
 
-    yvals <- unique(data[,yname])#quantile(data[,yname], seq(.01,.99,.005)) ## could also take all unique yvals or let user pass them all in
+    yvals <- unique(data[, y_name])#quantile(data[, y_name], seq(.01,.99,.005)) ## could also take all unique yvals or let user pass them all in
     yvals <- unique(yvals[order(yvals)])
 
 
-    # only re-calculate if xdf is set
-    if (!is.null(xdf)) {
+    # only re-calculate if x_data is set
+    if (!is.null(x_data)) {
       
-      Qyxdf_interpolated <- lapply(1:nrow(xdf), function(i) {
-        xb <- as.numeric(as.matrix(xdf[i,])%*%as.matrix(coef(Qyx)))
+      Qyxdf_interpolated <- lapply(1:nrow(x_data), function(i) {
+        xb <- as.numeric(as.matrix(x_data[i,])%*%as.matrix(coef(Qyx)))
         sapply(tau_grid, function(tt_grid_val) {
           interpolateC(tau, xb, tt_grid_val, TRUE)
         })
@@ -445,8 +445,8 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
       Fyx <- lapply(Qyxdf_interpolated, function(Qyx) BMisc::makeDist(Qyx, tau_grid, sorted=TRUE))
 
 
-      Qtxdf_interpolated <- lapply(1:nrow(xdf), function(i) {
-        xb <- as.numeric(as.matrix(xdf[i,])%*%as.matrix(coef(Qtx)))
+      Qtxdf_interpolated <- lapply(1:nrow(x_data), function(i) {
+        xb <- as.numeric(as.matrix(x_data[i,])%*%as.matrix(coef(Qtx)))
         sapply(tau_grid, function(tt_grid_val) {
           interpolateC(tau, xb, tt_grid_val, TRUE)
         })
@@ -454,14 +454,14 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
       Ftx <- lapply(Qtxdf_interpolated, function(Qtx) BMisc::makeDist(Qtx, tau_grid, sorted=TRUE))
     }
     
-    if (is.null(xdf)) xdf <- x
+    if (is.null(x_data)) x_data <- x
     
     if (copula == "gaussian") {
       rho <- delt[1]
-      FytXmat <- array(dim=c(nrow(xdf), length(yvals), length(tvals)))
-      for (j in 1:length(tvals)) {
-        tt <- tvals[j]
-        this.Fytx <- lapply(1:nrow(xdf), function(i) {
+      FytXmat <- array(dim=c(nrow(x_data), length(yvals), length(t_values)))
+      for (j in 1:length(t_values)) {
+        tt <- t_values[j]
+        this.Fytx <- lapply(1:nrow(x_data), function(i) {
           pnorm ( ( qnorm(Fyx[[i]](yvals)) - rho*qnorm(Ftx[[i]](tt)) ) / ( sqrt(1-rho^2) ) )
         })
         FytXmat[,,j] <- do.call("rbind", this.Fytx)
@@ -470,15 +470,15 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
     if (copula=="clayton") {
       thet <- delt[1]
-      FytXmat <- array(dim=c(nrow(xdf), length(yvals), length(tvals)))
+      FytXmat <- array(dim=c(nrow(x_data), length(yvals), length(t_values)))
       C2 <- function(u, v, thet) {
         u <- pmax(u, 1e-6)
         v <- pmax(v, 1e-6)
         (u^(-thet) + v^(-thet) - 1)^(-(1/thet)-1) * v^(-thet-1)
       }
-      for (j in 1:length(tvals)) {
-        tt <- tvals[j]
-        this.Fytx <- lapply(1:nrow(xdf), function(i) {
+      for (j in 1:length(t_values)) {
+        tt <- t_values[j]
+        this.Fytx <- lapply(1:nrow(x_data), function(i) {
           C2(Fyx[[i]](yvals), Ftx[[i]](tt), thet)
         })
         FytXmat[,,j] <- do.call("rbind", this.Fytx)
@@ -487,7 +487,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
     if (copula=="gumbel") {
       thet <- delt[1]
-      FytXmat <- array(dim=c(nrow(xdf), length(yvals), length(tvals)))
+      FytXmat <- array(dim=c(nrow(x_data), length(yvals), length(t_values)))
       dgenerator_gumbel <- function(t, thet) {
         d <- (-thet/t)*(-log(t))^(thet-1)
         d <- sapply(d, function(dd) max(dd,-100000000))
@@ -497,9 +497,9 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
       ##   inside <- (-log(u))^thet + (-log(v))^thet
       ##   exp( - (inside^(1/thet)) ) * (-(1/thet) * inside^( (1/thet) - 1)) * (-thet/v) * ( (log(v))^(thet-1) )
       ## }
-      for (j in 1:length(tvals)) {
-        tt <- tvals[j]
-        this.Fytx <- lapply(1:nrow(xdf), function(i) {
+      for (j in 1:length(t_values)) {
+        tt <- t_values[j]
+        this.Fytx <- lapply(1:nrow(x_data), function(i) {
           num <- dgenerator_gumbel(Ftx[[i]](tt), thet)
           denom <- dgenerator_gumbel( gumbel::invphigumbel( gumbel::phigumbel(Ftx[[i]](tt), thet) + gumbel::phigumbel(Fyx[[i]](yvals),thet), thet) , thet )
           num/denom
@@ -510,7 +510,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
     if (copula == "frank") {
       thet <- delt[1]
-      FytXmat <- array(dim = c(nrow(xdf), length(yvals), length(tvals)))
+      FytXmat <- array(dim = c(nrow(x_data), length(yvals), length(t_values)))
       # Conditional CDF: partial derivative of Frank copula C(u,v) w.r.t. v.
       # C2(u,v,theta) = (e^{-theta*u} - 1) * e^{-theta*v} /
       #   ((e^{-theta} - 1) + (e^{-theta*u} - 1)(e^{-theta*v} - 1))
@@ -522,9 +522,9 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
         D <- exp(-thet * v)
         B * D / (A + B * (D - 1))
       }
-      for (j in seq_along(tvals)) {
-        tt <- tvals[j]
-        this.Fytx <- lapply(1:nrow(xdf), function(i) {
+      for (j in seq_along(t_values)) {
+        tt <- t_values[j]
+        this.Fytx <- lapply(1:nrow(x_data), function(i) {
           C2_frank(Fyx[[i]](yvals), Ftx[[i]](tt), thet)
         })
         FytXmat[,,j] <- do.call("rbind", this.Fytx)
@@ -544,15 +544,17 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 
     ## FytX contains a distribution function for every value of t and x
     ## this step averages over all the x's
-    Fyt <- lapply(1:length(tvals), function(i) {
+    Fyt <- lapply(1:length(t_values), function(i) {
       BMisc::combineDfs(yvals, Fytx[,i], rearrange=TRUE)
     })
     
 
-    if (!retFytxlist) { ## often want to drop this because it is huge
+    if (!return_fytx_list) { ## often want to drop this because it is huge
       Fytxlist <- NULL
+    } else {
+      Fytxlist <- Fytx
     }
-    out <- list(cop.param=delt[1], copula=copula, Fytxlist=Fytx, Fyt=Fyt, tvals=tvals, x=xdf,
+    out <- list(cop.param=delt[1], copula=copula, Fytxlist=Fytxlist, Fyt=Fyt, t_values=t_values, x=x_data,
                 t_mat=t_mat, Ps=Ps, up_mob=up_mob)
 
     ### only do above if you want the results for a particular value of t and x;
@@ -597,7 +599,7 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 #'
 #' @param cop.param copula parameter
 #' @param copula type of copula
-#' @param tvals values of the treatment that conditional distributions were
+#' @param t_values values of the treatment that conditional distributions were
 #'  estimated for
 #' @param x matrix of covariates
 #' @param Fytxlist list of conditional distributions
@@ -605,11 +607,11 @@ qr2me <- function(yname, tname, xformla, tau, data, xdf=NULL, tvals=NULL,
 #' @param Qtx estimates of quantiles of T conditional on X
 #'
 #' @export
-qr2meobj <- function(cop.param, copula, tvals, x, Fytxlist, Qyx, Qtx) {
+qr2meobj <- function(cop.param, copula, t_values, x, Fytxlist, Qyx, Qtx) {
   out <- list()
   out$cop.param <- cop.param
   out$copula <- copula
-  out$tvals <- tvals
+  out$t_values <- t_values
   out$x <- x
   out$Fytxlist <- Fytxlist
   out$Qyx <- Qyx
@@ -676,13 +678,13 @@ gg_qr2meobj <- function(obj, tau=c(.1,.5,.9), ylim=NULL,
 
   if (is.null(tau)) tau <- c(.1,.5,.9)
   qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
-  tvals <- obj$tvals
+  t_values <- obj$t_values
   
-  cmat <- cbind.data.frame(tvals, qq)
-  colnames(cmat) <- c("tvals", paste0("c",tau*100))
-  cmat <- gather(cmat, quantile, value, -tvals)
+  cmat <- cbind.data.frame(t_values, qq)
+  colnames(cmat) <- c("t_values", paste0("c",tau*100))
+  cmat <- gather(cmat, quantile, value, -t_values)
 
-  p <- ggplot(cmat, mapping=aes(x=tvals,y=value, group=quantile, color=quantile)) +
+  p <- ggplot(cmat, mapping=aes(x=t_values,y=value, group=quantile, color=quantile)) +
     geom_line() +
     geom_point()
 
@@ -711,14 +713,15 @@ gg_qr2meobj <- function(obj, tau=c(.1,.5,.9), ylim=NULL,
 addplot <- function(obj, p, tau=c(.1,.5,.9)) {
 
   qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
+  t_values <- obj$t_values
 
-  cmat <- cbind.data.frame(tvals, qq)
-  colnames(cmat) <- c("tvals", paste0("c",tau*100))
-  cmat <- tidyr::gather(cmat, quantile, value, -tvals)
-  p <- p + geom_line(data=cmat, mapping=aes(x=tvals, y=value, group=quantile,
+  cmat <- cbind.data.frame(t_values, qq)
+  colnames(cmat) <- c("t_values", paste0("c",tau*100))
+  cmat <- tidyr::gather(cmat, quantile, value, -t_values)
+  p <- p + geom_line(data=cmat, mapping=aes(x=t_values, y=value, group=quantile,
                                             color=quantile),
                      linetype="dashed")
-  p <- p + geom_point(data=cmat, mapping=aes(x=tvals, y=value, group=quantile,
+  p <- p + geom_point(data=cmat, mapping=aes(x=t_values, y=value, group=quantile,
                                              color=quantile))
   p
 }

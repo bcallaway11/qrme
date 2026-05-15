@@ -9,7 +9,7 @@ skip_if_not(
 )
 
 # --- Shared DGP ---------------------------------------------------------------
-# Same DGP as simulations/simulations.R: Clayton copula, Gaussian ME (nmix=1).
+# Same DGP as simulations/simulations.R: Clayton copula, Gaussian ME (n_mix=1).
 # No measurement error on Y so qrme should recover coefficients close to truth.
 local({
   set.seed(2025)
@@ -45,11 +45,11 @@ test_that("qrme coefficients are close to true values", {
     formula     = Y ~ X,
     data        = dd,
     tau         = tau,
-    nmix        = 1,
+    n_mix        = 1,
     mcmc_draws  = 400L,
-    mcmc_burnin = 200L,
-    conv_crit   = "params",
-    maxit       = 100L,
+    mcmc_burn_in = 200L,
+    conv_criterion   = "params",
+    max_em_iters       = 100L,
     se          = FALSE,
     verbose     = FALSE
   )
@@ -73,11 +73,11 @@ test_that("qrme bootstrap runs and attaches SE fields", {
     formula     = Y ~ X,
     data        = dd[1:100, ],     # small subset to keep it fast
     tau         = tau[c(1, 5, 9)], # three quantiles only
-    nmix        = 1,
+    n_mix        = 1,
     mcmc_draws  = 100L,
-    mcmc_burnin = 50L,
-    conv_crit   = "params",
-    maxit       = 20L,
+    mcmc_burn_in = 50L,
+    conv_criterion   = "params",
+    max_em_iters       = 20L,
     se          = TRUE,
     n_boot      = 3L,
     verbose     = FALSE

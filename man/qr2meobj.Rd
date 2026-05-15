@@ -4,14 +4,14 @@
 \alias{qr2meobj}
 \title{qr2meobj}
 \usage{
-qr2meobj(cop.param, copula, tvals, x, Fytxlist, Qyx, Qtx)
+qr2meobj(cop.param, copula, t_values, x, Fytxlist, Qyx, Qtx)
 }
 \arguments{
 \item{cop.param}{copula parameter}
 
 \item{copula}{type of copula}
 
-\item{tvals}{values of the treatment that conditional distributions were
+\item{t_values}{values of the treatment that conditional distributions were
 estimated for}
 
 \item{x}{matrix of covariates}

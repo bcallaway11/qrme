@@ -7,7 +7,7 @@
 mh_mcmc(
   startval = 0,
   mcmc_draws = 200,
-  mcmc_burnin = 100,
+  mcmc_burn_in = 100,
   proposal_sd = NULL,
   betmat,
   m,
@@ -24,7 +24,7 @@ mh_mcmc(
 
 \item{mcmc_draws}{The total number of measurement error draws to make}
 
-\item{mcmc_burnin}{The number of draws to drop}
+\item{mcmc_burn_in}{The number of draws to drop}
 
 \item{proposal_sd}{Standard deviation of the random-walk MH proposal. Passed
 from \code{em.algo} after automatic scaling; see \code{\link{em.algo}}.}

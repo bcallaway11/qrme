@@ -5,42 +5,42 @@
 \title{QR with 2-sided measurement error}
 \usage{
 qr2me(
-  yname,
-  tname,
-  xformla,
+  y_name,
+  t_name,
+  x_formula,
   tau,
   data,
-  xdf = NULL,
-  tvals = NULL,
-  me_dist = "gaussian",
+  x_data = NULL,
+  t_values = NULL,
+  me_distribution = "gaussian",
   copula = "gaussian",
   Qyx,
   Qtx,
-  retFytxlist = FALSE,
-  copula_me_draws = 100L,
-  mobility_copula_draws = 100L,
+  return_fytx_list = FALSE,
+  n_copula_me_draws = 100L,
+  n_copula_draws = 100L,
   verbose = FALSE
 )
 }
 \arguments{
-\item{yname}{name of the outcome in the passed in data}
+\item{y_name}{name of the outcome in the passed in data}
 
-\item{tname}{name of the treatment in the passed in data}
+\item{t_name}{name of the treatment in the passed in data}
 
-\item{xformla}{a one-sided formula for additional covariates (assumed
+\item{x_formula}{a one-sided formula for additional covariates (assumed
 not to be measured with error)}
 
 \item{tau}{a vector containing particular quantiles that have been estimated ??}
 
 \item{data}{a data.frame containing the data used for estimation}
 
-\item{xdf}{If you want conditional distributions to be returned, pass in the value of the distribution here;
+\item{x_data}{If you want conditional distributions to be returned, pass in the value of the distribution here;
 otherwise the default behavior is to return a single distribution that averages over all values of X in the dataset}
 
-\item{tvals}{a vector of values of the treatment variable at which to compute the conditional distribution 
+\item{t_values}{a vector of values of the treatment variable at which to compute the conditional distribution 
 of Y given X and T}
 
-\item{me_dist}{which type of measurement error distribution to use (default is "gaussian"), 
+\item{me_distribution}{which type of measurement error distribution to use (default is "gaussian"), 
 "laplace" is also supported}
 
 \item{copula}{which type of copula to use.  Options are "gaussian" (the
@@ -52,15 +52,15 @@ error) of Y on X}
 \item{Qtx}{quantile regression estimates (can be adjusted for measurement
 error) of T on X}
 
-\item{retFytxlist}{whether or not to return the conditional distribution
-for every value of x in xdf
+\item{return_fytx_list}{whether or not to return the conditional distribution
+for every value of x in x_data
 (default is FALSE because this can take up a lot of room in memory)}
 
-\item{copula_me_draws}{Number of measurement-error draws used in the
+\item{n_copula_me_draws}{Number of measurement-error draws used in the
 second-stage copula likelihood (default 100). Increase this for a less
 noisy copula likelihood at the cost of speed.}
 
-\item{mobility_copula_draws}{Number of copula draws per covariate row used
+\item{n_copula_draws}{Number of copula draws per covariate row used
 to compute mobility summaries such as transition matrices and rank
 correlations (default 100).}
 

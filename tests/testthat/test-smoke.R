@@ -31,11 +31,11 @@ local({
 
 ctrl <- list(
   se            = FALSE,
-  nmix          = 1,
+  n_mix          = 1,
   mcmc_draws    = 60L,
-  mcmc_burnin   = 30L,
-  conv_crit     = "params",
-  maxit         = 20L,
+  mcmc_burn_in   = 30L,
+  conv_criterion     = "params",
+  max_em_iters         = 20L,
   verbose       = FALSE
 )
 
@@ -50,7 +50,7 @@ test_that("qrme runs and returns a well-formed merr object", {
   expect_true(is.matrix(fit$bet))
   expect_equal(nrow(fit$bet), length(tau))
   expect_true(is.numeric(fit$n_iter) && fit$n_iter >= 1)
-  expect_equal(fit$conv_crit, ctrl$conv_crit)
+  expect_equal(fit$conv_criterion, ctrl$conv_criterion)
   expect_equal(fit$tol, 1e-2)
   expect_true(is.numeric(fit$conv_criteria))
   expect_true(is.logical(fit$conv_converged))
@@ -64,12 +64,12 @@ test_that("qrme controls finite-mixture output and warns on nonconvergence", {
     suppressWarnings(fit <- qrme(
       formula = Y ~ X,
       data = dd,
-      tau = tau[c(2, 4)],
-      nmix = 2L,
+      tau = tau[c(1, 3)],
+      n_mix = 2L,
       tol = Inf,
-      maxit = 1L,
+      max_em_iters = 1L,
       mcmc_draws = 40L,
-      mcmc_burnin = 20L,
+      mcmc_burn_in = 20L,
       verbose = FALSE
     )),
     NA
@@ -82,12 +82,12 @@ test_that("qrme controls finite-mixture output and warns on nonconvergence", {
     qrme(
       formula = Y ~ X,
       data = dd,
-      tau = tau[c(2, 4)],
-      nmix = 1L,
+      tau = tau[c(1, 3)],
+      n_mix = 1L,
       tol = 0,
-      maxit = 1L,
+      max_em_iters = 1L,
       mcmc_draws = 40L,
-      mcmc_burnin = 20L,
+      mcmc_burn_in = 20L,
       verbose = FALSE
     ),
     "EM algorithm failed to converge"
@@ -96,23 +96,23 @@ test_that("qrme controls finite-mixture output and warns on nonconvergence", {
 
 # --- Test 2: tsme -------------------------------------------------------------
 test_that("tsme runs and returns a well-formed result list", {
-  tvals   <- mean(dd$T)
-  povline <- quantile(dd$Y, 0.2)
+  t_values   <- mean(dd$T)
+  pov_line <- quantile(dd$Y, 0.2)
 
   res <- suppressWarnings(tsme(
     data      = dd,
-    Yformla   = Y ~ X,
-    Tformla   = T ~ X,
+    y_formula   = Y ~ X,
+    t_formula   = T ~ X,
     tau       = tau,
-    tvals     = tvals,
-    povline   = povline,
-    Ynmix     = 1L,
-    Tnmix     = 1L,
+    t_values     = t_values,
+    pov_line   = pov_line,
+    y_n_mix     = 1L,
+    t_n_mix     = 1L,
     mcmc_draws  = ctrl$mcmc_draws,
-    mcmc_burnin = ctrl$mcmc_burnin,
-    conv_crit = ctrl$conv_crit,
+    mcmc_burn_in = ctrl$mcmc_burn_in,
+    conv_criterion = ctrl$conv_criterion,
     tol       = Inf,
-    maxit     = 1L,
+    max_em_iters     = 1L,
     se        = FALSE,
     verbose   = FALSE
   ))
@@ -122,7 +122,7 @@ test_that("tsme runs and returns a well-formed result list", {
   expect_s3_class(res$meQtx, "merr")
   expect_equal(res$tol[["Y"]], res$meQyx$tol)
   expect_equal(res$tol[["T"]], res$meQtx$tol)
-  expect_equal(res$conv_crit[["Y"]], ctrl$conv_crit)
+  expect_equal(res$conv_criterion[["Y"]], ctrl$conv_criterion)
   expect_true(is.numeric(res$conv_criteria))
   expect_true(is.logical(res$conv_converged))
   expect_true(is.numeric(res$mix_n_iter))

@@ -4,12 +4,12 @@
 \alias{fvC}
 \title{fvC}
 \usage{
-fvC(v, me_dist, m, pi, mu, sig)
+fvC(v, me_distribution, m, pi, mu, sig)
 }
 \arguments{
 \item{v}{value to estimate the density at}
 
-\item{me_dist}{the distribution of the measurement error.  "gaussian" is the
+\item{me_distribution}{the distribution of the measurement error.  "gaussian" is the
 default and supports a mixture of normals.  "laplace" is also supported.}
 
 \item{m}{number of mixture components}
