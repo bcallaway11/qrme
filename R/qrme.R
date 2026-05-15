@@ -554,15 +554,17 @@ qr2me <- function(y_name, t_name, x_formula, tau, data, x_data=NULL, t_values=NU
     } else {
       Fytxlist <- Fytx
     }
-    out <- list(cop.param=delt[1], copula=copula, Fytxlist=Fytxlist, Fyt=Fyt, t_values=t_values, x=x_data,
+    out <- list(cop.param=delt[1], cop_loglik=res$objective, copula=copula,
+                Fytxlist=Fytxlist, Fyt=Fyt, t_values=t_values, x=x_data,
                 t_mat=t_mat, Ps=Ps, up_mob=up_mob)
 
     ### only do above if you want the results for a particular value of t and x;
-    ### otherwise can just return all results 
+    ### otherwise can just return all results
   } else {
     ## out <- list(cop.param=parms2coppar(res$maximum, copula=copula, x=x),
     ##             copula=copula)
-    out <- list(cop.param=delt[1], copula=copula, t_mat=t_mat, Ps=Ps, up_mob=up_mob)
+    out <- list(cop.param=delt[1], cop_loglik=res$objective, copula=copula,
+                t_mat=t_mat, Ps=Ps, up_mob=up_mob)
   }
 
   out$Qyx <- Qyx

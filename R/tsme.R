@@ -135,23 +135,27 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
   nomeresQ <- sapply(nomeres$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
   qrytxQ <- sapply(qrytx$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
 
-  meCopParam <- meres$cop.param
+  meCopParam   <- meres$cop.param
   nomeCopParam <- nomeres$cop.param
-  
+  meCopLoglik   <- meres$cop_loglik
+  nomeCopLoglik <- nomeres$cop_loglik
+
   out <- list(y_formula=y_formula, t_formula=t_formula, tau=tau, t_values=t_values, copula=copula,
-              meCopParam=meCopParam, nomeCopParam=nomeCopParam, y_n_mix=y_n_mix, t_n_mix=t_n_mix, report_quantiles=report_quantiles,
+              meCopParam=meCopParam, nomeCopParam=nomeCopParam,
+              meCopLoglik=meCopLoglik, nomeCopLoglik=nomeCopLoglik,
+              mix_loglik=c(Y=Qyx$mix_loglik, T=Qtx$mix_loglik),
+              y_n_mix=y_n_mix, t_n_mix=t_n_mix, report_quantiles=report_quantiles,
               tol=c(Y=Qyx$tol, T=Qtx$tol),
               conv_criterion=c(Y=Qyx$conv_criterion, T=Qtx$conv_criterion),
               conv_criteria=c(Y=Qyx$conv_criteria, T=Qtx$conv_criteria),
               conv_converged=c(Y=Qyx$conv_converged, T=Qtx$conv_converged),
               mix_n_iter=c(Y=Qyx$mix_n_iter, T=Qtx$mix_n_iter),
-              mix_loglik=c(Y=Qyx$mix_loglik, T=Qtx$mix_loglik),
               mix_converged=c(Y=Qyx$mix_converged, T=Qtx$mix_converged),
-              meQyx=Qyx, meQtx=Qtx, meresQ=meresQ, 
-              nomeQyx=rqyx, nomeQtx=rqtx, nomeresQ=nomeresQ, 
+              meQyx=Qyx, meQtx=Qtx, meresQ=meresQ,
+              nomeQyx=rqyx, nomeQtx=rqtx, nomeresQ=nomeresQ,
               qrytxQ=qrytxQ, qrytx=qrytx,
-              meTmat=meTmat, nomeTmat=nomeTmat, obsTmat=obsTmat, 
-              mePs=mePs, nomePs=nomePs, obsPs=obsPs, 
+              meTmat=meTmat, nomeTmat=nomeTmat, obsTmat=obsTmat,
+              mePs=mePs, nomePs=nomePs, obsPs=obsPs,
               meUm=meUm, nomeUm=nomeUm, obsUm=obsUm,
               mePovrate=mePovrate, nomePovrate=nomePovrate, qrPovrate=qrPovrate)
 
