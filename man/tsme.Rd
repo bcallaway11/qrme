@@ -42,7 +42,11 @@ tsme(
   verbose = FALSE,
   se = FALSE,
   n_boot = 100,
-  n_cores = 1
+  n_cores = 1,
+  boot_n_copula_me_draws = NULL,
+  boot_mcmc_draws = NULL,
+  boot_mcmc_burn_in = NULL,
+  boot_tol = NULL
 )
 }
 \arguments{
@@ -171,6 +175,26 @@ to use (default is 100)}
 
 \item{n_cores}{allows for parallel processing in computing standard errors using
 the bootstrap (the default is 1)}
+
+\item{boot_n_copula_me_draws}{Number of copula ME draws for each bootstrap
+draw. \code{NULL} (default) uses the same value as \code{n_copula_me_draws}.
+Reducing this (e.g. to 500) speeds up the bootstrap; per-draw MC noise
+averages out over bootstrap iterations.}
+
+\item{boot_mcmc_draws}{Total MCMC draws per EM step in each bootstrap draw.
+\code{NULL} (default) uses the same value as \code{mcmc_draws}. With
+warm-starting from the full-data fit, fewer draws are needed per bootstrap
+draw; 200 is a reasonable value when the full fit uses 400.}
+
+\item{boot_mcmc_burn_in}{MCMC burn-in draws per EM step in each bootstrap
+draw. \code{NULL} (default) uses the same value as \code{mcmc_burn_in}.
+Can be reduced alongside \code{boot_mcmc_draws} since warm-starting puts
+the chain near the posterior from the first iteration.}
+
+\item{boot_tol}{Convergence tolerance for the EM algorithm in each bootstrap
+draw. \code{NULL} (default) uses the same value as \code{tol}. A slightly
+looser tolerance (e.g. 5 times the full-fit value) reduces iterations per
+draw; the resulting imprecision averages out over bootstrap iterations.}
 }
 \value{
 list of nonlinear measures of intergenerational income mobility
