@@ -89,23 +89,22 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
 
 
   if (report_transition_matrix) {
-    meTmat <- meres$t_mat#tmat(Qyx$Ystar, Qtx$Ystar)
-    obsTmat <- tmat(data[,y_name], data[,t_name])
-    nomeTmat <- nomeres$t_mat
+    me_tmat   <- meres$t_mat
+    obs_tmat  <- tmat(data[,y_name], data[,t_name])
+    nome_tmat <- nomeres$t_mat
   }
 
   if (report_spearman) {
-    mePs <- meres$Ps
-    nomePs <- nomeres$Ps
-    obsPs  <- cor(data[,y_name], data[,t_name], method="spearman")
+    me_spearman   <- meres$Ps
+    nome_spearman <- nomeres$Ps
+    obs_spearman  <- cor(data[,y_name], data[,t_name], method="spearman")
   }
 
   if (report_upward_mobility) {
-    meUm <- meres$up_mob
-    nomeUm <- nomeres$up_mob
-    obsUm <- upMob(data[,y_name], data[,t_name])
+    me_up_mob   <- meres$up_mob
+    nome_up_mob <- nomeres$up_mob
+    obs_up_mob  <- upMob(data[,y_name], data[,t_name])
   }
-
 
   # results just using quantile regression
   tau <- seq(0,1,length.out=100)
@@ -124,25 +123,25 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
       combineDfs(seq(min(data[,y_name]), max(data[,y_name]), length.out=500), Fytx)
     }
   })
-  
+
   if (report_poverty) {
-    if (ignore_me) mePovrate <- NULL else mePovrate <- sapply(1:(length(meres$t_values)), function(i) meres$Fyt[[i]](pov_line))
-    nomePovrate <- sapply(1:(length(nomeres$t_values)), function(i) nomeres$Fyt[[i]](pov_line))
-    qrPovrate <- sapply(1:(length(nomeres$t_values)), function(i) qrytx$Fyt[[i]](pov_line))
+    if (ignore_me) me_pov_rate <- NULL else me_pov_rate <- sapply(1:(length(meres$t_values)), function(i) meres$Fyt[[i]](pov_line))
+    nome_pov_rate <- sapply(1:(length(nomeres$t_values)), function(i) nomeres$Fyt[[i]](pov_line))
+    qr_pov_rate   <- sapply(1:(length(nomeres$t_values)), function(i) qrytx$Fyt[[i]](pov_line))
   }
 
-  meresQ <- if(ignore_me) meresQ <- NULL else meresQ <-  sapply(meres$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
-  nomeresQ <- sapply(nomeres$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
-  qrytxQ <- sapply(qrytx$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
+  me_cond_quant   <- if (ignore_me) NULL else sapply(meres$Fyt,  function(Fy) quantile(Fy, type=1, probs=report_quantiles))
+  nome_cond_quant <- sapply(nomeres$Fyt, function(Fy) quantile(Fy, type=1, probs=report_quantiles))
+  qr_cond_quant   <- sapply(qrytx$Fyt,  function(Fy) quantile(Fy, type=1, probs=report_quantiles))
 
-  meCopParam   <- meres$cop.param
-  nomeCopParam <- nomeres$cop.param
-  meCopLoglik   <- meres$cop_loglik
-  nomeCopLoglik <- nomeres$cop_loglik
+  me_cop_param   <- meres$cop.param
+  nome_cop_param <- nomeres$cop.param
+  me_cop_loglik   <- meres$cop_loglik
+  nome_cop_loglik <- nomeres$cop_loglik
 
   out <- list(y_formula=y_formula, t_formula=t_formula, tau=tau, t_values=t_values, copula=copula,
-              meCopParam=meCopParam, nomeCopParam=nomeCopParam,
-              meCopLoglik=meCopLoglik, nomeCopLoglik=nomeCopLoglik,
+              me_cop_param=me_cop_param, nome_cop_param=nome_cop_param,
+              me_cop_loglik=me_cop_loglik, nome_cop_loglik=nome_cop_loglik,
               mix_loglik=c(Y=Qyx$mix_loglik, T=Qtx$mix_loglik),
               y_n_mix=y_n_mix, t_n_mix=t_n_mix, report_quantiles=report_quantiles,
               tol=c(Y=Qyx$tol, T=Qtx$tol),
@@ -151,13 +150,13 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
               conv_converged=c(Y=Qyx$conv_converged, T=Qtx$conv_converged),
               mix_n_iter=c(Y=Qyx$mix_n_iter, T=Qtx$mix_n_iter),
               mix_converged=c(Y=Qyx$mix_converged, T=Qtx$mix_converged),
-              meQyx=Qyx, meQtx=Qtx, meresQ=meresQ,
-              nomeQyx=rqyx, nomeQtx=rqtx, nomeresQ=nomeresQ,
-              qrytxQ=qrytxQ, qrytx=qrytx,
-              meTmat=meTmat, nomeTmat=nomeTmat, obsTmat=obsTmat,
-              mePs=mePs, nomePs=nomePs, obsPs=obsPs,
-              meUm=meUm, nomeUm=nomeUm, obsUm=obsUm,
-              mePovrate=mePovrate, nomePovrate=nomePovrate, qrPovrate=qrPovrate)
+              me_qyx=Qyx, me_qtx=Qtx, me_cond_quant=me_cond_quant,
+              nome_qyx=rqyx, nome_qtx=rqtx, nome_cond_quant=nome_cond_quant,
+              qr_cond_quant=qr_cond_quant, qrytx=qrytx,
+              me_tmat=me_tmat, nome_tmat=nome_tmat, obs_tmat=obs_tmat,
+              me_spearman=me_spearman, nome_spearman=nome_spearman, obs_spearman=obs_spearman,
+              me_up_mob=me_up_mob, nome_up_mob=nome_up_mob, obs_up_mob=obs_up_mob,
+              me_pov_rate=me_pov_rate, nome_pov_rate=nome_pov_rate, qr_pov_rate=qr_pov_rate)
 
   out
 
@@ -329,12 +328,12 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
     # begins near the solution. For n_mix=1 this eliminates cold-start noise;
     # for n_mix>1 it also reduces label-switching since the EM stays near the
     # ordered full-data solution.
-    boot_start_sigma_y <- res$meQyx$sig
-    boot_start_mu_y    <- res$meQyx$mu
-    boot_start_pi_y    <- res$meQyx$pi
-    boot_start_sigma_t <- res$meQtx$sig
-    boot_start_mu_t    <- res$meQtx$mu
-    boot_start_pi_t    <- res$meQtx$pi
+    boot_start_sigma_y <- res$me_qyx$sig
+    boot_start_mu_y    <- res$me_qyx$mu
+    boot_start_pi_y    <- res$me_qyx$pi
+    boot_start_sigma_t <- res$me_qtx$sig
+    boot_start_mu_t    <- res$me_qtx$mu
+    boot_start_pi_t    <- res$me_qtx$pi
 
     eachIter <- pbapply::pblapply(1:n_boot, function(b) {
       n <- nrow(data)
@@ -385,49 +384,49 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
     eachIter <- eachIter[!sapply(eachIter, is.null)]
 
     # first step estimators — outcome
-    res$meQyx$sig.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$sig)), 2, sd)
-    res$meQyx$mu.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$mu)),  2, sd)
-    res$meQyx$pi.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQyx$pi)),  2, sd)
-    res$meQyx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) e$meQyx$bet)), 1:2, sd)
+    res$me_qyx$sig_se <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qyx$sig)), 2, sd)
+    res$me_qyx$mu_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qyx$mu)),  2, sd)
+    res$me_qyx$pi_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qyx$pi)),  2, sd)
+    res$me_qyx$bet_se <- apply(simplify2array(lapply(eachIter, function(e) e$me_qyx$bet)), 1:2, sd)
     # first step estimators — treatment
-    res$meQtx$sig.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$sig)), 2, sd)
-    res$meQtx$mu.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$mu)),  2, sd)
-    res$meQtx$pi.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$meQtx$pi)),  2, sd)
-    res$meQtx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) e$meQtx$bet)), 1:2, sd)
+    res$me_qtx$sig_se <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qtx$sig)), 2, sd)
+    res$me_qtx$mu_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qtx$mu)),  2, sd)
+    res$me_qtx$pi_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qtx$pi)),  2, sd)
+    res$me_qtx$bet_se <- apply(simplify2array(lapply(eachIter, function(e) e$me_qtx$bet)), 1:2, sd)
     # qr
-    res$qrytx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) coef(e$qrytx))), 1:2, sd)
+    res$qrytx$bet_se <- apply(simplify2array(lapply(eachIter, function(e) coef(e$qrytx))), 1:2, sd)
     # no-ME first stage
-    res$nomeQyx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nomeQyx)))), 1:2, sd)
-    res$nomeQtx$bet.se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nomeQtx)))), 1:2, sd)
+    res$nome_qyx$bet_se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nome_qyx)))), 1:2, sd)
+    res$nome_qtx$bet_se <- apply(simplify2array(lapply(eachIter, function(e) t(coef(e$nome_qtx)))), 1:2, sd)
 
     # copula parameters
-    res$meCopParam.se   <- sd(sapply(eachIter, function(e) e$meCopParam))
-    res$nomeCopParam.se <- sd(sapply(eachIter, function(e) e$nomeCopParam))
+    res$me_cop_param_se   <- sd(sapply(eachIter, function(e) e$me_cop_param))
+    res$nome_cop_param_se <- sd(sapply(eachIter, function(e) e$nome_cop_param))
 
     # transition matrix
-    res$meTmat.se   <- apply(simplify2array(lapply(eachIter, function(e) e$meTmat)),   1:2, sd)
-    res$nomeTmat.se <- apply(simplify2array(lapply(eachIter, function(e) e$nomeTmat)), 1:2, sd)
-    res$obsTmat.se  <- apply(simplify2array(lapply(eachIter, function(e) e$obsTmat)),  1:2, sd)
+    res$me_tmat_se   <- apply(simplify2array(lapply(eachIter, function(e) e$me_tmat)),   1:2, sd)
+    res$nome_tmat_se <- apply(simplify2array(lapply(eachIter, function(e) e$nome_tmat)), 1:2, sd)
+    res$obs_tmat_se  <- apply(simplify2array(lapply(eachIter, function(e) e$obs_tmat)),  1:2, sd)
 
     # spearman's rho
-    res$mePs.se   <- sd(sapply(eachIter, function(e) e$mePs))
-    res$nomePs.se <- sd(sapply(eachIter, function(e) e$nomePs))
-    res$obsPs.se  <- sd(sapply(eachIter, function(e) e$obsPs))
+    res$me_spearman_se   <- sd(sapply(eachIter, function(e) e$me_spearman))
+    res$nome_spearman_se <- sd(sapply(eachIter, function(e) e$nome_spearman))
+    res$obs_spearman_se  <- sd(sapply(eachIter, function(e) e$obs_spearman))
 
     # upward mobility
-    res$meUm.se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$meUm)),   2, sd)
-    res$nomeUm.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$nomeUm)), 2, sd)
-    res$obsUm.se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$obsUm)),  2, sd)
+    res$me_up_mob_se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_up_mob)),   2, sd)
+    res$nome_up_mob_se <- apply(do.call(rbind, lapply(eachIter, function(e) e$nome_up_mob)), 2, sd)
+    res$obs_up_mob_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$obs_up_mob)),  2, sd)
 
     # poverty rate
-    res$mePovrate.se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$mePovrate)),   2, sd)
-    res$nomePovrate.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$nomePovrate)), 2, sd)
-    res$qrPovrate.se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$qrPovrate)),   2, sd)
+    res$me_pov_rate_se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_pov_rate)),   2, sd)
+    res$nome_pov_rate_se <- apply(do.call(rbind, lapply(eachIter, function(e) e$nome_pov_rate)), 2, sd)
+    res$qr_pov_rate_se   <- apply(do.call(rbind, lapply(eachIter, function(e) e$qr_pov_rate)),   2, sd)
 
     # conditional quantile curves
-    res$meresQ.se   <- apply(simplify2array(lapply(eachIter, function(e) e$meresQ)),   1:2, sd)
-    res$nomeresQ.se <- apply(simplify2array(lapply(eachIter, function(e) e$nomeresQ)), 1:2, sd)
-    res$qrytxQ.se   <- apply(simplify2array(lapply(eachIter, function(e) e$qrytxQ)),   1:2, sd)
+    res$me_cond_quant_se   <- apply(simplify2array(lapply(eachIter, function(e) e$me_cond_quant)),   1:2, sd)
+    res$nome_cond_quant_se <- apply(simplify2array(lapply(eachIter, function(e) e$nome_cond_quant)), 1:2, sd)
+    res$qr_cond_quant_se   <- apply(simplify2array(lapply(eachIter, function(e) e$qr_cond_quant)),   1:2, sd)
 
     res$n_boot <- length(eachIter)
 
