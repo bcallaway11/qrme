@@ -3,7 +3,7 @@
 # Description: Functions for nonlinear models with two-sided measurement error
 #   via copula (tsme) and its internal workhorse (compute.tsme).
 # Author: Brant Callaway
-# Last update: 2026-05-16
+# Last update: 2026-05-17
 # Date created: 2026-05-14
 # =============================================================================
 
@@ -254,6 +254,22 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
 #'  to use (default is 100)
 #' @param n_cores allows for parallel processing in computing standard errors using
 #'  the bootstrap (the default is 1)
+#' @param boot_n_copula_me_draws Number of copula ME draws for each bootstrap
+#'  draw. \code{NULL} (default) uses the same value as \code{n_copula_me_draws}.
+#'  Reducing this (e.g. to 500) speeds up the bootstrap; per-draw MC noise
+#'  averages out over bootstrap iterations.
+#' @param boot_mcmc_draws Total MCMC draws per EM step in each bootstrap draw.
+#'  \code{NULL} (default) uses the same value as \code{mcmc_draws}. With
+#'  warm-starting from the full-data fit, fewer draws are needed per bootstrap
+#'  draw; 200 is a reasonable value when the full fit uses 400.
+#' @param boot_mcmc_burn_in MCMC burn-in draws per EM step in each bootstrap
+#'  draw. \code{NULL} (default) uses the same value as \code{mcmc_burn_in}.
+#'  Can be reduced alongside \code{boot_mcmc_draws} since warm-starting puts
+#'  the chain near the posterior from the first iteration.
+#' @param boot_tol Convergence tolerance for the EM algorithm in each bootstrap
+#'  draw. \code{NULL} (default) uses the same value as \code{tol}. A slightly
+#'  looser tolerance (e.g. 5 times the full-fit value) reduces iterations per
+#'  draw; the resulting imprecision averages out over bootstrap iterations.
 #'
 #' @return list of nonlinear measures of intergenerational income mobility
 #'  adjusted for measurement error
@@ -269,7 +285,9 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
                  start_sigma_y=NULL, start_mu_y=NULL, start_pi_y=NULL,
                  start_sigma_t=NULL, start_mu_t=NULL, start_pi_t=NULL,
                  n_copula_draws=100L, ignore_me=FALSE, verbose=FALSE,
-                 se=FALSE, n_boot=100, n_cores=1) {
+                 se=FALSE, n_boot=100, n_cores=1,
+                 boot_n_copula_me_draws=NULL, boot_mcmc_draws=NULL,
+                 boot_mcmc_burn_in=NULL, boot_tol=NULL) {
 
   if (qrme_verbose_level(verbose) >= 1L) {
     message("tsme method")
@@ -322,6 +340,12 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
 
   if (se) {
 
+    # Resolve boot-specific tuning parameters; NULL means use the full-fit value.
+    b_n_copula_me_draws <- if (is.null(boot_n_copula_me_draws)) n_copula_me_draws else boot_n_copula_me_draws
+    b_mcmc_draws        <- if (is.null(boot_mcmc_draws))        mcmc_draws        else boot_mcmc_draws
+    b_mcmc_burn_in      <- if (is.null(boot_mcmc_burn_in))      mcmc_burn_in      else boot_mcmc_burn_in
+    b_tol               <- if (is.null(boot_tol))               tol               else boot_tol
+
     # Warm-start ME parameters from full-data estimates so each bootstrap draw
     # begins near the solution. For n_mix=1 this eliminates cold-start noise;
     # for n_mix>1 it also reduces label-switching since the EM stays near the
@@ -347,7 +371,7 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
                             me_distribution=me_distribution,
                             copula=copula,
                             mcmc_method=mcmc_method,
-                            n_copula_me_draws=n_copula_me_draws,
+                            n_copula_me_draws=b_n_copula_me_draws,
                             report_transition_matrix=report_transition_matrix,
                             report_spearman=report_spearman,
                             report_upward_mobility=report_upward_mobility,
@@ -356,13 +380,13 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
                             report_quantiles=report_quantiles,
                             y_n_mix=y_n_mix,
                             t_n_mix=t_n_mix,
-                            tol=tol,
+                            tol=b_tol,
                             conv_criterion=conv_criterion,
                             loglik_draws=loglik_draws,
                             conv_patience=conv_patience,
                             max_em_iters=max_em_iters,
-                            mcmc_draws=mcmc_draws,
-                            mcmc_burn_in=mcmc_burn_in,
+                            mcmc_draws=b_mcmc_draws,
+                            mcmc_burn_in=b_mcmc_burn_in,
                             proposal_sd=proposal_sd,
                             start_sigma_y=boot_start_sigma_y,
                             start_mu_y=boot_start_mu_y,
