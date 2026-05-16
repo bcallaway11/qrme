@@ -3,7 +3,7 @@
 # Description: Functions for nonlinear models with two-sided measurement error
 #   via copula (tsme) and its internal workhorse (compute.tsme).
 # Author: Brant Callaway
-# Last update: 2026-05-15
+# Last update: 2026-05-16
 # Date created: 2026-05-14
 # =============================================================================
 
@@ -110,18 +110,16 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
   tau <- seq(0,1,length.out=100)
   qr_formula <- toformula(y_name, c(t_name, rhs.vars(y_formula)))
   qrytx <- rq(qr_formula, tau=tau, data=data)
-  qrytx$Fyt <- lapply(1:length(t_values), function(i) {
-    if (is.null(x_data)) newdta <- data else newdta <- x_data
-    newdta[,t_name] <- t_values[i]
-    if (nrow(newdta) == 1) {
-      Qytx <- predict(qrytx, newdata=newdta)
-      Fytx <- BMisc::makeDist(Qytx[1,], tau, rearrange=TRUE, method="linear")
-      return(Fytx)
-    } else {
-      Fytx <- predict(qrytx, newdata=newdta, type="Fhat", stepfun=TRUE)
-      Fytx <- rearrange(Fytx)
-      combineDfs(seq(min(data[,y_name]), max(data[,y_name]), length.out=500), Fytx)
-    }
+  # Predict QR conditional quantile curves at mean controls, varying t.
+  # For a linear QR model, E_X[Q_tau(Y|X,T=t)] = Q_tau(Y|X=E[X],T=t), so
+  # predicting at column means of the model matrix is exact (not an approximation)
+  # and avoids the grid-resolution artifacts of the previous combineDfs approach.
+  mm_mean <- colMeans(model.matrix(qr_formula, data))
+  qrytx$Fyt <- lapply(seq_along(t_values), function(i) {
+    pred          <- mm_mean
+    pred[t_name]  <- t_values[i]
+    Qytx <- matrix(pred %*% coef(qrytx), nrow = 1L)
+    BMisc::makeDist(Qytx[1L, ], tau, rearrange = TRUE, method = "linear")
   })
 
   if (report_poverty) {
