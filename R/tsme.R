@@ -78,6 +78,7 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
   rqyx$pi <- rqtx$pi <- 1
   rqyx$mu <- rqtx$mu <- 0
   rqyx$sig <- rqtx$sig <- 0
+  rqyx$me_distribution <- rqtx$me_distribution <- "none"
 
   nomeres <- qr2me(y_name, t_name, y_formula, tau=tau, data=data,
                    t_values=t_values, x_data=x_data, n_copula_me_draws=n_copula_me_draws,
@@ -454,5 +455,314 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
 
   }
 
+  class(res) <- "tsme"
   res
+}
+
+
+# =============================================================================
+# S3 Methods for tsme
+# =============================================================================
+
+#' @title print.tsme
+#' @description Print method for tsme objects.  Shows formulas, copula
+#'   parameters, measurement error standard deviations, and Spearman's rho
+#'   for all three estimators.  Standard errors are shown when bootstrap
+#'   results are available.
+#'
+#' @param x a tsme object returned by \code{\link{tsme}}
+#' @param ... unused
+#'
+#' @export
+print.tsme <- function(x, ...) {
+  cat("Two-Sided Measurement Error Model (tsme)\n")
+  cat(strrep("-", 42L), "\n", sep = "")
+  cat("Outcome:   ", deparse(x$y_formula), "\n")
+  cat("Treatment: ", deparse(x$t_formula), "\n\n")
+
+  has_se <- !is.null(x$me_cop_param_se)
+
+  if (has_se) {
+    cat(sprintf(
+      "Copula: %-10s theta(ME) = %.4f (SE %.4f) | theta(No-ME) = %.4f (SE %.4f)\n",
+      x$copula, x$me_cop_param, x$me_cop_param_se, x$nome_cop_param, x$nome_cop_param_se
+    ))
+  } else {
+    cat(sprintf(
+      "Copula: %-10s theta(ME) = %.4f | theta(No-ME) = %.4f\n",
+      x$copula, x$me_cop_param, x$nome_cop_param
+    ))
+  }
+  cat("\n")
+
+  cat("ME parameters:\n")
+  .tsme_print_merr(x$me_qyx, "Y", has_se)
+  .tsme_print_merr(x$me_qtx, "T", has_se)
+  cat("\n")
+
+  if (!is.null(x$me_spearman)) {
+    if (has_se) {
+      cat(sprintf(
+        "Spearman's rho:  ME = %.4f (SE %.4f) | No-ME = %.4f (SE %.4f) | Obs = %.4f (SE %.4f)\n",
+        x$me_spearman, x$me_spearman_se,
+        x$nome_spearman, x$nome_spearman_se,
+        x$obs_spearman, x$obs_spearman_se
+      ))
+    } else {
+      cat(sprintf(
+        "Spearman's rho:  ME = %.4f | No-ME = %.4f | Obs = %.4f\n",
+        x$me_spearman, x$nome_spearman, x$obs_spearman
+      ))
+    }
+  }
+
+  invisible(x)
+}
+
+# Internal: one-line sigma summary for a merr object inside print.tsme
+.tsme_print_merr <- function(m, label, has_se) {
+  n_mix <- length(m$sig)
+  dist  <- if (!is.null(m$me_distribution)) m$me_distribution else ""
+  if (n_mix == 1L) {
+    if (has_se && !is.null(m$sig_se)) {
+      cat(sprintf("  %s (%s): sigma = %.4f (SE %.4f)\n", label, dist, m$sig, m$sig_se))
+    } else {
+      cat(sprintf("  %s (%s): sigma = %.4f\n", label, dist, m$sig))
+    }
+  } else {
+    cat(sprintf(
+      "  %s (%s, n_mix=%d): sigma = %s\n",
+      label, dist, n_mix, paste(round(m$sig, 4L), collapse = ", ")
+    ))
+  }
+}
+
+#' @title summary.tsme
+#' @description Summary method for tsme objects.  Calls \code{\link{print.tsme}}
+#'   then appends the upward mobility table and ME-corrected transition matrix.
+#'
+#' @param object a tsme object returned by \code{\link{tsme}}
+#' @param ... unused
+#'
+#' @export
+summary.tsme <- function(object, ...) {
+  print(object)
+
+  has_se <- !is.null(object$me_cop_param_se)
+
+  if (!is.null(object$me_up_mob)) {
+    cat("\nUpward Mobility:\n")
+    q_labs <- c("Q1 (bottom)", "Q2", "Q3", "Q4 (top)")
+    if (has_se) {
+      um <- data.frame(
+        ME       = round(object$me_up_mob,     4L),
+        ME_se    = round(object$me_up_mob_se,  4L),
+        NoME     = round(object$nome_up_mob,   4L),
+        NoME_se  = round(object$nome_up_mob_se, 4L),
+        Observed = round(object$obs_up_mob,    4L),
+        Obs_se   = round(object$obs_up_mob_se, 4L),
+        row.names = q_labs, check.names = FALSE
+      )
+    } else {
+      um <- data.frame(
+        ME       = round(object$me_up_mob,   4L),
+        NoME     = round(object$nome_up_mob, 4L),
+        Observed = round(object$obs_up_mob,  4L),
+        row.names = q_labs, check.names = FALSE
+      )
+    }
+    print(um)
+  }
+
+  if (!is.null(object$me_tmat)) {
+    # me_tmat is stored as [father descending, son ascending]; reverse rows for display
+    cat("\nTransition Matrix (ME-corrected, rows=father, cols=son):\n")
+    n_q   <- nrow(object$me_tmat)
+    tmat  <- round(object$me_tmat[n_q:1L, ], 4L)
+    q_labs <- c("Q1 (bottom)", "Q2", "Q3", "Q4 (top)")
+    rownames(tmat) <- q_labs
+    colnames(tmat) <- c("Q1", "Q2", "Q3", "Q4")
+    print(tmat)
+  }
+
+  invisible(object)
+}
+
+#' @title autoplot.tsme
+#' @description ggplot2-based plot method for tsme objects.  Returns a
+#'   \code{ggplot} object that can be further customized.
+#'
+#' @param object a tsme object returned by \code{\link{tsme}}
+#' @param type plot type: \code{"cond_quant"} (conditional quantile curves,
+#'   default) or \code{"pov_rate"} (poverty rates)
+#' @param which which estimator to display: \code{"me"} (ME-corrected, default),
+#'   \code{"nome"} (no-ME), \code{"qr"} (standard QR), or \code{"all"} (all
+#'   three on one plot; only valid when \code{type = "pov_rate"})
+#' @param ci logical; add confidence bands when bootstrap SEs are available
+#'   (default \code{TRUE})
+#' @param level confidence level for the bands (default 0.90)
+#' @param ... unused
+#'
+#' @return a ggplot object
+#' @export
+autoplot.tsme <- function(object,
+                          type  = c("cond_quant", "pov_rate"),
+                          which = c("me", "nome", "qr", "all"),
+                          ci    = TRUE,
+                          level = 0.90,
+                          ...) {
+  type  <- match.arg(type)
+  which <- match.arg(which)
+  z     <- stats::qnorm(0.5 + level / 2)
+
+  t_values <- object$t_values
+  t_lab    <- deparse(object$t_formula[[2L]])
+  y_lab    <- deparse(object$y_formula[[2L]])
+
+  if (type == "cond_quant") {
+    if (which == "all") {
+      warning("which='all' not supported for type='cond_quant'; using which='me'")
+      which <- "me"
+    }
+    mat <- switch(which,
+      me   = object$me_cond_quant,
+      nome = object$nome_cond_quant,
+      qr   = object$qr_cond_quant
+    )
+    mat_se <- if (ci) switch(which,
+      me   = object$me_cond_quant_se,
+      nome = object$nome_cond_quant_se,
+      qr   = object$qr_cond_quant_se
+    ) else NULL
+
+    if (!is.matrix(mat)) mat <- matrix(mat, nrow = 1L)
+
+    tau      <- object$report_quantiles
+    n_tau    <- length(tau)
+    n_t      <- length(t_values)
+    tau_labs <- paste0("Q", round(tau * 100L))
+
+    # as.vector(t(mat)) reads mat row by row: mat[1,], mat[2,], ...
+    df <- data.frame(
+      t_values = rep(t_values, n_tau),
+      quantile = factor(rep(tau_labs, each = n_t), levels = tau_labs),
+      value    = as.vector(t(mat))
+    )
+    if (!is.null(mat_se)) {
+      if (!is.matrix(mat_se)) mat_se <- matrix(mat_se, nrow = 1L)
+      se_vec <- as.vector(t(mat_se))
+      df$uci <- df$value + z * se_vec
+      df$lci <- df$value - z * se_vec
+    }
+
+    title_lab <- switch(which, me = "ME-corrected", nome = "No-ME", qr = "QR (observed)")
+
+    p <- ggplot2::ggplot(df, ggplot2::aes(x = t_values, y = value,
+                                          color = quantile)) +
+      ggplot2::geom_line(lwd = 1.0) +
+      ggplot2::geom_point(size = 2L) +
+      ggplot2::theme_classic() +
+      ggplot2::scale_colour_brewer(palette = "Set2", name = "") +
+      ggplot2::labs(x = t_lab, y = y_lab,
+                    title = paste("Conditional Quantile Curves —", title_lab)) +
+      ggplot2::theme(legend.position = "top")
+
+    if (!is.null(mat_se)) {
+      p <- p +
+        ggplot2::geom_line(ggplot2::aes(y = uci), linetype = "dashed") +
+        ggplot2::geom_line(ggplot2::aes(y = lci), linetype = "dashed")
+    }
+
+  } else { # pov_rate
+
+    if (which == "all") {
+      .na_se <- function(se_vec) {
+        if (is.null(se_vec)) rep(NA_real_, length(t_values)) else se_vec
+      }
+      me_se   <- if (ci) .na_se(object$me_pov_rate_se)   else .na_se(NULL)
+      nome_se <- if (ci) .na_se(object$nome_pov_rate_se) else .na_se(NULL)
+      qr_se   <- if (ci) .na_se(object$qr_pov_rate_se)   else .na_se(NULL)
+
+      df <- rbind(
+        data.frame(t_values = t_values, value = object$me_pov_rate,
+                   se = me_se,   estimator = "ME-corrected"),
+        data.frame(t_values = t_values, value = object$nome_pov_rate,
+                   se = nome_se, estimator = "No-ME"),
+        data.frame(t_values = t_values, value = object$qr_pov_rate,
+                   se = qr_se,   estimator = "QR (observed)")
+      )
+      df$estimator <- factor(df$estimator,
+                             levels = c("ME-corrected", "No-ME", "QR (observed)"))
+      df$uci <- df$value + z * df$se
+      df$lci <- df$value - z * df$se
+
+      p <- ggplot2::ggplot(df, ggplot2::aes(x = t_values, y = value,
+                                            color = estimator)) +
+        ggplot2::geom_line(lwd = 1.0) +
+        ggplot2::geom_point(size = 2L) +
+        ggplot2::theme_classic() +
+        ggplot2::scale_colour_brewer(palette = "Set2", name = "") +
+        ggplot2::labs(x = t_lab, y = "Poverty Rate", title = "Poverty Rate") +
+        ggplot2::theme(legend.position = "top")
+
+      if (ci) {
+        df_ci <- df[!is.na(df$se), ]
+        if (nrow(df_ci) > 0L) {
+          p <- p +
+            ggplot2::geom_line(data = df_ci, ggplot2::aes(y = uci),
+                               linetype = "dashed") +
+            ggplot2::geom_line(data = df_ci, ggplot2::aes(y = lci),
+                               linetype = "dashed")
+        }
+      }
+
+    } else {
+      pov    <- switch(which,
+        me   = object$me_pov_rate,
+        nome = object$nome_pov_rate,
+        qr   = object$qr_pov_rate
+      )
+      pov_se <- if (ci) switch(which,
+        me   = object$me_pov_rate_se,
+        nome = object$nome_pov_rate_se,
+        qr   = object$qr_pov_rate_se
+      ) else NULL
+
+      df <- data.frame(t_values = t_values, value = pov)
+      if (!is.null(pov_se)) {
+        df$uci <- pov + z * pov_se
+        df$lci <- pov - z * pov_se
+      }
+
+      title_lab <- switch(which, me = "ME-corrected", nome = "No-ME",
+                          qr = "QR (observed)")
+      p <- ggplot2::ggplot(df, ggplot2::aes(x = t_values, y = value)) +
+        ggplot2::geom_line(lwd = 1.0) +
+        ggplot2::geom_point(size = 2L) +
+        ggplot2::theme_classic() +
+        ggplot2::labs(x = t_lab, y = "Poverty Rate",
+                      title = paste("Poverty Rate —", title_lab))
+
+      if (!is.null(pov_se)) {
+        p <- p +
+          ggplot2::geom_line(ggplot2::aes(y = uci), linetype = "dashed") +
+          ggplot2::geom_line(ggplot2::aes(y = lci), linetype = "dashed")
+      }
+    }
+  }
+
+  p
+}
+
+#' @title plot.tsme
+#' @description Plot method for tsme objects; calls \code{\link{autoplot.tsme}}
+#'   and prints the result.
+#'
+#' @param x a tsme object returned by \code{\link{tsme}}
+#' @param ... passed to \code{\link{autoplot.tsme}}
+#'
+#' @export
+plot.tsme <- function(x, ...) {
+  print(ggplot2::autoplot(x, ...))
+  invisible(x)
 }

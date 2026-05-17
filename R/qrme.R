@@ -5,7 +5,7 @@
 #              via the pseudo-EM algorithm in em.R. Also includes qr2me() for
 #              two-sided measurement error and supporting S3 methods.
 # Author: Brant Callaway
-# Last update: 2026-05-15
+# Last update: 2026-05-17
 # Date created: 2026-05-07
 # =============================================================================
 
@@ -622,87 +622,41 @@ qr2meobj <- function(cop.param, copula, t_values, x, Fytxlist, Qyx, Qtx) {
   class(out) <- "qr2meobj"
 }
 
-#' print.qr2meobj
+#' @title print.merr
+#' @description Print method for merr objects returned by \code{\link{qrme}}.
+#'   Shows the measurement error distribution type and its fitted parameters
+#'   (mixture weights, means, and standard deviations) with bootstrap standard
+#'   errors when available.
 #'
-#' @param x a qr2meobj
-#' @param ... other arguments
-#' 
+#' @param x a merr object
+#' @param ... unused
+#'
 #' @export
-print.qr2meobj <- function(x, ...) {
-  print(x$Qyx)
-  print(x$Qtx)
-  cat("\n\n")
-  cat("Copula Type: ")
-  cat(x$copula)
+print.merr <- function(x, ...) {
+  n_mix <- length(x$sig)
+  dist  <- if (!is.null(x$me_distribution)) x$me_distribution else "unknown"
+  cat(sprintf("Measurement error: %s", dist))
+  if (n_mix > 1L) cat(sprintf(" (n_mix = %d)", n_mix))
   cat("\n")
-  cat("Copula Paramter: ")
-  cat(x$cop.param)
-  cat("\n\n")
-}
 
-#' print.merr
-#'
-#' @param x an merr object
-#' @param ... other arguments
-#' 
-#' @export
-print.merr <- function(x,...) {
-  coef <- round(t(as.matrix(x$coefficients)),4)
-  rownames(coef) <- x$tau
-  colnames(coef) <- c("Intercept", attr(x$terms,"term.labels"))
-  cat("Coefficients:\n")
-  print(coef)
-  cat("\n\n")
-  cat("Measurement Error Distribution:\n")
-  U <- round(cbind(x$pi, x$mu, x$sig^2),4)
-  rownames(U) <- sapply(1:nrow(U), function(i) paste0("Comp. ",i))
-  colnames(U) <- c("Prob.", "Mean", "Variance")
-  print(U)    
-}
+  has_se <- !is.null(x$sig_se)
+  nm     <- if (n_mix == 1L) "" else paste0("Comp.", seq_len(n_mix))
 
-## getListElement <- function(listolists, whichone=1) {
-##   lapply(listolists, function(l) l[[whichone]])
-## }
-
-#' gg_qr2meobj
-#'
-#' plot a qr2meobj
-#'
-#' @param obj a qr2meobj
-#' @param tau which quantiles to plot
-#' @param ylim limits of y-axis
-#' @param ylab label for y-axis
-#' @param xlab label for x-axis
-#'
-#' @export
-gg_qr2meobj <- function(obj, tau=c(.1,.5,.9), ylim=NULL,
-                          ylab=NULL, xlab=NULL) {
-
-  if (is.null(tau)) tau <- c(.1,.5,.9)
-  qq <- t(sapply(obj$Fyt, function(FF) quantile(FF, probs=tau)))
-  t_values <- obj$t_values
-  
-  cmat <- cbind.data.frame(t_values, qq)
-  colnames(cmat) <- c("t_values", paste0("c",tau*100))
-  cmat <- gather(cmat, quantile, value, -t_values)
-
-  p <- ggplot(cmat, mapping=aes(x=t_values,y=value, group=quantile, color=quantile)) +
-    geom_line() +
-    geom_point()
-
-  if (!is.null(ylim)) {
-    p <- p + scale_y_continuous(limits=ylim)
+  if (has_se) {
+    df <- data.frame(
+      Pi       = x$pi,    Pi_se    = x$pi_se,
+      Mu       = x$mu,    Mu_se    = x$mu_se,
+      Sigma    = x$sig,   Sigma_se = x$sig_se,
+      row.names = nm, check.names = FALSE
+    )
+  } else {
+    df <- data.frame(
+      Pi = x$pi, Mu = x$mu, Sigma = x$sig,
+      row.names = nm, check.names = FALSE
+    )
   }
-
-  if (!is.null(ylab)) {
-    p <- p + ggplot2::ylab(ylab)
-  }
-
-  if (!is.null(xlab)) {
-    p <- p + ggplot2::xlab(xlab)
-  }
-
-  p
+  print(round(df, 4L))
+  invisible(x)
 }
 
 #' addplot

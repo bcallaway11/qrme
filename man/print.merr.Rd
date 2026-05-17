@@ -7,10 +7,13 @@
 \method{print}{merr}(x, ...)
 }
 \arguments{
-\item{x}{an merr object}
+\item{x}{a merr object}
 
-\item{...}{other arguments}
+\item{...}{unused}
 }
 \description{
-print.merr
+Print method for merr objects returned by \code{\link{qrme}}.
+  Shows the measurement error distribution type and its fitted parameters
+  (mixture weights, means, and standard deviations) with bootstrap standard
+  errors when available.
 }
