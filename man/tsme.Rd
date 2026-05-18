@@ -62,12 +62,13 @@ tsme(
 parameters for}
 
 \item{x_data}{matrix of values of covariates to average over for conditional
- distribution-type parameters.   The default is NULL and in this case
- all covariates in the data will be averaged over.  A main alternative
- would be to pass in a single row with particular values of covariates
- of interest.
-#' @param me_distribution the distribution of the measurement error.  "gaussian" is the
- default and supports a mixture of normals.  "laplace" is also supported}
+distribution-type parameters.   The default is NULL and in this case
+all covariates in the data will be averaged over.  A main alternative
+would be to pass in a single row with particular values of covariates
+of interest.}
+
+\item{me_distribution}{the distribution of the measurement error.  "gaussian" is the
+default and supports a mixture of normals.  "laplace" is also supported}
 
 \item{copula}{what type of copula to use in second step.  Options are
 "gaussian" (the default), "clayton", "gumbel", or "frank"}
@@ -97,7 +98,7 @@ to report (default is .1,.5,.9)}
 measurement error distribution. Default is 1 (single Gaussian). Use
 \code{logLik()}, \code{AIC()}, and \code{BIC()} on a fitted
 \code{qrme()} object to select the appropriate value. \code{y_n_mix} and
-\code{t_n_mix} can differ — it is valid and common to use different
+\code{t_n_mix} can differ -- it is valid and common to use different
 complexity for each equation.}
 
 \item{t_n_mix}{Number of Gaussian mixture components for the treatment (T)

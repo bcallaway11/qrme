@@ -7,6 +7,14 @@
 \description{
 Code for estimating quantile regressions with measurement error. The first main set of functions estimates quantile regression with measurement error in the dependent variable using an EM-type-algorithm. The second set of functions estimates quantile regressions with measurement error in the outcome and in a continuous "treatment" variable. All functions allow for an arbitrary number of other covariates that are assumed not to be measured with error.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/bcallaway11/qrme}
+  \item Report bugs at \url{https://github.com/bcallaway11/qrme/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Callaway Brantly \email{brantly.callaway@uga.edu}
 
@@ -15,7 +23,7 @@ Authors:
   \item Callaway Brantly \email{brantly.callaway@uga.edu}
   \item Li Tong \email{tong.li@vanderbilt.edu}
   \item Murtazashvili Irina \email{im99@drexel.edu}
-  \item Tsyawo Emmanuel S.
+  \item Tsyawo Emmanuel S. \email{estsyawo@gmail.com}
 }
 
 }

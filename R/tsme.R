@@ -177,7 +177,7 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
 #'  all covariates in the data will be averaged over.  A main alternative
 #'  would be to pass in a single row with particular values of covariates
 #'  of interest.
-#' #' @param me_distribution the distribution of the measurement error.  "gaussian" is the
+#' @param me_distribution the distribution of the measurement error.  "gaussian" is the
 #'  default and supports a mixture of normals.  "laplace" is also supported
 #' @param copula what type of copula to use in second step.  Options are
 #'  "gaussian" (the default), "clayton", "gumbel", or "frank"
@@ -198,7 +198,7 @@ compute.tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
 #'   measurement error distribution. Default is 1 (single Gaussian). Use
 #'   \code{logLik()}, \code{AIC()}, and \code{BIC()} on a fitted
 #'   \code{qrme()} object to select the appropriate value. \code{y_n_mix} and
-#'   \code{t_n_mix} can differ — it is valid and common to use different
+#'   \code{t_n_mix} can differ -- it is valid and common to use different
 #'   complexity for each equation.
 #' @param t_n_mix Number of Gaussian mixture components for the treatment (T)
 #'   measurement error distribution. Default is 1. See \code{y_n_mix}.
@@ -406,12 +406,12 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
     # drop list elements where bootstrap failed
     eachIter <- eachIter[!sapply(eachIter, is.null)]
 
-    # first step estimators — outcome
+    # first step estimators -- outcome
     res$me_qyx$sig_se <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qyx$sig)), 2, sd)
     res$me_qyx$mu_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qyx$mu)),  2, sd)
     res$me_qyx$pi_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qyx$pi)),  2, sd)
     res$me_qyx$bet_se <- apply(simplify2array(lapply(eachIter, function(e) e$me_qyx$bet)), 1:2, sd)
-    # first step estimators — treatment
+    # first step estimators -- treatment
     res$me_qtx$sig_se <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qtx$sig)), 2, sd)
     res$me_qtx$mu_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qtx$mu)),  2, sd)
     res$me_qtx$pi_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$me_qtx$pi)),  2, sd)
@@ -664,7 +664,7 @@ autoplot.tsme <- function(object,
       ggplot2::theme_classic() +
       ggplot2::scale_colour_brewer(palette = "Set2", name = "") +
       ggplot2::labs(x = t_lab, y = y_lab,
-                    title = paste("Conditional Quantile Curves —", title_lab)) +
+                    title = paste("Conditional Quantile Curves --", title_lab)) +
       ggplot2::theme(legend.position = "top")
 
     if (!is.null(mat_se)) {
@@ -741,7 +741,7 @@ autoplot.tsme <- function(object,
         ggplot2::geom_point(size = 2L) +
         ggplot2::theme_classic() +
         ggplot2::labs(x = t_lab, y = "Poverty Rate",
-                      title = paste("Poverty Rate —", title_lab))
+                      title = paste("Poverty Rate --", title_lab))
 
       if (!is.null(pov_se)) {
         p <- p +

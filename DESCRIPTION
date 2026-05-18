@@ -1,12 +1,17 @@
 Package: qrme
 Title: Quantile Regression with Measurement Error
-Version: 1.0.0
-Authors@R: c(person("Callaway", "Brantly", email = "brantly.callaway@uga.edu", role = c("aut", "cre")), person("Li", "Tong", email="tong.li@vanderbilt.edu", role="aut"), person("Murtazashvili", "Irina", email="im99@drexel.edu", role="aut"), person("Tsyawo", "Emmanuel S.", role="aut"))
+Version: 1.0.1
+Authors@R: c(person("Callaway", "Brantly", email = "brantly.callaway@uga.edu", role = c("aut", "cre")), person("Li", "Tong", email="tong.li@vanderbilt.edu", role="aut"), person("Murtazashvili", "Irina", email="im99@drexel.edu", role="aut"), person("Tsyawo", "Emmanuel S.", email="estsyawo@gmail.com", role="aut"))
 Description: Code for estimating quantile regressions with measurement error.  The first main set of functions estimates quantile regression with measurement error in the dependent variable using an EM-type-algorithm.  The second set of functions estimates quantile regressions with measurement error in the outcome and in a continuous "treatment" variable.  All functions allow for an arbitrary number of other covariates that are assumed not to be measured with error.
-Depends: R (>= 2.1.0)
+Depends: R (>= 4.0.0)
 License: GPL-2
-Imports: BMisc, copula, ggplot2, mixtools, pbapply, quantreg, tidyr, gumbel, Rcpp, RcppArmadillo
+URL: https://bcallaway11.github.io/qrme, https://github.com/bcallaway11/qrme
+BugReports: https://github.com/bcallaway11/qrme/issues
+Imports: BMisc, copula, ggplot2, mixtools, pbapply, quantreg, tidyr, gumbel, Rcpp
 LinkingTo: Rcpp, RcppArmadillo
+Suggests: knitr, rmarkdown, testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true
+LazyDataCompression: xz
 Config/roxygen2/version: 8.0.0

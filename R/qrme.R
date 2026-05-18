@@ -122,6 +122,8 @@ compute.qrme <- function(formula, tau=0.5, data, me_distribution="gaussian", n_m
 #' @param formula y ~ x
 #' @param tau vector for which quantiles to compute quantile regression
 #' @param data a data.frame that contains y and x
+#' @param me_distribution Distribution of the measurement error: \code{"gaussian"}
+#'  (default, supports a mixture of normals) or \code{"laplace"}.
 #' @param n_mix The number of mixture components of the measurement error
 #'  (default 1). Increase this for more flexible measurement-error
 #'  distributions.

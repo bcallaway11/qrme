@@ -13,6 +13,7 @@
 #'
 #' @return A matrix containing values of the transition matrix.  The columns contain different groups by value of the treatment,
 #'  the rows contain different values for the outcome (it is ordered from bottom to top though as is standard for a transition matrix)
+#' @export
 tmat <- function(Y,T, qcutoffs=c(.25,.5,.75)) {
     ucutoffs <- c(qcutoffs,1)
     lcutoffs <- c(0,qcutoffs)

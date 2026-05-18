@@ -389,7 +389,7 @@ em.algo.inner <- function(formula, data,
         out <- quantreg::rq(
             formula = formula,
             tau = tau,
-            weights = w,
+            weights = w,  # w is a column of newdta1, found via model.frame NSE
             data = newdta1,
             method = "pfn"
         )

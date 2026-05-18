@@ -5,7 +5,7 @@
 
 `qrme` is the companion R package for
 
-> Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2024).
+> Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2026).
 > *Distributional Effects with Two-Sided Measurement Error: An
 > Application to Intergenerational Income Mobility.*
 > [arXiv:2107.09235](https://arxiv.org/abs/2107.09235)
@@ -88,7 +88,7 @@ res <- tsme(
 )
 
 # Transition matrix (distributional mobility summary)
-res$meTmat
+res$me_tmat
 ```
 
 `tsme()` fits a `qrme()` model for each variable, then links them with a
@@ -136,12 +136,18 @@ override the adaptive default.
 `n_mix = 1` is the right default for classical additive Gaussian
 measurement error.
 
+## Learn more
+
+- **Vignettes** — [Introduction to `qrme()`](https://bcallaway11.github.io/qrme/articles/qrme-intro.html) |
+  [NLSY97 application with `tsme()`](https://bcallaway11.github.io/qrme/articles/tsme-application.html)
+- **Package website** — <https://bcallaway11.github.io/qrme>
+
 ## References
 
-- Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2024).
+- Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2026).
   Distributional Effects with Two-Sided Measurement Error: An
   Application to Intergenerational Income Mobility. arXiv:2107.09235.
 
 - Hausman, J., Liu, H., Luo, Y. and Palmer, C. (2021). Errors in the
   dependent variable of quantile regression models. *Econometrica*,
-  89(2), pp. 849–873.
+  89(2), pp. 849-873.

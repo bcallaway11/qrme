@@ -1,0 +1,161 @@
+# qrme
+
+`qrme` is the companion R package for
+
+> Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2026).
+> *Distributional Effects with Two-Sided Measurement Error: An
+> Application to Intergenerational Income Mobility.*
+> [arXiv:2107.09235](https://arxiv.org/abs/2107.09235)
+
+It provides two main estimators:
+
+- **[`qrme()`](https://bcallaway11.github.io/qrme/reference/qrme.md)** —
+  Quantile regression with measurement error in the outcome variable.
+  This is an EM-based implementation of the estimator developed by
+  [Hausman, Liu, Luo, and Palmer (2021,
+  *Econometrica*)](https://doi.org/10.3982/ECTA14563), extended to
+  support finite Gaussian mixtures for the measurement error
+  distribution. The pseudo-EM algorithm alternates between a
+  Metropolis–Hastings MCMC step (E-step) to integrate out the latent
+  outcome and a standard quantile regression M-step, iterating until
+  convergence.
+  [`qrme()`](https://bcallaway11.github.io/qrme/reference/qrme.md) is a
+  useful standalone tool for any setting where the dependent variable is
+  measured with classical error.
+
+- **[`tsme()`](https://bcallaway11.github.io/qrme/reference/tsme.md)** —
+  Two-sided measurement error: joint quantile regression when *both* the
+  outcome and a continuous regressor are measured with error. Combines
+  two [`qrme()`](https://bcallaway11.github.io/qrme/reference/qrme.md)
+  fits via a copula to recover the joint distribution and a range of
+  distributional parameters such as quantile-on-quantile transition
+  matrices and poverty measures.
+
+## Installation
+
+``` r
+# install.packages("remotes")
+remotes::install_github("bcallaway11/qrme")
+```
+
+## Usage
+
+### Quantile regression with measurement error in the outcome (`qrme`)
+
+``` r
+library(qrme)
+
+# Simulate data: Y* = 1 + X + u, Y = Y* + e (measurement error)
+set.seed(42)
+n  <- 500
+X  <- runif(n)
+Ys <- 1 + X + rnorm(n)         # latent outcome
+Y  <- Ys + rnorm(n, sd = 0.5)  # observed outcome with ME
+dd <- data.frame(Y = Y, X = X)
+
+fit <- qrme(
+  formula = Y ~ X,
+  data    = dd,
+  tau     = c(0.25, 0.5, 0.75)
+)
+
+# Coefficient matrix: one row per quantile
+fit$bet
+```
+
+Key arguments:
+
+| Argument         | Default    | Description                                               |
+|------------------|------------|-----------------------------------------------------------|
+| `tau`            | `0.5`      | Quantile(s) to estimate                                   |
+| `n_mix`          | `1`        | Number of Gaussian mixture components for ME distribution |
+| `conv_criterion` | `"params"` | Convergence criterion: `"params"` or `"loglik"`           |
+| `tol`            | `1e-2`     | Convergence tolerance                                     |
+| `max_em_iters`   | `100`      | Maximum EM iterations                                     |
+| `mcmc_draws`     | `200`      | MCMC draws per EM E-step                                  |
+| `mcmc_burn_in`   | `100`      | MCMC burn-in draws                                        |
+| `se`             | `FALSE`    | Compute bootstrap standard errors                         |
+| `verbose`        | `FALSE`    | Print progress (numeric levels 0–3)                       |
+
+### Two-sided measurement error (`tsme`)
+
+``` r
+res <- tsme(
+  data     = dd,
+  y_formula  = Y ~ X,
+  t_formula  = T ~ X,
+  tau      = c(0.25, 0.5, 0.75),
+  t_values    = mean(dd$T),
+  pov_line  = quantile(dd$Y, 0.2)
+)
+
+# Transition matrix (distributional mobility summary)
+res$me_tmat
+```
+
+[`tsme()`](https://bcallaway11.github.io/qrme/reference/tsme.md) fits a
+[`qrme()`](https://bcallaway11.github.io/qrme/reference/qrme.md) model
+for each variable, then links them with a copula to estimate joint
+distributions and mobility parameters such as quantile-on-quantile
+transition matrices and poverty measures.
+
+## Tuning parameters
+
+The EM algorithm involves several parameters with different roles. The
+table below groups them by the nature of their tradeoff.
+
+| Parameter       | Default       | Role                                                                                         |
+|-----------------|---------------|----------------------------------------------------------------------------------------------|
+| `tol`           | `1e-2`        | Pure speed–accuracy: loosen to converge faster, tighten for more precise estimates           |
+| `max_em_iters`  | `100`         | Hard iteration cap; does not affect per-iteration cost                                       |
+| `conv_patience` | `1`           | Consecutive iterations below `tol` required; raise to 2 if using `conv_criterion = "loglik"` |
+| `mcmc_draws`    | `200`         | **Fundamental tradeoff**: more draws = better E-step but slower per iteration                |
+| `mcmc_burn_in`  | `100`         | Burn-in fraction of `mcmc_draws`; 30–50% is typical                                          |
+| `loglik_draws`  | `100`         | MC draws for log-likelihood convergence check; ignored when `conv_criterion = "params"`      |
+| `proposal_sd`   | adaptive      | MH step size; auto-updated each iteration to track the current ME scale                      |
+| `n_mix`         | `1`           | Number of mixture components — a model choice, not a tuning parameter                        |
+| `start_beta`    | naive QR      | Defaults to QR ignoring ME, which is consistent under symmetric error                        |
+| `start_mu`      | data-informed | Evenly spaced over ±0.25 sd(Y) for n_mix \> 1; 0 for n_mix = 1                               |
+| `start_sigma`   | data-informed | Backed out so the mixture SD equals 0.5 sd(Y)                                                |
+| `start_pi`      | uniform       | Equal weights across components                                                              |
+
+**`mcmc_draws` and `mcmc_burn_in`** are the most consequential
+parameters. Too few effective draws (= `mcmc_draws − mcmc_burn_in`) per
+observation produces a noisy E-step, which can cause the outer EM to
+wander or fail to converge — this is a correctness problem, not just a
+speed problem. The defaults of 200/100 work well in most settings;
+reduce only for exploratory runs.
+
+**`proposal_sd`** controls the Metropolis–Hastings step size and
+determines the effective sample size of the MCMC chain. By default it is
+initialised from the starting ME parameters and updated each EM
+iteration to track the current ME distribution scale. A healthy
+acceptance rate is roughly 20–70%; the acceptance rate is printed at
+`verbose = 2` and a warning is issued if the final-iteration rate falls
+outside 10–90%. If the warning fires, pass `proposal_sd` explicitly to
+override the adaptive default.
+
+**`n_mix`** is selected by model fit rather than tuned. Use
+[`logLik()`](https://rdrr.io/r/stats/logLik.html),
+[`AIC()`](https://rdrr.io/r/stats/AIC.html), and
+[`BIC()`](https://rdrr.io/r/stats/AIC.html) on fitted objects to compare
+across values; `n_mix = 1` is the right default for classical additive
+Gaussian measurement error.
+
+## Learn more
+
+- **Vignettes** — [Introduction to
+  `qrme()`](https://bcallaway11.github.io/qrme/articles/qrme-intro.html)
+  \| [NLSY97 application with
+  `tsme()`](https://bcallaway11.github.io/qrme/articles/tsme-application.html)
+- **Package website** — <https://bcallaway11.github.io/qrme>
+
+## References
+
+- Callaway, B., Li, T., Murtazashvili, I., and Tsyawo, E. S. (2026).
+  Distributional Effects with Two-Sided Measurement Error: An
+  Application to Intergenerational Income Mobility. arXiv:2107.09235.
+
+- Hausman, J., Liu, H., Luo, Y. and Palmer, C. (2021). Errors in the
+  dependent variable of quantile regression models. *Econometrica*,
+  89(2), pp. 849-873.

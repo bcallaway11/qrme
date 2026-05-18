@@ -1,16 +1,152 @@
+url: https://bcallaway11.github.io/qrme
+
 template:
-  params:
-    bootswatch: flatly
+  bootstrap: 5
+  bootswatch: lux
+  bslib:
+    primary: "#1e3a5f"          # deep navy — anchors the brand
+    link-color: "#2c6e9e"       # lighter navy for inline links
+    font-size-base: "1rem"
+    headings-font-weight: "600"
+  includes:
+    in_header: |
+      <style>
+        /* Slightly warmer code blocks */
+        pre code { background-color: #f7f8fa; }
+        /* Tighten up the reference table */
+        .ref-index h2 { border-bottom: 2px solid #1e3a5f; padding-bottom: 6px; }
+        /* Nav active underline accent */
+        .navbar-nav .nav-link.active { border-bottom: 2px solid #2c6e9e; }
+      </style>
+
+home:
+  title: "qrme — Quantile Regression with Measurement Error"
+  description: >
+    R package for estimating quantile regression models when the dependent
+    variable or a continuous treatment is measured with error. Implements
+    EM-based estimation with Metropolis-Hastings MCMC and copula linking
+    for the two-sided case.
+  links:
+    - text: "arXiv paper"
+      href: https://arxiv.org/abs/2107.09235
+    - text: "GitHub repository"
+      href: https://github.com/bcallaway11/qrme
+
+authors:
+  Brantly Callaway:
+    href: https://bcallaway11.github.io/
+  Tong Li:
+    href: https://sites.google.com/view/tong-li-econ/
+  Irina Murtazashvili:
+    href: https://www.irimurtazashvili.com/
+  Emmanuel S. Tsyawo:
+    href: https://estsyawo.github.io/
+
+navbar:
+  bg: primary
+  type: dark
+  structure:
+    left:  [intro, articles, reference, news]
+    right: [github]
+  components:
+    intro:
+      text: "Get Started"
+      href: articles/qrme-intro.html
+    articles:
+      text: "Articles"
+      menu:
+        - text: "Introduction to qrme()"
+          href: articles/qrme-intro.html
+        - text: "Two-sided ME: NLSY97 Application"
+          href: articles/tsme-application.html
+    reference:
+      text: "Reference"
+      href: reference/index.html
+    news:
+      text: "Changelog"
+      href: news/index.html
+    github:
+      icon: fa-github
+      href: https://github.com/bcallaway11/qrme
+      aria-label: GitHub
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with
+  components:
+    developed_by: >
+      Developed by Callaway, Li, Murtazashvili, and Tsyawo.
+      Companion to [arXiv:2107.09235](https://arxiv.org/abs/2107.09235).
 
 reference:
-  - title: Main functions
-    contents: 
-      - qrme
-
-  - title: Helper functions
+  - title: "Package overview"
     contents:
+      - qrme-package
+
+  - title: "Main estimators"
+    desc: >
+      The two primary user-facing estimators. `qrme()` handles measurement
+      error in the outcome; `tsme()` handles measurement error in both the
+      outcome and a continuous treatment.
+    contents:
+      - qrme
+      - tsme
+
+  - title: "Model selection and diagnostics"
+    desc: >
+      Tools for choosing among copula families, ME distributions, and
+      mixture orders, and for checking convergence sensitivity.
+    contents:
+      - tsme_model_select
+      - qrme_start_search
+      - logLik.merr
+
+  - title: "Mobility measures"
+    desc: >
+      Functions for computing intergenerational (or rank-rank) mobility
+      parameters from a joint distribution.
+    contents:
+      - tmat
+      - upMob
+
+  - title: "S3 methods"
+    desc: "Print, summarise, and plot fitted objects."
+    contents:
+      - print.merr
+      - print.tsme
+      - summary.tsme
+      - autoplot.tsme
+      - plot.tsme
+
+  - title: "Data"
+    desc: >
+      NLSY97 father-son analysis sample and a pre-computed `tsme()` result
+      for use in the vignettes and examples.
+    contents:
+      - nlsy97
+      - nlsy97_tsme_fit
+
+  - title: "Lower-level functions"
+    desc: >
+      Exported for advanced users and reproducibility. Most users will not
+      call these directly.
+    contents:
+      - compute.qrme
+      - compute.tsme
+      - em.algo
+      - em.algo.inner
       - betfun
-      - mh_mcmc
+      - betfun.inner
       - makeRQS
-      - parms2coppar
+      - rlaplace
+      - mh_mcmc
+      - fv
+      - fv.yx
+      - fy.x
       - cop.pdf
+      - ll
+      - parms2coppar
+      - qr2meobj
+      - qr2me
+      - addplot

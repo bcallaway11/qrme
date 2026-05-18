@@ -1,0 +1,276 @@
+---
+title: "Introduction to qrme: Quantile Regression with Measurement Error"
+author: "Brantly Callaway, Tong Li, Irina Murtazashvili, Emmanuel S. Tsyawo"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to qrme: Quantile Regression with Measurement Error}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.width = 6,
+  fig.height = 4
+)
+set.seed(1234)
+```
+
+## Overview
+
+The **qrme** package estimates quantile regression (QR) models when the
+dependent variable is measured with error.  Classical QR applied to noisy
+outcomes produces biased estimates of the conditional quantile function of
+the true (latent) outcome.  `qrme()` corrects this bias via a
+pseudo-EM algorithm that alternates between
+
+1. **E-step** — drawing latent true outcomes given the observed noisy
+   outcome and current QR parameters, using Metropolis–Hastings MCMC; and
+2. **M-step** — re-fitting quantile regressions on the augmented data.
+
+For the case where *both* the outcome and a continuous treatment variable are
+measured with error, see `vignette("tsme-application")`, which describes
+`tsme()`.
+
+## A simulated example
+
+### Data-generating process
+
+We use a location-scale DGP where the true outcome $Y^*$ depends on a
+uniform covariate $X$:
+
+$$
+Y^* = \beta_0(U) + \beta_1(U)\,X, \quad U \sim \text{Uniform}(0,1),
+$$
+
+$$
+\beta_0(u) = 1 + 3u - u^2, \qquad \beta_1(u) = e^u.
+$$
+
+The observed outcome is $Y = Y^* + V$, where $V \sim N(0, \sigma_V^2)$ with
+$\sigma_V = 0.5$.
+
+```{r dgp}
+library(qrme)
+library(quantreg)
+
+n   <- 400
+tau <- seq(0.10, 0.90, by = 0.10)
+
+# true coefficient functions
+b0 <- function(u) 1 + 3 * u - u^2
+b1 <- function(u) exp(u)
+
+X     <- runif(n)
+U     <- runif(n)
+Ystar <- b0(U) + b1(U) * X          # latent outcome
+V     <- rnorm(n, sd = 0.5)         # measurement error
+Y     <- Ystar + V                   # observed (noisy) outcome
+
+dd <- data.frame(Y = Y, Ystar = Ystar, X = X)
+```
+
+### Naive QR ignoring measurement error
+
+Standard `rq()` applied to the noisy outcome is inconsistent for the QR
+coefficients of $Y^*$.
+
+```{r naive-qr}
+fit_naive <- rq(Ystar ~ X, tau = tau, data = dd)   # infeasible truth
+fit_noisy <- rq(Y     ~ X, tau = tau, data = dd)   # naive, ignores ME
+
+# slope coefficients at each tau
+rbind(
+  truth  = coef(fit_naive)["X", ],
+  noisy  = coef(fit_noisy)["X", ]
+)
+```
+
+The naive estimates are systematically attenuated relative to the truth
+because additive ME compresses the conditional distribution.
+
+### ME-corrected QR with `qrme()`
+
+`qrme()` takes a standard formula interface.  Key arguments:
+
+| Argument | Default | Purpose |
+|---|---|---|
+| `tau` | `0.5` | quantile(s) to estimate |
+| `n_mix` | `1` | number of Gaussian components for ME distribution |
+| `me_distribution` | `"gaussian"` | `"gaussian"` or `"laplace"` |
+| `mcmc_draws` | `200` | MCMC draws per E-step |
+| `mcmc_burn_in` | `100` | burn-in draws (discarded) |
+| `tol` | `0.01` | convergence tolerance |
+| `max_em_iters` | `100` | maximum EM iterations |
+| `se` | `FALSE` | compute bootstrap standard errors? |
+| `n_boot` | `100` | bootstrap replications (if `se = TRUE`) |
+
+```{r qrme-fit, cache = FALSE}
+fit_me <- qrme(
+  formula      = Y ~ X,
+  data         = dd,
+  tau          = tau,
+  n_mix        = 1L,
+  mcmc_draws   = 150L,
+  mcmc_burn_in = 75L,
+  tol          = 1e-2,
+  max_em_iters = 30L,
+  se           = FALSE,
+  verbose      = FALSE
+)
+```
+
+The result is an object of class `merr`.  Printing it shows the estimated
+measurement error distribution:
+
+```{r print-merr}
+print(fit_me)
+```
+
+### Coefficient estimates
+
+The QR coefficient matrix lives in `fit_me$bet`.  Rows correspond to `tau`
+values; columns to regression coefficients (intercept first).
+
+```{r coef-table}
+# intercept and slope at each quantile
+colnames(fit_me$bet) <- c("intercept", "slope_X")
+round(fit_me$bet, 3)
+```
+
+Use `betfun()` to get a smooth interpolating function over the unit interval,
+which is useful for plotting the full quantile process:
+
+```{r betfun-plot}
+bf    <- betfun(fit_me$bet, tau)
+tau_g <- seq(0.05, 0.95, length.out = 200)
+
+# betfun returns a function over scalar tau; sapply to vectorise
+slope_me    <- sapply(tau_g, function(u) bf(u)[2])
+bf_noisy    <- betfun(coef(fit_noisy), tau)
+slope_noisy <- sapply(tau_g, function(u) bf_noisy(u)[2])
+bf_truth    <- betfun(coef(fit_naive), tau)
+slope_truth <- sapply(tau_g, function(u) bf_truth(u)[2])
+
+plot(
+  tau_g, slope_me,
+  type = "l", lwd = 2, col = "steelblue",
+  xlab = expression(tau), ylab = "Slope on X",
+  main = "Slope coefficient: ME-corrected vs naive vs truth"
+)
+lines(tau_g, slope_noisy, col = "firebrick", lwd = 2, lty = 2)
+lines(tau_g, slope_truth, col = "black",     lwd = 1, lty = 3)
+legend("topleft",
+  legend = c("qrme (ME-corrected)", "Naive rq", "Infeasible truth"),
+  col    = c("steelblue", "firebrick", "black"),
+  lty    = c(1, 2, 3), lwd = c(2, 2, 1), bty = "n"
+)
+```
+
+The ME-corrected estimates track the truth substantially better than the
+naive estimates, especially at extreme quantiles.
+
+### Recovering the measurement error distribution
+
+The EM algorithm simultaneously estimates the ME distribution.  With a
+single-component Gaussian specification (`n_mix = 1`), the estimated
+parameters are:
+
+```{r me-params}
+cat(sprintf(
+  "ME distribution: %s\n  pi = %.3f   mu = %.3f   sigma = %.3f\n",
+  fit_me$me_distribution, fit_me$pi, fit_me$mu, fit_me$sig
+))
+cat("True sigma_V = 0.5\n")
+```
+
+### Finite Gaussian mixtures (`n_mix > 1`)
+
+For more flexible ME distributions, increase `n_mix`.  With `n_mix = 2` the
+EM fits a two-component mixture:
+
+```{r nmix2, cache = FALSE}
+fit_m2 <- qrme(
+  formula      = Y ~ X,
+  data         = dd,
+  tau          = tau,
+  n_mix        = 2L,
+  mcmc_draws   = 150L,
+  mcmc_burn_in = 75L,
+  tol          = 1e-2,
+  max_em_iters = 30L,
+  se           = FALSE,
+  verbose      = FALSE
+)
+print(fit_m2)
+```
+
+Model selection between mixture orders can be done via `AIC()` / `BIC()`,
+which call the `logLik.merr()` S3 method:
+
+```{r aic-bic}
+data.frame(
+  n_mix = c(1, 2),
+  AIC   = c(AIC(fit_me), AIC(fit_m2)),
+  BIC   = c(BIC(fit_me), BIC(fit_m2))
+)
+```
+
+### Bootstrap standard errors
+
+Set `se = TRUE` and choose `n_boot` to obtain percentile bootstrap SEs.
+This adds `$bet.se`, `$sig.se`, `$mu.se`, and `$pi.se` to the returned
+object.  Bootstrap is omitted here because it is slow; a typical call looks
+like:
+
+```{r bootstrap, eval = FALSE}
+fit_se <- qrme(
+  formula      = Y ~ X,
+  data         = dd,
+  tau          = tau,
+  n_mix        = 1L,
+  mcmc_draws   = 200L,
+  mcmc_burn_in = 100L,
+  se           = TRUE,
+  n_boot       = 200L,
+  n_cores      = 4L     # parallelise across bootstrap replications
+)
+print(fit_se)           # shows SEs alongside point estimates
+```
+
+### Multi-start estimation
+
+The EM algorithm is not globally convergent and can settle at local optima.
+`qrme_start_search()` runs the estimator from multiple random starting
+values and returns the best fit by log-likelihood:
+
+```{r start-search, eval = FALSE}
+best <- qrme_start_search(
+  formula     = Y ~ X,
+  data        = dd,
+  tau         = tau,
+  n_starts    = 10,
+  sigma_range = c(0.05, 1.5),
+  n_mix       = 1L,
+  mcmc_draws  = 200L
+)
+```
+
+## Summary
+
+`qrme()` provides a straightforward interface for ME-corrected quantile
+regression.  The workflow is:
+
+1. Specify the model with a formula and choose `tau`.
+2. Choose the ME distribution (`n_mix`, `me_distribution`).
+3. Tune the MCMC (`mcmc_draws`, `mcmc_burn_in`, `proposal_sd`) and EM
+   (`tol`, `max_em_iters`) settings.
+4. Optionally add bootstrap SEs (`se = TRUE`).
+5. Use `betfun()` for smooth coefficient curves and `AIC()`/`BIC()` for
+   mixture-order selection.
+
+For the two-sided ME extension (ME in both the outcome and a continuous
+treatment) see `vignette("tsme-application")`.

@@ -2,7 +2,6 @@
 #'
 #' @useDynLib qrme
 #' @importFrom Rcpp evalCpp
-#' @exportPattern "^[[:alpha:]]+"
 #' @import BMisc
 #' @importFrom copula gumbelCopula frankCopula claytonCopula normalCopula dCopula
 #' @import ggplot2

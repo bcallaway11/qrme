@@ -36,6 +36,9 @@ qrme(
 
 \item{data}{a data.frame that contains y and x}
 
+\item{me_distribution}{Distribution of the measurement error: \code{"gaussian"}
+(default, supports a mixture of normals) or \code{"laplace"}.}
+
 \item{n_mix}{The number of mixture components of the measurement error
 (default 1). Increase this for more flexible measurement-error
 distributions.}
