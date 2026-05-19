@@ -45,14 +45,50 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.1" id="qrme-101">qrme 1.0.1<a class="anchor" aria-label="anchor" href="#qrme-101"></a></h2>
-<ul><li>Added Emmanuel S. Tsyawo (<a href="mailto:estsyawo@gmail.com" class="email">estsyawo@gmail.com</a>) as a listed author in DESCRIPTION.</li>
-<li>Bundled the NLSY97 father-son analysis sample (<code>nlsy97</code>) as package data.</li>
-<li>Switched from <code>exportPattern</code> to explicit <code>@export</code> tags; C++ internals and helper functions are no longer part of the public API.</li>
-<li>Added <code>@export</code> to <code><a href="../reference/tmat.html">tmat()</a></code>, which was inadvertently unexported.</li>
-<li>Removed the <code>R/old/</code> legacy directory.</li>
-<li>Updated minimum R version to 4.0.0 and added <code>URL</code> / <code>BugReports</code> fields to DESCRIPTION.</li>
-<li>Added two vignettes: an introduction to <code><a href="../reference/qrme.html">qrme()</a></code> and an application of <code><a href="../reference/tsme.html">tsme()</a></code> to intergenerational income mobility using NLSY97 data.</li>
+<div class="section level3">
+<h3 id="new-functionality-1-0-1">New functionality<a class="anchor" aria-label="anchor" href="#new-functionality-1-0-1"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/tsme_model_select.html">tsme_model_select()</a></code></strong> — grid search over copula families (Gaussian, Clayton, Gumbel, Frank) and ME distributions (Gaussian, Laplace), returning AIC/BIC for each combination to guide model selection.</li>
+<li>
+<strong><code><a href="../reference/logLik.merr.html">logLik.merr()</a></code></strong>, <strong><code>AIC.merr()</code></strong>, <strong><code>BIC.merr()</code></strong> — log-likelihood and information criteria for <code>merr</code> objects, enabling mixture-order selection via <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code>/<code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code>.</li>
+<li>
+<strong><code><a href="../reference/print.tsme.html">print.tsme()</a></code></strong>, <strong><code><a href="../reference/summary.tsme.html">summary.tsme()</a></code></strong> — structured summaries of <code>tsme</code> results, including copula parameters, ME distributions, transition matrices, and upward mobility estimates.</li>
+<li>
+<strong><code><a href="../reference/autoplot.tsme.html">autoplot.tsme()</a></code></strong>, <strong><code><a href="../reference/plot.tsme.html">plot.tsme()</a></code></strong> — <code>ggplot2</code>-based visualisation of conditional quantile curves and poverty rates for ME-corrected, no-ME, and naive QR estimators.</li>
+<li>
+<strong>Frank copula</strong> added to <code><a href="../reference/tsme.html">tsme()</a></code> and <code><a href="../reference/qr2me.html">qr2me()</a></code> (previously only Gaussian, Clayton, and Gumbel were supported).</li>
+<li>Bundled <strong><code>nlsy97</code></strong> (NLSY97 father-son income pairs) and <strong><code>nlsy97_tsme_fit</code></strong> (pre-computed <code><a href="../reference/tsme.html">tsme()</a></code> result) as package datasets, used in the new vignettes and examples.</li>
 </ul></div>
+<div class="section level3">
+<h3 id="improvements-in-tuning-parameters-1-0-1">Improvements in tuning parameters<a class="anchor" aria-label="anchor" href="#improvements-in-tuning-parameters-1-0-1"></a></h3>
+<ul><li>
+<strong>Data-informed starting values</strong> — <code>start_sigma</code> is now initialised so that the mixture standard deviation equals 0.5 × sd(Y) (instead of a fixed constant); <code>start_mu</code> is evenly spaced over ±0.25 × sd(Y) for <code>n_mix &gt; 1</code> and 0 for <code>n_mix = 1</code>.</li>
+<li>
+<strong>Adaptive <code>proposal_sd</code></strong> — the Metropolis–Hastings proposal standard deviation is initialised from the current ME parameters and updated each EM iteration to track the evolving ME scale, reducing the need to set it manually.</li>
+<li>
+<strong>MH acceptance rate tracking</strong> — the acceptance rate is reported at <code>verbose = 2</code> and a warning is issued if the final-iteration rate falls outside 10–90%, prompting the user to pass <code>proposal_sd</code> explicitly.</li>
+<li>
+<strong><code>conv_patience</code></strong> — new argument controlling how many consecutive iterations below <code>tol</code> are required before declaring convergence (default 1); raising to 2 is recommended when <code>conv_criterion = "loglik"</code>.</li>
+<li>
+<strong>Bootstrap warm-start</strong> — bootstrap replications now initialise ME parameters from the full-data fit rather than from scratch, substantially reducing bootstrap run time and improving stability.</li>
+<li>
+<strong>Separate bootstrap tuning</strong> — <code><a href="../reference/tsme.html">tsme()</a></code> exposes <code>boot_mcmc_draws</code>, <code>boot_mcmc_burn_in</code>, <code>boot_n_copula_me_draws</code>, and <code>boot_tol</code> so that bootstrap replications can use lighter settings than the main fit without affecting point-estimate accuracy.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-changes-1-0-1">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-1-0-1"></a></h3>
+<ul><li>Argument names in <code><a href="../reference/qrme.html">qrme()</a></code> standardised to snake_case: <code>max_iter</code> → <code>max_em_iters</code>, <code>burn_in</code> → <code>mcmc_burn_in</code>, <code>n_draws</code> → <code>mcmc_draws</code>.</li>
+<li>Output fields in <code><a href="../reference/tsme.html">tsme()</a></code> renamed to snake_case throughout (e.g., <code>meTmat</code> → <code>me_tmat</code>, <code>meCopParam</code> → <code>me_cop_param</code>).</li>
+<li>Conditional quantile curves in <code><a href="../reference/tsme.html">tsme()</a></code> now evaluated at the mean of the covariate matrix rather than a grid, matching the paper’s specification.</li>
+<li>Laplace M-step corrected to use the MLE scale estimator instead of the normal-mixture variance formula.</li>
+<li>Clayton copula conditional CDF clamped to avoid numerical instability at boundary quantiles.</li>
+<li>Added Emmanuel S. Tsyawo (<a href="mailto:estsyawo@gmail.com" class="email">estsyawo@gmail.com</a>) as a listed author.</li>
+<li>Switched from <code>exportPattern</code> to explicit <code>@export</code> tags; C++ internals are no longer part of the public API.</li>
+<li>Removed the <code>R/old/</code> legacy directory.</li>
+<li>Updated minimum R version to 4.0.0; added <code>URL</code> and <code>BugReports</code> to DESCRIPTION.</li>
+<li>Added two vignettes (Quarto): an introduction to <code><a href="../reference/qrme.html">qrme()</a></code> and an application of <code><a href="../reference/tsme.html">tsme()</a></code> to intergenerational income mobility using the NLSY97 data.</li>
+<li>Added a pkgdown website (<a href="https://bcallaway11.github.io/qrme/" class="uri">https://bcallaway11.github.io/qrme/</a>).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="qrme-100">qrme 1.0.0<a class="anchor" aria-label="anchor" href="#qrme-100"></a></h2>
 <ul><li>Initial release.</li>

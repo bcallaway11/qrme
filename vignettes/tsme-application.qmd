@@ -1,22 +1,19 @@
 ---
 title: "Two-Sided Measurement Error: Intergenerational Income Mobility"
 author: "Brantly Callaway, Tong Li, Irina Murtazashvili, Emmanuel S. Tsyawo"
-date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+date: today
+format: html
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: "#>"
+    fig.width: 7
+    fig.height: 4.5
 vignette: >
   %\VignetteIndexEntry{Two-Sided Measurement Error: Intergenerational Income Mobility}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 ---
-
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  collapse  = TRUE,
-  comment   = "#>",
-  fig.width = 7,
-  fig.height = 4.5
-)
-```
 
 ## Overview
 
@@ -47,7 +44,8 @@ Longitudinal Survey of Youth 1997.  Key variables:
 | `ageF` | Father's age |
 | `educF` | Father's years of schooling |
 
-```{r data}
+```{r}
+#| label: data
 library(qrme)
 library(ggplot2)
 
@@ -65,7 +63,9 @@ The call below reproduces the main specification from the paper: a Frank copula,
 Laplace measurement error distribution, and one mixture component for each
 equation.  Age controls enter both the child income and father income equations.
 
-```{r tsme-call, eval = FALSE}
+```{r}
+#| label: tsme-call
+#| eval: false
 tau     <- seq(0.02, 0.98, length.out = 25)
 t_values <- quantile(nlsy97$lpi, probs = seq(0.1, 0.9, by = 0.1))
 
@@ -101,7 +101,8 @@ fit <- tsme(
 This call takes roughly 90 minutes with 10 cores.  For the remainder of this
 vignette we load the pre-computed result bundled with the package:
 
-```{r load-fit}
+```{r}
+#| label: load-fit
 fit <- nlsy97_tsme_fit
 ```
 
@@ -110,14 +111,16 @@ fit <- nlsy97_tsme_fit
 `print()` shows the copula parameter and measurement error distribution for
 each equation, comparing the ME-corrected estimator against a no-ME benchmark:
 
-```{r print}
+```{r}
+#| label: print
 print(fit)
 ```
 
 `summary()` adds the ME-corrected transition matrix and upward mobility
 estimates:
 
-```{r summary}
+```{r}
+#| label: summary
 summary(fit)
 ```
 
@@ -126,7 +129,8 @@ summary(fit)
 The EM algorithm estimates the ME standard deviation for each equation.  With
 a Laplace distribution and one component, the key parameter is $\sigma_V$:
 
-```{r me-params}
+```{r}
+#| label: me-params
 cat(sprintf(
   "Child income equation  — sigma_V = %.4f  (SE = %.4f)\n",
   fit$me_qyx$sig, fit$me_qyx$sig_se
@@ -146,7 +150,8 @@ self-reported income data are quite noisy.
 The Frank copula parameter and the implied Spearman rank correlation summarise
 intergenerational dependence:
 
-```{r copula}
+```{r}
+#| label: copula
 cat(sprintf(
   "Frank copula parameter: ME = %.3f (SE = %.3f)   No-ME = %.3f\n",
   fit$me_cop_param, fit$me_cop_param_se, fit$nome_cop_param
@@ -168,7 +173,8 @@ persistence.
 The 4×4 transition matrix gives the probability that a son from father's income
 quartile $j$ ends up in son's income quartile $i$:
 
-```{r tmat}
+```{r}
+#| label: tmat
 quart_labels <- c("Q1 (bottom)", "Q2", "Q3", "Q4 (top)")
 tmat_tbl <- as.data.frame(round(fit$me_tmat, 3))
 colnames(tmat_tbl) <- quart_labels
@@ -185,7 +191,8 @@ fathers are substantially more likely to end up in the top quartile.
 Upward mobility measures the fraction of sons whose income rank exceeds their
 father's, by father's income quartile:
 
-```{r upward-mob}
+```{r}
+#| label: upward-mob
 um_tbl <- data.frame(
   `Father's quartile` = quart_labels,
   `ME-corrected`  = round(fit$me_up_mob,    3),
@@ -206,11 +213,15 @@ across father's income deciles.  The ME-corrected curves spread further than
 the naive QR curves, reflecting the attenuation bias that measurement error
 induces in standard QR:
 
-```{r plot-cond-quant, fig.cap = "ME-corrected conditional quantile curves"}
+```{r}
+#| label: plot-cond-quant
+#| fig-cap: "ME-corrected conditional quantile curves"
 autoplot(fit, type = "cond_quant", which = "me")
 ```
 
-```{r plot-all, fig.cap = "Conditional quantile curves: ME-corrected vs No-ME vs QR"}
+```{r}
+#| label: plot-all
+#| fig-cap: "Conditional quantile curves: ME-corrected vs No-ME vs QR"
 # Plot each estimator separately and compare
 p_nome <- autoplot(fit, type = "cond_quant", which = "nome", ci = FALSE)
 p_qr   <- autoplot(fit, type = "cond_quant", which = "qr",   ci = FALSE)
@@ -222,7 +233,9 @@ The poverty rate is the fraction of sons below a given income threshold,
 conditional on father's income decile.  Setting `type = "pov_rate"` and
 `which = "all"` overlays all three estimators:
 
-```{r plot-pov, fig.cap = "Poverty rates by father's income decile"}
+```{r}
+#| label: plot-pov
+#| fig-cap: "Poverty rates by father's income decile"
 autoplot(fit, type = "pov_rate", which = "all", ci = FALSE)
 ```
 
@@ -233,7 +246,9 @@ autoplot(fit, type = "pov_rate", which = "all", ci = FALSE)
 and returns AIC/BIC for each combination.  This is computationally expensive;
 a typical call looks like:
 
-```{r model-select, eval = FALSE}
+```{r}
+#| label: model-select
+#| eval: false
 sel <- tsme_model_select(
   data            = nlsy97,
   y_formula       = lci ~ ageC_97 + ageF,

@@ -270,8 +270,7 @@ measurement error induces in standard QR:
 autoplot(fit, type = "cond_quant", which = "me")
 ```
 
-![ME-corrected conditional quantile
-curves](tsme-application_files/figure-html/plot-cond-quant-1.png)
+![](tsme-application_files/figure-html/plot-cond-quant-1.png)
 
 ME-corrected conditional quantile curves
 
@@ -291,8 +290,7 @@ conditional on father’s income decile. Setting `type = "pov_rate"` and
 autoplot(fit, type = "pov_rate", which = "all", ci = FALSE)
 ```
 
-![Poverty rates by father's income
-decile](tsme-application_files/figure-html/plot-pov-1.png)
+![](tsme-application_files/figure-html/plot-pov-1.png)
 
 Poverty rates by father’s income decile
 

@@ -10,7 +10,9 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Introduction to qrme: Quantile Regression with Measurement Error">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><script src="qrme-intro_files/libs/quarto-html/popper.min.js"></script><script src="qrme-intro_files/libs/quarto-html/tippy.umd.min.js"></script><link href="qrme-intro_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="qrme-intro_files/libs/quarto-html/light-border.css" rel="stylesheet">
+<!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Introduction to qrme: Quantile Regression with Measurement Error">
 <style>
   /* Slightly warmer code blocks */
   pre code { background-color: #f7f8fa; }
@@ -55,71 +57,48 @@
 
 
   </div>
-</nav><div class="container template-article">
-
-
-
-
+</nav><div class="container template-quarto">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Introduction to qrme: Quantile Regression with Measurement Error</h1>
-                        <h4 data-toc-skip class="author">Brantly
-Callaway, Tong Li, Irina Murtazashvili, Emmanuel S. Tsyawo</h4>
-            
-            <h4 data-toc-skip class="date">2026-05-18</h4>
-      
-      <small class="dont-index">Source: <a href="https://github.com/bcallaway11/qrme/blob/HEAD/vignettes/qrme-intro.Rmd" class="external-link"><code>vignettes/qrme-intro.Rmd</code></a></small>
-      <div class="d-none name"><code>qrme-intro.Rmd</code></div>
+
+      <p class="author">Brantly Callaway, Tong Li, Irina Murtazashvili, Emmanuel S. Tsyawo</p>
+      <p class="date">2026-05-18</p>
+
+      <small class="dont-index">Source: <a href="https://github.com/bcallaway11/qrme/blob/HEAD/vignettes/qrme-intro.qmd" class="external-link"><code>vignettes/qrme-intro.qmd</code></a></small>
+      <div class="d-none name"><code></code></div>
     </div>
 
-    
-    
-<div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+
+
+
+
+
+    <section class="level2"><h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>The <strong>qrme</strong> package estimates quantile regression (QR)
-models when the dependent variable is measured with error. Classical QR
-applied to noisy outcomes produces biased estimates of the conditional
-quantile function of the true (latent) outcome. <code><a href="../reference/qrme.html">qrme()</a></code>
-corrects this bias via a pseudo-EM algorithm that alternates between</p>
-<ol style="list-style-type: decimal">
+<p>The <strong>qrme</strong> package estimates quantile regression (QR) models when the dependent variable is measured with error. Classical QR applied to noisy outcomes produces biased estimates of the conditional quantile function of the true (latent) outcome. <code><a href="../reference/qrme.html">qrme()</a></code> corrects this bias via a pseudo-EM algorithm that alternates between</p>
+<ol type="1">
 <li>
-<strong>E-step</strong> — drawing latent true outcomes given the
-observed noisy outcome and current QR parameters, using
-Metropolis–Hastings MCMC; and</li>
+<strong>E-step</strong> — drawing latent true outcomes given the observed noisy outcome and current QR parameters, using Metropolis–Hastings MCMC; and</li>
 <li>
-<strong>M-step</strong> — re-fitting quantile regressions on the
-augmented data.</li>
+<strong>M-step</strong> — re-fitting quantile regressions on the augmented data.</li>
 </ol>
-<p>For the case where <em>both</em> the outcome and a continuous
-treatment variable are measured with error, see
-<code><a href="../articles/tsme-application.html">vignette("tsme-application")</a></code>, which describes
-<code><a href="../reference/tsme.html">tsme()</a></code>.</p>
-</div>
-<div class="section level2">
-<h2 id="a-simulated-example">A simulated example<a class="anchor" aria-label="anchor" href="#a-simulated-example"></a>
+<p>For the case where <em>both</em> the outcome and a continuous treatment variable are measured with error, see <code><a href="../articles/tsme-application.html">vignette("tsme-application")</a></code>, which describes <code><a href="../reference/tsme.html">tsme()</a></code>.</p>
+</section><section class="level2"><h2 id="a-simulated-example">A simulated example<a class="anchor" aria-label="anchor" href="#a-simulated-example"></a>
 </h2>
-<div class="section level3">
-<h3 id="data-generating-process">Data-generating process<a class="anchor" aria-label="anchor" href="#data-generating-process"></a>
+<section class="level3"><h3 id="data-generating-process">Data-generating process<a class="anchor" aria-label="anchor" href="#data-generating-process"></a>
 </h3>
-<p>We use a location-scale DGP where the true outcome
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>Y</mi><mo>*</mo></msup><annotation encoding="application/x-tex">Y^*</annotation></semantics></math>
-depends on a uniform covariate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>Y</mi><mo>*</mo></msup><mo>=</mo><msub><mi>β</mi><mn>0</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>U</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><msub><mi>β</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>U</mi><mo stretchy="true" form="postfix">)</mo></mrow><mspace width="0.167em"></mspace><mi>X</mi><mo>,</mo><mspace width="1.0em"></mspace><mi>U</mi><mo>∼</mo><mtext mathvariant="normal">Uniform</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p>We use a location-scale DGP where the true outcome <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>Y</mi><mo>*</mo></msup><annotation encoding="application/x-tex">Y^*</annotation></semantics></math> depends on a uniform covariate <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>Y</mi><mo>*</mo></msup><mo>=</mo><msub><mi>β</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>U</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><msub><mi>β</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>U</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi>X</mi><mo>,</mo><mspace width="1.0em"></mspace><mi>U</mi><mo>∼</mo><mtext mathvariant="normal">Uniform</mtext><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
 Y^* = \beta_0(U) + \beta_1(U)\,X, \quad U \sim \text{Uniform}(0,1),
 </annotation></semantics></math></p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mn>0</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>1</mn><mo>+</mo><mn>3</mn><mi>u</mi><mo>−</mo><msup><mi>u</mi><mn>2</mn></msup><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>β</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><msup><mi>e</mi><mi>u</mi></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1</mn><mo>+</mo><mn>3</mn><mi>u</mi><mo>−</mo><msup><mi>u</mi><mn>2</mn></msup><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>β</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msup><mi>e</mi><mi>u</mi></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
 \beta_0(u) = 1 + 3u - u^2, \qquad \beta_1(u) = e^u.
 </annotation></semantics></math></p>
-<p>The observed outcome is
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><msup><mi>Y</mi><mo>*</mo></msup><mo>+</mo><mi>V</mi></mrow><annotation encoding="application/x-tex">Y = Y^* + V</annotation></semantics></math>,
-where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><msubsup><mi>σ</mi><mi>V</mi><mn>2</mn></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">V \sim N(0, \sigma_V^2)</annotation></semantics></math>
-with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>σ</mi><mi>V</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\sigma_V = 0.5</annotation></semantics></math>.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p>The observed outcome is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><msup><mi>Y</mi><mo>*</mo></msup><mo>+</mo><mi>V</mi></mrow><annotation encoding="application/x-tex">Y = Y^* + V</annotation></semantics></math>, where <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi><mo>∼</mo><mi>N</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><msubsup><mi>σ</mi><mi>V</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">V \sim N(0, \sigma_V^2)</annotation></semantics></math> with <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>σ</mi><mi>V</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\sigma_V = 0.5</annotation></semantics></math>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bcallaway11.github.io/qrme">qrme</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.r-project.org" class="external-link">quantreg</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: SparseM</span></span>
@@ -139,13 +118,11 @@ with
 <span></span>
 <span><span class="va">dd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span>, Ystar <span class="op">=</span> <span class="va">Ystar</span>, X <span class="op">=</span> <span class="va">X</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="naive-qr-ignoring-measurement-error">Naive QR ignoring measurement error<a class="anchor" aria-label="anchor" href="#naive-qr-ignoring-measurement-error"></a>
+</section><section class="level3"><h3 id="naive-qr-ignoring-measurement-error">Naive QR ignoring measurement error<a class="anchor" aria-label="anchor" href="#naive-qr-ignoring-measurement-error"></a>
 </h3>
-<p>Standard <code><a href="https://rdrr.io/pkg/quantreg/man/rq.html" class="external-link">rq()</a></code> applied to the noisy outcome is
-inconsistent for the QR coefficients of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>Y</mi><mo>*</mo></msup><annotation encoding="application/x-tex">Y^*</annotation></semantics></math>.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<p>Standard <code><a href="https://rdrr.io/pkg/quantreg/man/rq.html" class="external-link">rq()</a></code> applied to the noisy outcome is inconsistent for the QR coefficients of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>Y</mi><mo>*</mo></msup><annotation encoding="application/x-tex">Y^*</annotation></semantics></math>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_naive</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/quantreg/man/rq.html" class="external-link">rq</a></span><span class="op">(</span><span class="va">Ystar</span> <span class="op">~</span> <span class="va">X</span>, tau <span class="op">=</span> <span class="va">tau</span>, data <span class="op">=</span> <span class="va">dd</span><span class="op">)</span>   <span class="co"># infeasible truth</span></span>
 <span><span class="va">fit_noisy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/quantreg/man/rq.html" class="external-link">rq</a></span><span class="op">(</span><span class="va">Y</span>     <span class="op">~</span> <span class="va">X</span>, tau <span class="op">=</span> <span class="va">tau</span>, data <span class="op">=</span> <span class="va">dd</span><span class="op">)</span>   <span class="co"># naive, ignores ME</span></span>
 <span></span>
@@ -160,15 +137,13 @@ inconsistent for the QR coefficients of
 <span><span class="co">#&gt;       tau= 0.9</span></span>
 <span><span class="co">#&gt; truth 2.565987</span></span>
 <span><span class="co">#&gt; noisy 2.525466</span></span></code></pre></div>
-<p>The naive estimates are systematically attenuated relative to the
-truth because additive ME compresses the conditional distribution.</p>
 </div>
-<div class="section level3">
-<h3 id="me-corrected-qr-with-qrme">ME-corrected QR with <code>qrme()</code><a class="anchor" aria-label="anchor" href="#me-corrected-qr-with-qrme"></a>
+<p>The naive estimates are systematically attenuated relative to the truth because additive ME compresses the conditional distribution.</p>
+</section><section class="level3"><h3 id="me-corrected-qr-with-qrme">ME-corrected QR with <code>qrme()</code>
+<a class="anchor" aria-label="anchor" href="#me-corrected-qr-with-qrme"></a>
 </h3>
-<p><code><a href="../reference/qrme.html">qrme()</a></code> takes a standard formula interface. Key
-arguments:</p>
-<table class="table">
+<p><code><a href="../reference/qrme.html">qrme()</a></code> takes a standard formula interface. Key arguments:</p>
+<table class="table caption-top">
 <thead><tr class="header">
 <th>Argument</th>
 <th>Default</th>
@@ -224,7 +199,8 @@ arguments:</p>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_me</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/qrme.html">qrme</a></span><span class="op">(</span></span>
 <span>  formula      <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">X</span>,</span>
 <span>  data         <span class="op">=</span> <span class="va">dd</span>,</span>
@@ -259,21 +235,20 @@ arguments:</p>
 <span><span class="co">#&gt; Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m</span></span>
 <span><span class="co">#&gt; Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m</span></span>
 <span><span class="co">#&gt; Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m</span></span></code></pre></div>
-<p>The result is an object of class <code>merr</code>. Printing it shows
-the estimated measurement error distribution:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+</div>
+<p>The result is an object of class <code>merr</code>. Printing it shows the estimated measurement error distribution:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_me</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Measurement error: gaussian</span></span>
 <span><span class="co">#&gt;  Pi Mu  Sigma</span></span>
 <span><span class="co">#&gt;   1  0 0.6107</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="coefficient-estimates">Coefficient estimates<a class="anchor" aria-label="anchor" href="#coefficient-estimates"></a>
+</section><section class="level3"><h3 id="coefficient-estimates">Coefficient estimates<a class="anchor" aria-label="anchor" href="#coefficient-estimates"></a>
 </h3>
-<p>The QR coefficient matrix lives in <code>fit_me$bet</code>. Rows
-correspond to <code>tau</code> values; columns to regression
-coefficients (intercept first).</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>The QR coefficient matrix lives in <code>fit_me$bet</code>. Rows correspond to <code>tau</code> values; columns to regression coefficients (intercept first).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># intercept and slope at each quantile</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">fit_me</span><span class="op">$</span><span class="va">bet</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"intercept"</span>, <span class="st">"slope_X"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_me</span><span class="op">$</span><span class="va">bet</span>, <span class="fl">3</span><span class="op">)</span></span>
@@ -287,14 +262,15 @@ coefficients (intercept first).</p>
 <span><span class="co">#&gt; tau= 0.7     2.395   2.226</span></span>
 <span><span class="co">#&gt; tau= 0.8     2.454   2.437</span></span>
 <span><span class="co">#&gt; tau= 0.9     2.519   2.544</span></span></code></pre></div>
-<p>Use <code><a href="../reference/betfun.html">betfun()</a></code> to get a smooth interpolating function over
-the unit interval, which is useful for plotting the full quantile
-process:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+</div>
+<p>Use <code><a href="../reference/betfun.html">betfun()</a></code> to get a smooth interpolating function over the unit interval, which is useful for plotting the full quantile process:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bf</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/betfun.html">betfun</a></span><span class="op">(</span><span class="va">fit_me</span><span class="op">$</span><span class="va">bet</span>, <span class="va">tau</span><span class="op">)</span></span>
 <span><span class="va">tau_g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.10</span>, <span class="fl">0.90</span>, length.out <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># betfun returns a function over scalar tau; sapply to vectorise</span></span>
+<span><span class="co"># coef() on a multi-tau rq object is (coefs x tau); transpose for betfun</span></span>
 <span><span class="va">slope_me</span>    <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">tau_g</span>, <span class="kw">function</span><span class="op">(</span><span class="va">u</span><span class="op">)</span> <span class="fu">bf</span><span class="op">(</span><span class="va">u</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">bf_noisy</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/betfun.html">betfun</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_noisy</span><span class="op">)</span><span class="op">)</span>, <span class="va">tau</span><span class="op">)</span></span>
 <span><span class="va">slope_noisy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">tau_g</span>, <span class="kw">function</span><span class="op">(</span><span class="va">u</span><span class="op">)</span> <span class="fu">bf_noisy</span><span class="op">(</span><span class="va">u</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
@@ -315,17 +291,19 @@ process:</p>
 <span>  col    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span>, <span class="st">"black"</span><span class="op">)</span>,</span>
 <span>  lty    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, bty <span class="op">=</span> <span class="st">"n"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="qrme-intro_files/figure-html/betfun-plot-1.png" class="r-plt" alt="" width="576"></p>
-<p>The ME-corrected estimates track the truth substantially better than
-the naive estimates, especially at extreme quantiles.</p>
+<div class="cell-output-display">
+<div>
+<figure><p><img src="qrme-intro_files/figure-html/betfun-plot-1.png" width="576"></p>
+</figure>
 </div>
-<div class="section level3">
-<h3 id="recovering-the-measurement-error-distribution">Recovering the measurement error distribution<a class="anchor" aria-label="anchor" href="#recovering-the-measurement-error-distribution"></a>
+</div>
+</div>
+<p>The ME-corrected estimates track the truth substantially better than the naive estimates, especially at extreme quantiles.</p>
+</section><section class="level3"><h3 id="recovering-the-measurement-error-distribution">Recovering the measurement error distribution<a class="anchor" aria-label="anchor" href="#recovering-the-measurement-error-distribution"></a>
 </h3>
-<p>The EM algorithm simultaneously estimates the ME distribution. With a
-single-component Gaussian specification (<code>n_mix = 1</code>), the
-estimated parameters are:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<p>The EM algorithm simultaneously estimates the ME distribution. With a single-component Gaussian specification (<code>n_mix = 1</code>), the estimated parameters are:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span></span>
 <span>  <span class="st">"ME distribution: %s\n  pi = %.3f   mu = %.3f   sigma = %.3f\n"</span>,</span>
 <span>  <span class="va">fit_me</span><span class="op">$</span><span class="va">me_distribution</span>, <span class="va">fit_me</span><span class="op">$</span><span class="va">pi</span>, <span class="va">fit_me</span><span class="op">$</span><span class="va">mu</span>, <span class="va">fit_me</span><span class="op">$</span><span class="va">sig</span></span>
@@ -335,12 +313,11 @@ estimated parameters are:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"True sigma_V = 0.5\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; True sigma_V = 0.5</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="finite-gaussian-mixtures-n_mix-1">Finite Gaussian mixtures (<code>n_mix &gt; 1</code>)<a class="anchor" aria-label="anchor" href="#finite-gaussian-mixtures-n_mix-1"></a>
+</section><section class="level3"><h3 id="finite-gaussian-mixtures-n_mix-1">Finite Gaussian mixtures (<code>n_mix &gt; 1</code>)<a class="anchor" aria-label="anchor" href="#finite-gaussian-mixtures-n_mix-1"></a>
 </h3>
-<p>For more flexible ME distributions, increase <code>n_mix</code>. With
-<code>n_mix = 2</code> the EM fits a two-component mixture:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>For more flexible ME distributions, increase <code>n_mix</code>. With <code>n_mix = 2</code> the EM fits a two-component mixture:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_m2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/qrme.html">qrme</a></span><span class="op">(</span></span>
 <span>  formula      <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">X</span>,</span>
 <span>  data         <span class="op">=</span> <span class="va">dd</span>,</span>
@@ -422,10 +399,10 @@ estimated parameters are:</p>
 <span><span class="co">#&gt;            Pi      Mu  Sigma</span></span>
 <span><span class="co">#&gt; Comp.1 0.5301 -0.5906 0.4842</span></span>
 <span><span class="co">#&gt; Comp.2 0.4699  0.6664 0.3234</span></span></code></pre></div>
-<p>Model selection between mixture orders can be done via
-<code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code> / <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code>, which call the
-<code><a href="../reference/logLik.merr.html">logLik.merr()</a></code> S3 method:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+</div>
+<p>Model selection between mixture orders can be done via <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code> / <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code>, which call the <code><a href="../reference/logLik.merr.html">logLik.merr()</a></code> S3 method:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  n_mix <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  AIC   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC</a></span><span class="op">(</span><span class="va">fit_me</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC</a></span><span class="op">(</span><span class="va">fit_m2</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -435,15 +412,11 @@ estimated parameters are:</p>
 <span><span class="co">#&gt; 1     1 1184.047 1255.367</span></span>
 <span><span class="co">#&gt; 2     2 1226.329 1315.904</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="bootstrap-standard-errors">Bootstrap standard errors<a class="anchor" aria-label="anchor" href="#bootstrap-standard-errors"></a>
+</section><section class="level3"><h3 id="bootstrap-standard-errors">Bootstrap standard errors<a class="anchor" aria-label="anchor" href="#bootstrap-standard-errors"></a>
 </h3>
-<p>Set <code>se = TRUE</code> and choose <code>n_boot</code> to obtain
-percentile bootstrap SEs. This adds <code>$bet.se</code>,
-<code>$sig.se</code>, <code>$mu.se</code>, and <code>$pi.se</code> to
-the returned object. Bootstrap is omitted here because it is slow; a
-typical call looks like:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<p>Set <code>se = TRUE</code> and choose <code>n_boot</code> to obtain percentile bootstrap SEs. This adds <code>$bet.se</code>, <code>$sig.se</code>, <code>$mu.se</code>, and <code>$pi.se</code> to the returned object. Bootstrap is omitted here because it is slow; a typical call looks like:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_se</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/qrme.html">qrme</a></span><span class="op">(</span></span>
 <span>  formula      <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">X</span>,</span>
 <span>  data         <span class="op">=</span> <span class="va">dd</span>,</span>
@@ -457,14 +430,11 @@ typical call looks like:</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_se</span><span class="op">)</span>           <span class="co"># shows SEs alongside point estimates</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="multi-start-estimation">Multi-start estimation<a class="anchor" aria-label="anchor" href="#multi-start-estimation"></a>
+</section><section class="level3"><h3 id="multi-start-estimation">Multi-start estimation<a class="anchor" aria-label="anchor" href="#multi-start-estimation"></a>
 </h3>
-<p>The EM algorithm is not globally convergent and can settle at local
-optima. <code><a href="../reference/qrme_start_search.html">qrme_start_search()</a></code> runs the estimator from
-multiple random starting values and returns the best fit by
-log-likelihood:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<p>The EM algorithm is not globally convergent and can settle at local optima. <code><a href="../reference/qrme_start_search.html">qrme_start_search()</a></code> runs the estimator from multiple random starting values and returns the best fit by log-likelihood:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">best</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/qrme_start_search.html">qrme_start_search</a></span><span class="op">(</span></span>
 <span>  formula     <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">X</span>,</span>
 <span>  data        <span class="op">=</span> <span class="va">dd</span>,</span>
@@ -475,30 +445,103 @@ log-likelihood:</p>
 <span>  mcmc_draws  <span class="op">=</span> <span class="fl">200L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
-</div>
-<div class="section level2">
-<h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
+</section></section><section class="level2"><h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
 </h2>
-<p><code><a href="../reference/qrme.html">qrme()</a></code> provides a straightforward interface for
-ME-corrected quantile regression. The workflow is:</p>
-<ol style="list-style-type: decimal">
+<p><code><a href="../reference/qrme.html">qrme()</a></code> provides a straightforward interface for ME-corrected quantile regression. The workflow is:</p>
+<ol type="1">
 <li>Specify the model with a formula and choose <code>tau</code>.</li>
-<li>Choose the ME distribution (<code>n_mix</code>,
-<code>me_distribution</code>).</li>
-<li>Tune the MCMC (<code>mcmc_draws</code>, <code>mcmc_burn_in</code>,
-<code>proposal_sd</code>) and EM (<code>tol</code>,
-<code>max_em_iters</code>) settings.</li>
+<li>Choose the ME distribution (<code>n_mix</code>, <code>me_distribution</code>).</li>
+<li>Tune the MCMC (<code>mcmc_draws</code>, <code>mcmc_burn_in</code>, <code>proposal_sd</code>) and EM (<code>tol</code>, <code>max_em_iters</code>) settings.</li>
 <li>Optionally add bootstrap SEs (<code>se = TRUE</code>).</li>
-<li>Use <code><a href="../reference/betfun.html">betfun()</a></code> for smooth coefficient curves and
-<code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code>/<code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code> for mixture-order selection.</li>
+<li>Use <code><a href="../reference/betfun.html">betfun()</a></code> for smooth coefficient curves and <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code>/<code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code> for mixture-order selection.</li>
 </ol>
-<p>For the two-sided ME extension (ME in both the outcome and a
-continuous treatment) see <code><a href="../articles/tsme-application.html">vignette("tsme-application")</a></code>.</p>
-</div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+<p>For the two-sided ME extension (ME in both the outcome and a continuous treatment) see <code><a href="../articles/tsme-application.html">vignette("tsme-application")</a></code>.</p>
+</section><script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config);
+    }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script></main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
-
 
 
     <footer><div class="pkgdown-footer-left">

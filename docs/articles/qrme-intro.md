@@ -32,7 +32,7 @@ $$Y^{*} = \beta_{0}(U) + \beta_{1}(U)\, X,\quad U \sim \text{Uniform}(0,1),$$
 $$\beta_{0}(u) = 1 + 3u - u^{2},\qquad\beta_{1}(u) = e^{u}.$$
 
 The observed outcome is $Y = Y^{*} + V$, where
-$V \sim N\left( 0,\sigma_{V}^{2} \right)$ with $\sigma_{V} = 0.5$.
+$V \sim N(0,\sigma_{V}^{2})$ with $\sigma_{V} = 0.5$.
 
 ``` r
 library(qrme)
@@ -174,6 +174,7 @@ bf    <- betfun(fit_me$bet, tau)
 tau_g <- seq(0.10, 0.90, length.out = 200)
 
 # betfun returns a function over scalar tau; sapply to vectorise
+# coef() on a multi-tau rq object is (coefs x tau); transpose for betfun
 slope_me    <- sapply(tau_g, function(u) bf(u)[2])
 bf_noisy    <- betfun(t(coef(fit_noisy)), tau)
 slope_noisy <- sapply(tau_g, function(u) bf_noisy(u)[2])

@@ -1,21 +1,23 @@
 ---
 title: "Introduction to qrme: Quantile Regression with Measurement Error"
 author: "Brantly Callaway, Tong Li, Irina Murtazashvili, Emmanuel S. Tsyawo"
-date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+date: today
+format: html
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: "#>"
+    fig.width: 6
+    fig.height: 4
 vignette: >
   %\VignetteIndexEntry{Introduction to qrme: Quantile Regression with Measurement Error}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  collapse  = TRUE,
-  comment   = "#>",
-  fig.width = 6,
-  fig.height = 4
-)
+```{r}
+#| label: setup
+#| include: false
 set.seed(1234)
 ```
 
@@ -53,7 +55,8 @@ $$
 The observed outcome is $Y = Y^* + V$, where $V \sim N(0, \sigma_V^2)$ with
 $\sigma_V = 0.5$.
 
-```{r dgp}
+```{r}
+#| label: dgp
 library(qrme)
 library(quantreg)
 
@@ -78,7 +81,9 @@ dd <- data.frame(Y = Y, Ystar = Ystar, X = X)
 Standard `rq()` applied to the noisy outcome is inconsistent for the QR
 coefficients of $Y^*$.
 
-```{r naive-qr, warning = FALSE}
+```{r}
+#| label: naive-qr
+#| warning: false
 fit_naive <- rq(Ystar ~ X, tau = tau, data = dd)   # infeasible truth
 fit_noisy <- rq(Y     ~ X, tau = tau, data = dd)   # naive, ignores ME
 
@@ -108,7 +113,8 @@ because additive ME compresses the conditional distribution.
 | `se` | `FALSE` | compute bootstrap standard errors? |
 | `n_boot` | `100` | bootstrap replications (if `se = TRUE`) |
 
-```{r qrme-fit, cache = FALSE}
+```{r}
+#| label: qrme-fit
 fit_me <- qrme(
   formula      = Y ~ X,
   data         = dd,
@@ -126,7 +132,8 @@ fit_me <- qrme(
 The result is an object of class `merr`.  Printing it shows the estimated
 measurement error distribution:
 
-```{r print-merr}
+```{r}
+#| label: print-merr
 print(fit_me)
 ```
 
@@ -135,7 +142,8 @@ print(fit_me)
 The QR coefficient matrix lives in `fit_me$bet`.  Rows correspond to `tau`
 values; columns to regression coefficients (intercept first).
 
-```{r coef-table}
+```{r}
+#| label: coef-table
 # intercept and slope at each quantile
 colnames(fit_me$bet) <- c("intercept", "slope_X")
 round(fit_me$bet, 3)
@@ -144,11 +152,14 @@ round(fit_me$bet, 3)
 Use `betfun()` to get a smooth interpolating function over the unit interval,
 which is useful for plotting the full quantile process:
 
-```{r betfun-plot, warning = FALSE}
+```{r}
+#| label: betfun-plot
+#| warning: false
 bf    <- betfun(fit_me$bet, tau)
 tau_g <- seq(0.10, 0.90, length.out = 200)
 
 # betfun returns a function over scalar tau; sapply to vectorise
+# coef() on a multi-tau rq object is (coefs x tau); transpose for betfun
 slope_me    <- sapply(tau_g, function(u) bf(u)[2])
 bf_noisy    <- betfun(t(coef(fit_noisy)), tau)
 slope_noisy <- sapply(tau_g, function(u) bf_noisy(u)[2])
@@ -180,7 +191,8 @@ The EM algorithm simultaneously estimates the ME distribution.  With a
 single-component Gaussian specification (`n_mix = 1`), the estimated
 parameters are:
 
-```{r me-params}
+```{r}
+#| label: me-params
 cat(sprintf(
   "ME distribution: %s\n  pi = %.3f   mu = %.3f   sigma = %.3f\n",
   fit_me$me_distribution, fit_me$pi, fit_me$mu, fit_me$sig
@@ -193,7 +205,8 @@ cat("True sigma_V = 0.5\n")
 For more flexible ME distributions, increase `n_mix`.  With `n_mix = 2` the
 EM fits a two-component mixture:
 
-```{r nmix2, cache = FALSE}
+```{r}
+#| label: nmix2
 fit_m2 <- qrme(
   formula      = Y ~ X,
   data         = dd,
@@ -212,7 +225,8 @@ print(fit_m2)
 Model selection between mixture orders can be done via `AIC()` / `BIC()`,
 which call the `logLik.merr()` S3 method:
 
-```{r aic-bic}
+```{r}
+#| label: aic-bic
 data.frame(
   n_mix = c(1, 2),
   AIC   = c(AIC(fit_me), AIC(fit_m2)),
@@ -227,7 +241,9 @@ This adds `$bet.se`, `$sig.se`, `$mu.se`, and `$pi.se` to the returned
 object.  Bootstrap is omitted here because it is slow; a typical call looks
 like:
 
-```{r bootstrap, eval = FALSE}
+```{r}
+#| label: bootstrap
+#| eval: false
 fit_se <- qrme(
   formula      = Y ~ X,
   data         = dd,
@@ -248,7 +264,9 @@ The EM algorithm is not globally convergent and can settle at local optima.
 `qrme_start_search()` runs the estimator from multiple random starting
 values and returns the best fit by log-likelihood:
 
-```{r start-search, eval = FALSE}
+```{r}
+#| label: start-search
+#| eval: false
 best <- qrme_start_search(
   formula     = Y ~ X,
   data        = dd,

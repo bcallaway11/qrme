@@ -9,8 +9,8 @@ URL: https://bcallaway11.github.io/qrme, https://github.com/bcallaway11/qrme
 BugReports: https://github.com/bcallaway11/qrme/issues
 Imports: BMisc, copula, ggplot2, mixtools, pbapply, quantreg, tidyr, gumbel, Rcpp
 LinkingTo: Rcpp, RcppArmadillo
-Suggests: knitr, rmarkdown, testthat (>= 3.0.0)
-VignetteBuilder: knitr
+Suggests: quarto, testthat (>= 3.0.0)
+VignetteBuilder: quarto
 Encoding: UTF-8
 LazyData: true
 LazyDataCompression: xz
