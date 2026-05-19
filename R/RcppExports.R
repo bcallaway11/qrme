@@ -11,6 +11,7 @@
 #' @param tau vector of values where QR were estimated
 #'
 #' @return value of density at y and X given QR estimates
+#' @keywords internal
 fyxC <- function(y, betmat, X, tau) {
     .Call('_qrme_fyxC', PACKAGE = 'qrme', y, betmat, X, tau)
 }
@@ -29,6 +30,7 @@ fyxC <- function(y, betmat, X, tau) {
 #' @param sig vector of mixture standard deviations
 #'
 #' @return estimated density of measurement error at v
+#' @keywords internal
 fvC <- function(v, me_distribution, m, pi, mu, sig) {
     .Call('_qrme_fvC', PACKAGE = 'qrme', v, me_distribution, m, pi, mu, sig)
 }
@@ -45,6 +47,7 @@ fvC <- function(v, me_distribution, m, pi, mu, sig) {
 #' @inheritParams mh_mcmcC
 #'
 #' @return estimate of density of measurement error conditional on y and x
+#' @keywords internal
 fvyxC <- function(v, betmat, me_distribution, m, pi, mu, sig, y, x, tau) {
     .Call('_qrme_fvyxC', PACKAGE = 'qrme', v, betmat, me_distribution, m, pi, mu, sig, y, x, tau)
 }
@@ -58,6 +61,7 @@ fvyxC <- function(v, betmat, me_distribution, m, pi, mu, sig, y, x, tau) {
 #' @inheritParams mh_mcmcC
 #'
 #' @return vector of MCMC draws of measurement error
+#' @keywords internal
 mh_mcmc_innerC <- function(startval, mcmc_draws, mcmc_burn_in, proposal_sd, betmat, me_distribution, m, pi, mu, sig, y, x, tau) {
     .Call('_qrme_mh_mcmc_innerC', PACKAGE = 'qrme', startval, mcmc_draws, mcmc_burn_in, proposal_sd, betmat, me_distribution, m, pi, mu, sig, y, x, tau)
 }
@@ -72,6 +76,7 @@ mh_mcmc_innerC <- function(startval, mcmc_draws, mcmc_burn_in, proposal_sd, betm
 #' @inheritParams mh_mcmcC
 #'
 #' @return vector of weights to be used in importance sampling
+#' @keywords internal
 imp_sampC <- function(Y, X, V, mcmc_draws, proposal_sd, betmat, me_distribution, m, pi, mu, sig, tau) {
     .Call('_qrme_imp_sampC', PACKAGE = 'qrme', Y, X, V, mcmc_draws, proposal_sd, betmat, me_distribution, m, pi, mu, sig, tau)
 }
@@ -93,6 +98,7 @@ imp_sampC <- function(Y, X, V, mcmc_draws, proposal_sd, betmat, me_distribution,
 #' @param mu means of mixture components
 #' @param sig standard deviations of mixture components
 #' @param tau which values QR's have been estimated for
+#' @keywords internal
 mh_mcmcC <- function(Y, X, startval, mcmc_draws, mcmc_burn_in, proposal_sd, betmat, me_distribution, m, pi, mu, sig, tau) {
     .Call('_qrme_mh_mcmcC', PACKAGE = 'qrme', Y, X, startval, mcmc_draws, mcmc_burn_in, proposal_sd, betmat, me_distribution, m, pi, mu, sig, tau)
 }
@@ -103,6 +109,7 @@ mh_mcmcC <- function(Y, X, startval, mcmc_draws, mcmc_burn_in, proposal_sd, betm
 #'   an n x Y.size() matrix of fyx evaluated at those points
 #' @inheritParams mh_mcmcC
 #' @return matrix of conditional density estimates
+#' @keywords internal
 fYXmatC <- function(Y, betmat, X, tau) {
     .Call('_qrme_fYXmatC', PACKAGE = 'qrme', Y, betmat, X, tau)
 }
@@ -120,6 +127,7 @@ fYXmatC <- function(Y, betmat, X, tau) {
 #'  of x
 #'
 #' @return interpolated value
+#' @keywords internal
 interpolateC <- function(x, y, xval, extrapolate) {
     .Call('_qrme_interpolateC', PACKAGE = 'qrme', x, y, xval, extrapolate)
 }
@@ -134,6 +142,7 @@ interpolateC <- function(x, y, xval, extrapolate) {
 #' @param extrapolate whether or not to extrapolate beyond endpoints of x
 #'
 #' @return vector of extrapolations
+#' @keywords internal
 interpolateMatC <- function(x, ymat, xval, extrapolate) {
     .Call('_qrme_interpolateMatC', PACKAGE = 'qrme', x, ymat, xval, extrapolate)
 }
@@ -158,12 +167,13 @@ interpolateMatC <- function(x, ymat, xval, extrapolate) {
 #'
 #' @return cube corresponding to conditional distribution as a function
 #'  of y, t, and each row of X in the data
+#' @keywords internal
 computeFytXC <- function(yvals, t_values, Qyxpreds, Ftxpreds, tau, copula, copParam) {
     .Call('_qrme_computeFytXC', PACKAGE = 'qrme', yvals, t_values, Qyxpreds, Ftxpreds, tau, copula, copParam)
 }
 
 #' testCopula
-#' 
+#'
 #' extra functions for testing copula code
 #' not used
 #'
@@ -175,4 +185,3 @@ computeFytXC <- function(yvals, t_values, Qyxpreds, Ftxpreds, tau, copula, copPa
 testCopula <- function(u, v, copParam) {
     .Call('_qrme_testCopula', PACKAGE = 'qrme', u, v, copParam)
 }
-

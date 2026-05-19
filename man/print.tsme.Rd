@@ -17,3 +17,7 @@ Print method for tsme objects.  Shows formulas, copula
   for all three estimators.  Standard errors are shown when bootstrap
   results are available.
 }
+\examples{
+print(nlsy97_tsme_fit)
+
+}

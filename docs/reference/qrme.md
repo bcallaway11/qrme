@@ -170,3 +170,50 @@ an object of class "merr". Supports
 [`AIC()`](https://rdrr.io/r/stats/AIC.html), and
 [`BIC()`](https://rdrr.io/r/stats/AIC.html) for comparing fits across
 different starting values.
+
+## Examples
+
+``` r
+# \donttest{
+  set.seed(42)
+  n <- 300
+  X     <- runif(n)
+  Ystar <- 1 + 2 * X + rnorm(n)          # latent outcome
+  Y     <- Ystar + rnorm(n, sd = 0.5)    # observed with ME
+  dd    <- data.frame(Y = Y, X = X)
+
+  fit <- qrme(Y ~ X, data = dd,
+              tau          = c(0.25, 0.5, 0.75),
+              n_mix        = 1L,
+              mcmc_draws   = 100L,
+              mcmc_burn_in = 50L,
+              max_em_iters = 15L,
+              verbose      = FALSE)
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: Too many fixups:  doubling m
+#> Warning: EM algorithm failed to converge after 15 iterations
+  print(fit)
+#> Measurement error: gaussian
+#>  Pi Mu  Sigma
+#>   1  0 0.7085
+  fit$bet   # coefficient matrix: rows = tau, cols = regressors
+#>           (Intercept)        X
+#> tau= 0.25   0.6019999 2.145111
+#> tau= 0.50   0.8475466 2.221434
+#> tau= 0.75   1.0402846 2.346840
+# }
+```

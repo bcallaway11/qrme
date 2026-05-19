@@ -64,3 +64,22 @@ Fit \code{\link{tsme}} over a grid of copula families and
   For \code{y_n_mix = t_n_mix = 1} the free parameters are \eqn{\sigma_Y},
   \eqn{\sigma_T}, and \eqn{\theta_{\text{cop}}}, giving \code{k_params = 3}.
 }
+\examples{
+\dontrun{
+  tau      <- seq(0.05, 0.95, length.out = 15)
+  t_values <- quantile(nlsy97$lpi, probs = seq(0.1, 0.9, by = 0.1))
+  sel <- tsme_model_select(
+    data            = nlsy97,
+    y_formula       = lci ~ ageC_97 + ageF,
+    t_formula       = lpi ~ ageC_97 + ageF,
+    tau             = tau,
+    t_values        = t_values,
+    me_distribution = "laplace",
+    mcmc_draws      = 200L,
+    mcmc_burn_in    = 20L,
+    n_cores         = 4L
+  )
+  print(sel)
+}
+
+}

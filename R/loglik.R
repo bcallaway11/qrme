@@ -35,6 +35,22 @@ loglik_raw <- function(y, x, betmat, tau, pi, mu, sig, me_distribution, ndraws =
 #' @return A scalar of class \code{"logLik"} with attributes \code{df}
 #'   (number of free parameters) and \code{nobs} (sample size).
 #'
+#' @examples
+#' \donttest{
+#'   set.seed(42)
+#'   n <- 200; X <- runif(n)
+#'   Y <- 1 + 2 * X + rnorm(n) + rnorm(n, sd = 0.5)
+#'   fit1 <- qrme(Y ~ X, data.frame(Y, X), tau = 0.5,
+#'                n_mix = 1L, mcmc_draws = 80L, mcmc_burn_in = 40L,
+#'                max_em_iters = 10L, verbose = FALSE)
+#'   fit2 <- qrme(Y ~ X, data.frame(Y, X), tau = 0.5,
+#'                n_mix = 2L, mcmc_draws = 80L, mcmc_burn_in = 40L,
+#'                max_em_iters = 10L, verbose = FALSE)
+#'   data.frame(n_mix = 1:2,
+#'              AIC   = c(AIC(fit1), AIC(fit2)),
+#'              BIC   = c(BIC(fit1), BIC(fit2)))
+#' }
+#'
 #' @export
 logLik.merr <- function(object, ndraws = 500, ...) {
   y       <- object$y

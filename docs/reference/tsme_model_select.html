@@ -147,6 +147,27 @@ in the grid (e.g. <code>n_copula_me_draws</code>, <code>mcmc_draws</code>,
   in the same order as <code>table</code>)</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span>  <span class="va">tau</span>      <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.95</span>, length.out <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">t_values</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">nlsy97</span><span class="op">$</span><span class="va">lpi</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.9</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu">tsme_model_select</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    data            <span class="op">=</span> <span class="va">nlsy97</span>,</span></span>
+<span class="r-in"><span>    y_formula       <span class="op">=</span> <span class="va">lci</span> <span class="op">~</span> <span class="va">ageC_97</span> <span class="op">+</span> <span class="va">ageF</span>,</span></span>
+<span class="r-in"><span>    t_formula       <span class="op">=</span> <span class="va">lpi</span> <span class="op">~</span> <span class="va">ageC_97</span> <span class="op">+</span> <span class="va">ageF</span>,</span></span>
+<span class="r-in"><span>    tau             <span class="op">=</span> <span class="va">tau</span>,</span></span>
+<span class="r-in"><span>    t_values        <span class="op">=</span> <span class="va">t_values</span>,</span></span>
+<span class="r-in"><span>    me_distribution <span class="op">=</span> <span class="st">"laplace"</span>,</span></span>
+<span class="r-in"><span>    mcmc_draws      <span class="op">=</span> <span class="fl">200L</span>,</span></span>
+<span class="r-in"><span>    mcmc_burn_in    <span class="op">=</span> <span class="fl">20L</span>,</span></span>
+<span class="r-in"><span>    n_cores         <span class="op">=</span> <span class="fl">4L</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">sel</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

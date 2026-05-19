@@ -298,3 +298,27 @@ tsme(
 
 list of nonlinear measures of intergenerational income mobility adjusted
 for measurement error
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+  tau      <- seq(0.02, 0.98, length.out = 25)
+  t_values <- quantile(nlsy97$lpi, probs = seq(0.1, 0.9, by = 0.1))
+  fit <- tsme(
+    data            = nlsy97,
+    y_formula       = lci ~ ageC_97 + ageF,
+    t_formula       = lpi ~ ageC_97 + ageF,
+    tau             = tau,
+    t_values        = t_values,
+    copula          = "frank",
+    me_distribution = "laplace",
+    mcmc_draws      = 400L,
+    mcmc_burn_in    = 20L,
+    se              = TRUE,
+    n_boot          = 200L,
+    n_cores         = 10L
+  )
+  print(fit)
+} # }
+```

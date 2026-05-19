@@ -26,3 +26,10 @@ Turns matrices of QR parameter values into functions.
  interpolation of parameter values (for interior values of tau) and
  based on some assumptions to handle values in the tails.
 }
+\examples{
+tau <- seq(0.1, 0.9, by = 0.1)
+bet <- cbind(intercept = 1 + tau, slope = exp(tau))
+bf  <- betfun(bet, tau)
+bf(0.5)   # interpolated coefficients at tau = 0.5
+
+}

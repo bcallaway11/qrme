@@ -185,6 +185,26 @@ compute.qrme <- function(formula, tau=0.5, data, me_distribution="gaussian", n_m
 #' @return an object of class "merr". Supports \code{logLik()}, \code{AIC()},
 #'   and \code{BIC()} for comparing fits across different starting values.
 #'
+#' @examples
+#' \donttest{
+#'   set.seed(42)
+#'   n <- 300
+#'   X     <- runif(n)
+#'   Ystar <- 1 + 2 * X + rnorm(n)          # latent outcome
+#'   Y     <- Ystar + rnorm(n, sd = 0.5)    # observed with ME
+#'   dd    <- data.frame(Y = Y, X = X)
+#'
+#'   fit <- qrme(Y ~ X, data = dd,
+#'               tau          = c(0.25, 0.5, 0.75),
+#'               n_mix        = 1L,
+#'               mcmc_draws   = 100L,
+#'               mcmc_burn_in = 50L,
+#'               max_em_iters = 15L,
+#'               verbose      = FALSE)
+#'   print(fit)
+#'   fit$bet   # coefficient matrix: rows = tau, cols = regressors
+#' }
+#'
 #' @export
 qrme <- function(formula, tau=0.5, data, me_distribution="gaussian", n_mix=1, start_beta=NULL, start_mu=NULL,
                  start_sigma=NULL, start_pi=NULL, mcmc_method="MH", tol=NULL, conv_criterion="params",
@@ -632,6 +652,17 @@ qr2meobj <- function(cop.param, copula, t_values, x, Fytxlist, Qyx, Qtx) {
 #'
 #' @param x a merr object
 #' @param ... unused
+#'
+#' @examples
+#' \donttest{
+#'   set.seed(1)
+#'   n <- 200; X <- runif(n)
+#'   Y <- 1 + X + rnorm(n) + rnorm(n, sd = 0.5)
+#'   fit <- qrme(Y ~ X, data.frame(Y, X), tau = 0.5,
+#'               mcmc_draws = 80L, mcmc_burn_in = 40L,
+#'               max_em_iters = 10L, verbose = FALSE)
+#'   print(fit)
+#' }
 #'
 #' @export
 print.merr <- function(x, ...) {

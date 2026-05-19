@@ -37,3 +37,10 @@ a ggplot object
 ggplot2-based plot method for tsme objects.  Returns a
   \code{ggplot} object that can be further customized.
 }
+\examples{
+\donttest{
+  ggplot2::autoplot(nlsy97_tsme_fit, type = "cond_quant", which = "me")
+  ggplot2::autoplot(nlsy97_tsme_fit, type = "pov_rate",   which = "all", ci = FALSE)
+}
+
+}

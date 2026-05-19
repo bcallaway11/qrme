@@ -12,6 +12,8 @@ covariates that are assumed not to be measured with error.
 
 Useful links:
 
+- <https://bcallaway11.github.io/qrme>
+
 - <https://github.com/bcallaway11/qrme>
 
 - Report bugs at <https://github.com/bcallaway11/qrme/issues>

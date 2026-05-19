@@ -21,3 +21,9 @@ Draw samples from the Laplace distribution.  Note that the
  function takes the standard deviation as an argument, but it converts it
  to the scale of the Laplace distribution, which is the typical parameterization.
 }
+\examples{
+set.seed(1)
+x <- rlaplace(500, mu = 0, sigma = 1)
+c(mean = mean(x), sd = sd(x))
+
+}

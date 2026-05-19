@@ -22,3 +22,12 @@ plot(x, ...)
 
   passed to
   [`autoplot.tsme`](https://bcallaway11.github.io/qrme/reference/autoplot.tsme.md)
+
+## Examples
+
+``` r
+# \donttest{
+  plot(nlsy97_tsme_fit, type = "cond_quant", which = "me")   # calls autoplot() internally
+
+# }
+```

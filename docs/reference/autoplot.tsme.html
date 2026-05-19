@@ -101,6 +101,17 @@ three on one plot; only valid when <code>type = "pov_rate"</code>)</p></dd>
     <p>a ggplot object</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">nlsy97_tsme_fit</span>, type <span class="op">=</span> <span class="st">"cond_quant"</span>, which <span class="op">=</span> <span class="st">"me"</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="autoplot.tsme-1.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">nlsy97_tsme_fit</span>, type <span class="op">=</span> <span class="st">"pov_rate"</span>,   which <span class="op">=</span> <span class="st">"all"</span>, ci <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="autoplot.tsme-2.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

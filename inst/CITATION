@@ -1,0 +1,15 @@
+bibentry(
+  bibtype  = "Article",
+  title    = "Distributional Effects with Two-Sided Measurement Error: An Application to Intergenerational Income Mobility",
+  author   = c(
+    person("Brantly",      "Callaway"),
+    person("Tong",         "Li"),
+    person("Irina",        "Murtazashvili"),
+    person("Emmanuel S.",  "Tsyawo")
+  ),
+  journal  = "arXiv preprint",
+  year     = "2026",
+  note     = "arXiv:2107.09235",
+  url      = "https://arxiv.org/abs/2107.09235",
+  doi      = "10.48550/arXiv.2107.09235"
+)

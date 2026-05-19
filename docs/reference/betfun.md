@@ -29,3 +29,13 @@ betfun(betmat, tau)
 
 A function that can be called on any element from 0 to 1 and returns a
 vector of parameter values
+
+## Examples
+
+``` r
+tau <- seq(0.1, 0.9, by = 0.1)
+bet <- cbind(intercept = 1 + tau, slope = exp(tau))
+bf  <- betfun(bet, tau)
+bf(0.5)   # interpolated coefficients at tau = 0.5
+#> [1] 1.500000 1.648721
+```

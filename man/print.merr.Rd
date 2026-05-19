@@ -17,3 +17,15 @@ Print method for merr objects returned by \code{\link{qrme}}.
   (mixture weights, means, and standard deviations) with bootstrap standard
   errors when available.
 }
+\examples{
+\donttest{
+  set.seed(1)
+  n <- 200; X <- runif(n)
+  Y <- 1 + X + rnorm(n) + rnorm(n, sd = 0.5)
+  fit <- qrme(Y ~ X, data.frame(Y, X), tau = 0.5,
+              mcmc_draws = 80L, mcmc_burn_in = 40L,
+              max_em_iters = 10L, verbose = FALSE)
+  print(fit)
+}
+
+}

@@ -13,17 +13,20 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/bcallaway11/qrme/blob/HEAD/DESCRIPTION)
+[`inst/CITATION`](https://github.com/bcallaway11/qrme/blob/HEAD/inst/CITATION)
 
-Brantly C, Tong L, Irina M, Emmanuel S. T (2026). *qrme: Quantile
-Regression with Measurement Error*. R package version 1.0.1,
-https://github.com/bcallaway11/qrme,
-<https://bcallaway11.github.io/qrme>.
+Callaway B, Li T, Murtazashvili I, Tsyawo E (2026). “Distributional
+Effects with Two-Sided Measurement Error: An Application to
+Intergenerational Income Mobility.” *arXiv preprint*.
+[doi:10.48550/arXiv.2107.09235](https://doi.org/10.48550/arXiv.2107.09235),
+arXiv:2107.09235, <https://arxiv.org/abs/2107.09235>.
 
-    @Manual{,
-      title = {qrme: Quantile Regression with Measurement Error},
-      author = {Callaway Brantly and Li Tong and Murtazashvili Irina and Tsyawo {Emmanuel S.}},
+    @Article{,
+      title = {Distributional Effects with Two-Sided Measurement Error: An Application to Intergenerational Income Mobility},
+      author = {Brantly Callaway and Tong Li and Irina Murtazashvili and Emmanuel S. Tsyawo},
+      journal = {arXiv preprint},
       year = {2026},
-      note = {R package version 1.0.1, https://github.com/bcallaway11/qrme},
-      url = {https://bcallaway11.github.io/qrme},
+      note = {arXiv:2107.09235},
+      url = {https://arxiv.org/abs/2107.09235},
+      doi = {10.48550/arXiv.2107.09235},
     }

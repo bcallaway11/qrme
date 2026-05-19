@@ -91,3 +91,24 @@ tsme_model_select(
 a list with element `table` (a data.frame sorted by BIC) and, if
 `return_fits = TRUE`, element `fits` (a list of tsme objects in the same
 order as `table`)
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+  tau      <- seq(0.05, 0.95, length.out = 15)
+  t_values <- quantile(nlsy97$lpi, probs = seq(0.1, 0.9, by = 0.1))
+  sel <- tsme_model_select(
+    data            = nlsy97,
+    y_formula       = lci ~ ageC_97 + ageF,
+    t_formula       = lpi ~ ageC_97 + ageF,
+    tau             = tau,
+    t_values        = t_values,
+    me_distribution = "laplace",
+    mcmc_draws      = 200L,
+    mcmc_burn_in    = 20L,
+    n_cores         = 4L
+  )
+  print(sel)
+} # }
+```

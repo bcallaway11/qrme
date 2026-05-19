@@ -59,3 +59,20 @@ Run \code{\link{qrme}} from multiple random starting values
   and mixture weights \code{start_pi} are drawn from a symmetric Dirichlet
   (i.e., uniform on the simplex).
 }
+\examples{
+\dontrun{
+  set.seed(1)
+  n <- 300; X <- runif(n)
+  Y <- 1 + 2 * X + rnorm(n) + rnorm(n, sd = 0.5)
+  best <- qrme_start_search(
+    Y ~ X, data.frame(Y, X),
+    tau         = c(0.25, 0.5, 0.75),
+    n_starts    = 5L,
+    mcmc_draws  = 100L,
+    mcmc_burn_in = 50L,
+    max_em_iters = 20L
+  )
+  best$table
+}
+
+}

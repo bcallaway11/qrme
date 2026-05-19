@@ -10,6 +10,7 @@ Code for estimating quantile regressions with measurement error. The first main 
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://bcallaway11.github.io/qrme}
   \item \url{https://github.com/bcallaway11/qrme}
   \item Report bugs at \url{https://github.com/bcallaway11/qrme/issues}
 }

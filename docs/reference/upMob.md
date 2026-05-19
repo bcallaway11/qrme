@@ -32,3 +32,10 @@ upMob(Y, T, amount = 0, qcutoffs = c(0.25, 0.5, 0.75))
 
 vector of amount of upward mobility by parents' income quartile (or
 other specified cutoffs)
+
+## Examples
+
+``` r
+upMob(nlsy97$lci, nlsy97$lpi)
+#> [1] 0.8302583 0.5725191 0.3867596 0.1666667
+```

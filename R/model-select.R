@@ -43,6 +43,24 @@
 #'   if \code{return_fits = TRUE}, element \code{fits} (a list of tsme objects
 #'   in the same order as \code{table})
 #'
+#' @examples
+#' \dontrun{
+#'   tau      <- seq(0.05, 0.95, length.out = 15)
+#'   t_values <- quantile(nlsy97$lpi, probs = seq(0.1, 0.9, by = 0.1))
+#'   sel <- tsme_model_select(
+#'     data            = nlsy97,
+#'     y_formula       = lci ~ ageC_97 + ageF,
+#'     t_formula       = lpi ~ ageC_97 + ageF,
+#'     tau             = tau,
+#'     t_values        = t_values,
+#'     me_distribution = "laplace",
+#'     mcmc_draws      = 200L,
+#'     mcmc_burn_in    = 20L,
+#'     n_cores         = 4L
+#'   )
+#'   print(sel)
+#' }
+#'
 #' @export
 tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
                               copulas          = c("gaussian", "clayton",

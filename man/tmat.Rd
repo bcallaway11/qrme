@@ -20,3 +20,7 @@ A matrix containing values of the transition matrix.  The columns contain differ
 \description{
 A function for computing transition matrices
 }
+\examples{
+tmat(nlsy97$lci, nlsy97$lpi)
+
+}

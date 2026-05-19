@@ -13,6 +13,10 @@
 #'
 #' @return A matrix containing values of the transition matrix.  The columns contain different groups by value of the treatment,
 #'  the rows contain different values for the outcome (it is ordered from bottom to top though as is standard for a transition matrix)
+#'
+#' @examples
+#' tmat(nlsy97$lci, nlsy97$lpi)
+#'
 #' @export
 tmat <- function(Y,T, qcutoffs=c(.25,.5,.75)) {
     ucutoffs <- c(qcutoffs,1)
@@ -53,6 +57,10 @@ tmat <- function(Y,T, qcutoffs=c(.25,.5,.75)) {
 #'
 #' @return vector of amount of upward mobility by parents' income quartile
 #'  (or other specified cutoffs)
+#'
+#' @examples
+#' upMob(nlsy97$lci, nlsy97$lpi)
+#'
 #' @export
 upMob <- function(Y, T, amount=0, qcutoffs=c(.25,.5,.75)) {
     cutoffs <- c(0, qcutoffs, 1)

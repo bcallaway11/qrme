@@ -27,3 +27,13 @@ rlaplace(n, mu = 0, sigma = 1)
 ## Value
 
 vector of n samples from the Laplace distribution
+
+## Examples
+
+``` r
+set.seed(1)
+x <- rlaplace(500, mu = 0, sigma = 1)
+c(mean = mean(x), sd = sd(x))
+#>       mean         sd 
+#> 0.02228648 0.93280121 
+```

@@ -15,3 +15,9 @@
 Plot method for tsme objects; calls \code{\link{autoplot.tsme}}
   and prints the result.
 }
+\examples{
+\donttest{
+  plot(nlsy97_tsme_fit, type = "cond_quant", which = "me")   # calls autoplot() internally
+}
+
+}

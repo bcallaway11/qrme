@@ -23,3 +23,7 @@ vector of amount of upward mobility by parents' income quartile
 \description{
 Upward Mobility Paramters
 }
+\examples{
+upMob(nlsy97$lci, nlsy97$lpi)
+
+}

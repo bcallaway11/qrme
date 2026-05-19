@@ -124,3 +124,24 @@ Quantile Regression with measurement error in the dependent
  that the measurement error distribution is a mixture of normal
  distributions.
 }
+\examples{
+\donttest{
+  set.seed(42)
+  n <- 300
+  X     <- runif(n)
+  Ystar <- 1 + 2 * X + rnorm(n)          # latent outcome
+  Y     <- Ystar + rnorm(n, sd = 0.5)    # observed with ME
+  dd    <- data.frame(Y = Y, X = X)
+
+  fit <- qrme(Y ~ X, data = dd,
+              tau          = c(0.25, 0.5, 0.75),
+              n_mix        = 1L,
+              mcmc_draws   = 100L,
+              mcmc_burn_in = 50L,
+              max_em_iters = 15L,
+              verbose      = FALSE)
+  print(fit)
+  fit$bet   # coefficient matrix: rows = tau, cols = regressors
+}
+
+}

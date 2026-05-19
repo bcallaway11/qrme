@@ -51,3 +51,14 @@ autoplot(
 ## Value
 
 a ggplot object
+
+## Examples
+
+``` r
+# \donttest{
+  ggplot2::autoplot(nlsy97_tsme_fit, type = "cond_quant", which = "me")
+
+  ggplot2::autoplot(nlsy97_tsme_fit, type = "pov_rate",   which = "all", ci = FALSE)
+
+# }
+```

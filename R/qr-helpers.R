@@ -13,6 +13,13 @@
 #'  It should be an L-dimensional vector.
 #' @return A function that can be called on any element from 0 to 1 and
 #'  returns a vector of parameter values
+#'
+#' @examples
+#' tau <- seq(0.1, 0.9, by = 0.1)
+#' bet <- cbind(intercept = 1 + tau, slope = exp(tau))
+#' bf  <- betfun(bet, tau)
+#' bf(0.5)   # interpolated coefficients at tau = 0.5
+#'
 #' @export
 betfun <- function(betmat, tau) {
   betmat <- as.matrix(betmat)
@@ -170,6 +177,12 @@ makeRQS <- function(params, formla, data, tau) {
 #' @param mu location parameter (default is 0)
 #' @param sigma standard deviation, function will convert it to the scale
 #' @return vector of n samples from the Laplace distribution
+#'
+#' @examples
+#' set.seed(1)
+#' x <- rlaplace(500, mu = 0, sigma = 1)
+#' c(mean = mean(x), sd = sd(x))
+#'
 #' @export
 rlaplace <- function(n, mu = 0, sigma = 1) {
   b <- sigma / sqrt(2)                 # Convert SD -> Laplace scale
