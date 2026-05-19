@@ -13,7 +13,7 @@ It provides two main estimators:
   Quantile regression with measurement error in the outcome variable.
   This is an EM-based implementation of the estimator developed by
   [Hausman, Liu, Luo, and Palmer (2021,
-  *Econometrica*)](https://doi.org/10.3982/ECTA14563), extended to
+  *Econometrica*)](https://doi.org/10.3982/ECTA14667), extended to
   support finite Gaussian mixtures for the measurement error
   distribution. The pseudo-EM algorithm alternates between a
   Metropolis–Hastings MCMC step (E-step) to integrate out the latent

@@ -171,18 +171,19 @@ useful for plotting the full quantile process:
 
 ``` r
 bf    <- betfun(fit_me$bet, tau)
-tau_g <- seq(0.05, 0.95, length.out = 200)
+tau_g <- seq(0.10, 0.90, length.out = 200)
 
 # betfun returns a function over scalar tau; sapply to vectorise
 slope_me    <- sapply(tau_g, function(u) bf(u)[2])
-bf_noisy    <- betfun(coef(fit_noisy), tau)
+bf_noisy    <- betfun(t(coef(fit_noisy)), tau)
 slope_noisy <- sapply(tau_g, function(u) bf_noisy(u)[2])
-bf_truth    <- betfun(coef(fit_naive), tau)
+bf_truth    <- betfun(t(coef(fit_naive)), tau)
 slope_truth <- sapply(tau_g, function(u) bf_truth(u)[2])
 
 plot(
   tau_g, slope_me,
   type = "l", lwd = 2, col = "steelblue",
+  ylim = range(slope_me, slope_noisy, slope_truth),
   xlab = expression(tau), ylab = "Slope on X",
   main = "Slope coefficient: ME-corrected vs naive vs truth"
 )
