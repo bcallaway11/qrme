@@ -1,3 +1,16 @@
+# qrme 1.0.2 (development)
+
+## Bug fixes
+
+* `print.merr()` now correctly displays bootstrap standard errors when `qrme()`
+  is called with `se = TRUE`.  The SE fields were stored under dot-separated
+  names (`sig.se`, `mu.se`, `pi.se`, `bet.se`) but `print.merr()` expected
+  underscore-separated names; both are now underscore-separated.  Also fixed
+  `print.merr()` for the `n_mix = 1` case, where `row.names = ""` caused a
+  spurious "should specify one of the variables" error from `data.frame()`.
+
+---
+
 # qrme 1.0.1
 
 ## New functionality

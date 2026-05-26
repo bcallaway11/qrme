@@ -5,7 +5,7 @@
 #              via the pseudo-EM algorithm in em.R. Also includes qr2me() for
 #              two-sided measurement error and supporting S3 methods.
 # Author: Brant Callaway
-# Last update: 2026-05-17
+# Last update: 2026-05-26
 # Date created: 2026-05-07
 # =============================================================================
 
@@ -270,10 +270,10 @@ qrme <- function(formula, tau=0.5, data, me_distribution="gaussian", n_mix=1, st
     eachIter <- eachIter[!sapply(eachIter, is.null)]
 
     ## only works if these are scalar...now only matrix
-    res$sig.se <- apply(do.call(rbind, lapply(eachIter, function(e) e$sig)), 2, sd)
-    res$mu.se <- apply(t(sapply(eachIter, function(e) e$mu)), 2, sd)##sd(sapply(eachIter, function(e) e$mu))
-    res$pi.se <- apply(t(sapply(eachIter, function(e) e$pi)), 2, sd)
-    res$bet.se <- apply(simplify2array(lapply(eachIter, function(e) e$bet)), 1:2, sd) ## element-wise standard deviation of list of matrices
+    res$sig_se <- apply(do.call(rbind, lapply(eachIter, function(e) e$sig)), 2, sd)
+    res$mu_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$mu)),  2, sd)
+    res$pi_se  <- apply(do.call(rbind, lapply(eachIter, function(e) e$pi)),  2, sd)
+    res$bet_se <- apply(simplify2array(lapply(eachIter, function(e) e$bet)), 1:2, sd)
     
   }
 
@@ -673,7 +673,7 @@ print.merr <- function(x, ...) {
   cat("\n")
 
   has_se <- !is.null(x$sig_se)
-  nm     <- if (n_mix == 1L) "" else paste0("Comp.", seq_len(n_mix))
+  nm     <- if (n_mix == 1L) NULL else paste0("Comp.", seq_len(n_mix))
 
   if (has_se) {
     df <- data.frame(
