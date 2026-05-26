@@ -222,7 +222,8 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
     rownames(grid) <- NULL
   }
 
-  n <- nrow(data)
+  n          <- nrow(data)
+  dots_clean <- list(...)[!names(list(...)) %in% "se"]
 
   # free ME params per equation: k=2 for n_mix=1, k=3m-1 for n_mix>=2
   k_me <- function(m) if (m == 1L) 2L else 3L * m - 1L
@@ -238,11 +239,14 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
       cop, dist, ym, tm
     ))
     fit <- tryCatch(
-      tsme(data = data, y_formula = y_formula, t_formula = t_formula,
-           tau = tau, t_values = t_values,
-           copula = cop, me_distribution = dist,
-           y_n_mix = ym, t_n_mix = tm,
-           se = FALSE, ...),
+      do.call(tsme, c(
+        list(data = data, y_formula = y_formula, t_formula = t_formula,
+             tau = tau, t_values = t_values,
+             copula = cop, me_distribution = dist,
+             y_n_mix = ym, t_n_mix = tm,
+             se = FALSE),
+        dots_clean
+      )),
       error = function(e) {
         message(sprintf("    FAILED: %s", conditionMessage(e)))
         NULL
