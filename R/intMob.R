@@ -49,7 +49,7 @@ tmat <- function(Y,T, qcutoffs=c(.25,.5,.75)) {
 
 #' @title upMob
 #'
-#' @description Upward Mobility Paramters
+#' @description Upward Mobility Parameters
 #'
 #' @inheritParams tmat
 #' @param amount How much child's rank has to increase in order to count

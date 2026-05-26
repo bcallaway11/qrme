@@ -20,3 +20,4 @@ a vector of copula parameters
 convert parameters from optimization routine into copula
  parameters, parameters are between 0 and 1
 }
+\keyword{internal}

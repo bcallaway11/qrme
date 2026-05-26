@@ -11,6 +11,9 @@
 
 \item{...}{unused}
 }
+\value{
+\code{object}, invisibly.
+}
 \description{
 Summary method for tsme objects.  Calls \code{\link{print.tsme}}
   then appends the upward mobility table and ME-corrected transition matrix.

@@ -21,7 +21,7 @@ vector of amount of upward mobility by parents' income quartile
  (or other specified cutoffs)
 }
 \description{
-Upward Mobility Paramters
+Upward Mobility Parameters
 }
 \examples{
 upMob(nlsy97$lci, nlsy97$lpi)

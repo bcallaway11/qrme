@@ -11,6 +11,9 @@
 
 \item{...}{passed to \code{\link{autoplot.tsme}}}
 }
+\value{
+\code{x}, invisibly.
+}
 \description{
 Plot method for tsme objects; calls \code{\link{autoplot.tsme}}
   and prints the result.

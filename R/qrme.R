@@ -630,6 +630,7 @@ qr2me <- function(y_name, t_name, x_formula, tau, data, x_data=NULL, t_values=NU
 #' @param Qyx estimates of quantiles of Y conditional on X
 #' @param Qtx estimates of quantiles of T conditional on X
 #'
+#' @keywords internal
 #' @export
 qr2meobj <- function(cop.param, copula, t_values, x, Fytxlist, Qyx, Qtx) {
   out <- list()
@@ -652,6 +653,8 @@ qr2meobj <- function(cop.param, copula, t_values, x, Fytxlist, Qyx, Qtx) {
 #'
 #' @param x a merr object
 #' @param ... unused
+#'
+#' @return \code{x}, invisibly.
 #'
 #' @examples
 #' \donttest{

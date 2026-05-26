@@ -3,7 +3,7 @@
 # Description: Functions for nonlinear models with two-sided measurement error
 #   via copula (tsme) and its internal workhorse (compute.tsme).
 # Author: Brant Callaway
-# Last update: 2026-05-17
+# Last update: 2026-05-26
 # Date created: 2026-05-14
 # =============================================================================
 
@@ -495,6 +495,8 @@ tsme <- function(data, y_formula, t_formula, tau, t_values, x_data=NULL,
 #' @param x a tsme object returned by \code{\link{tsme}}
 #' @param ... unused
 #'
+#' @return \code{x}, invisibly.
+#'
 #' @examples
 #' print(nlsy97_tsme_fit)
 #'
@@ -568,6 +570,8 @@ print.tsme <- function(x, ...) {
 #'
 #' @param object a tsme object returned by \code{\link{tsme}}
 #' @param ... unused
+#'
+#' @return \code{object}, invisibly.
 #'
 #' @examples
 #' summary(nlsy97_tsme_fit)
@@ -795,6 +799,8 @@ autoplot.tsme <- function(object,
 #'
 #' @param x a tsme object returned by \code{\link{tsme}}
 #' @param ... passed to \code{\link{autoplot.tsme}}
+#'
+#' @return \code{x}, invisibly.
 #'
 #' @examples
 #' \donttest{

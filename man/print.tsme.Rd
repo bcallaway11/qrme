@@ -11,6 +11,9 @@
 
 \item{...}{unused}
 }
+\value{
+\code{x}, invisibly.
+}
 \description{
 Print method for tsme objects.  Shows formulas, copula
   parameters, measurement error standard deviations, and Spearman's rho

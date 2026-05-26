@@ -10,7 +10,7 @@
 #' @param u first copula argument (u and v can be vectors)
 #' @param v second copula argument
 #' @param type one of c("gumbel","frank")
-#' @param delt the copula paramter
+#' @param delt the copula parameter
 #' @param eps A small positive number to trim out zeros
 #'
 #' @return vector of copula pdf values
@@ -101,6 +101,7 @@ ll <- function(params, y, t, x, copula="gumbel", Fyx, Ftx, fyx, ftx,
 #'
 #' @return a vector of copula parameters
 #'
+#' @keywords internal
 #' @export
 parms2coppar <- function(params, copula="gumbel",x) {
   x <- as.matrix(x)

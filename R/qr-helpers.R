@@ -43,7 +43,9 @@ betfun <- function(betmat, tau) {
 #'  This function does the work, but only for a single vector of betas.
 #' @param betvec vector of parameter values
 #' @param tau corresponding vector of quantiles where beta was estimated
-#' @param isconst ?? -- what is this doing?
+#' @param isconst logical; if \code{TRUE} the function is treated as a
+#'   constant (intercept) term and tail extrapolation uses a log-linear
+#'   correction rather than a flat extension
 #' @return function that takes argument from (0,1)
 #' @keywords internal
 #' @export
@@ -140,6 +142,7 @@ betfun.inner <- function(betvec, tau, isconst=FALSE) {
 #'
 #' @return rqs object
 #'
+#' @keywords internal
 #' @export
 makeRQS <- function(params, formla, data, tau) {
     x_formula <- formla

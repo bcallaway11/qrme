@@ -25,3 +25,4 @@ estimated for}
 \description{
 class for qr2meobj
 }
+\keyword{internal}

@@ -527,6 +527,7 @@ em.algo.inner <- function(formula, data,
 #'
 #' @return An nx1 vector that contains f(y|X)
 #'
+#' @keywords internal
 #' @export
 fy.x <- function(y, betmat, X, tau) {
     X <- as.matrix(X)
@@ -621,6 +622,7 @@ fv <- function(v, m = 1, pi = 1, mu = 0, sig = 1) {
 #' @param y particular value of y
 #' @param x particular value of x
 #' @return vector of draws of measurement error
+#' @keywords internal
 #' @export
 mh_mcmc <- function(startval = 0, mcmc_draws = 200, mcmc_burn_in = 100, proposal_sd = NULL, betmat, m, pi, mu, sig, y, x, tau) {
     x <- t(x)

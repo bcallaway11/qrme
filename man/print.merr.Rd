@@ -11,6 +11,9 @@
 
 \item{...}{unused}
 }
+\value{
+\code{x}, invisibly.
+}
 \description{
 Print method for merr objects returned by \code{\link{qrme}}.
   Shows the measurement error distribution type and its fitted parameters

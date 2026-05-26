@@ -55,3 +55,4 @@ vector of draws of measurement error
 \description{
 A Metropolis-Hastings algorithm for drawing measurment errors.
 }
+\keyword{internal}

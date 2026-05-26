@@ -32,3 +32,4 @@ Take the results of the optimization and convert them
  necessarily be increasing in tau.  However, we can separately rearrange
  those as needed.  But this gives a way to report the QR parameters.
 }
+\keyword{internal}

@@ -13,7 +13,7 @@ cop.pdf(u, v, type = "gumbel", delt, eps = .Machine$double.eps)
 
 \item{type}{one of c("gumbel","frank")}
 
-\item{delt}{the copula paramter}
+\item{delt}{the copula parameter}
 
 \item{eps}{A small positive number to trim out zeros}
 }
