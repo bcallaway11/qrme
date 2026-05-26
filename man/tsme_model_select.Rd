@@ -37,15 +37,14 @@ tsme_model_select(
 \item{me_distributions}{character vector of ME distributions to try.  Any
 subset of \code{c("gaussian","laplace")} (default: both).}
 
-\item{y_n_mix}{number of ME mixture components for the outcome equation
-(default 1)}
+\item{y_n_mix}{integer or integer vector of ME mixture component counts to
+try for the outcome equation (default \code{1L}).  When a vector is
+supplied, all values are crossed with the other grid dimensions.}
 
-\item{t_n_mix}{number of ME mixture components for the treatment equation
-(default 1)}
+\item{t_n_mix}{integer or integer vector of ME mixture component counts to
+try for the treatment equation (default \code{1L}).}
 
-\item{n_cores}{number of parallel workers (default 1); set to
-\code{length(copulas) * length(me_distributions)} to run one worker per
-grid cell}
+\item{n_cores}{number of parallel workers (default 1)}
 
 \item{return_fits}{logical; if \code{TRUE} the fitted tsme objects are
 returned alongside the table (default \code{FALSE})}
@@ -54,13 +53,17 @@ returned alongside the table (default \code{FALSE})}
 in the grid (e.g. \code{n_copula_me_draws}, \code{mcmc_draws})}
 }
 \value{
-a list with element \code{table} (a data.frame sorted by BIC) and,
-  if \code{return_fits = TRUE}, element \code{fits} (a list of tsme objects
+a list with element \code{table} (a data.frame sorted by BIC with
+  columns \code{copula}, \code{me_distribution}, \code{y_n_mix},
+  \code{t_n_mix}, \code{k_params}, \code{ll_y}, \code{ll_t},
+  \code{ll_cop}, \code{ll}, \code{aic}, \code{bic}) and, if
+  \code{return_fits = TRUE}, element \code{fits} (a list of tsme objects
   in the same order as \code{table})
 }
 \description{
-Fit \code{\link{tsme}} over a grid of copula families and
-  measurement error distributions and rank the specifications by AIC and BIC.
+Fit \code{\link{tsme}} over a grid of copula families,
+  measurement error distributions, and mixture component counts, then rank
+  the specifications by AIC and BIC.
 
   The log-likelihood is computed as the sum of three components:
   \itemize{
@@ -69,10 +72,13 @@ Fit \code{\link{tsme}} over a grid of copula families and
     \item \code{ll_cop}: copula log-likelihood
   }
   \deqn{AIC = -2 \ell + 2k, \quad BIC = -2 \ell + k \log n}
-  where \eqn{k} is computed automatically from \code{y_n_mix} and
-  \code{t_n_mix}: \eqn{k = k_Y + k_T + 1}, with \eqn{k_m = 2} for
-  \eqn{m = 1} and \eqn{k_m = 3m - 1} for \eqn{m \ge 2}, plus one
-  copula parameter.
+  where \eqn{k = k_Y + k_T + 1} is computed per grid row, with
+  \eqn{k_m = 2} for \eqn{m = 1} and \eqn{k_m = 3m - 1} for
+  \eqn{m \ge 2}, plus one copula parameter.
+
+  Laplace ME does not support mixture models (\code{n_mix > 1}); any grid
+  row combining Laplace with \code{y_n_mix > 1} or \code{t_n_mix > 1} is
+  dropped automatically with a message.
 }
 \examples{
 \dontrun{
@@ -84,8 +90,8 @@ Fit \code{\link{tsme}} over a grid of copula families and
     t_formula        = lpi ~ ageC_97 + ageF,
     tau              = tau,
     t_values         = t_values,
-    y_n_mix          = 1L,
-    t_n_mix          = 1L,
+    y_n_mix          = 1:2,
+    t_n_mix          = 1:2,
     n_cores          = 4L,
     mcmc_draws       = 200L,
     mcmc_burn_in     = 20L

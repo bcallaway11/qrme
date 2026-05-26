@@ -126,8 +126,9 @@ qrme_nmix_select <- function(formula, data, tau,
 }
 
 #' @title tsme_model_select
-#' @description Fit \code{\link{tsme}} over a grid of copula families and
-#'   measurement error distributions and rank the specifications by AIC and BIC.
+#' @description Fit \code{\link{tsme}} over a grid of copula families,
+#'   measurement error distributions, and mixture component counts, then rank
+#'   the specifications by AIC and BIC.
 #'
 #'   The log-likelihood is computed as the sum of three components:
 #'   \itemize{
@@ -136,10 +137,13 @@ qrme_nmix_select <- function(formula, data, tau,
 #'     \item \code{ll_cop}: copula log-likelihood
 #'   }
 #'   \deqn{AIC = -2 \ell + 2k, \quad BIC = -2 \ell + k \log n}
-#'   where \eqn{k} is computed automatically from \code{y_n_mix} and
-#'   \code{t_n_mix}: \eqn{k = k_Y + k_T + 1}, with \eqn{k_m = 2} for
-#'   \eqn{m = 1} and \eqn{k_m = 3m - 1} for \eqn{m \ge 2}, plus one
-#'   copula parameter.
+#'   where \eqn{k = k_Y + k_T + 1} is computed per grid row, with
+#'   \eqn{k_m = 2} for \eqn{m = 1} and \eqn{k_m = 3m - 1} for
+#'   \eqn{m \ge 2}, plus one copula parameter.
+#'
+#'   Laplace ME does not support mixture models (\code{n_mix > 1}); any grid
+#'   row combining Laplace with \code{y_n_mix > 1} or \code{t_n_mix > 1} is
+#'   dropped automatically with a message.
 #'
 #' @param data data.frame passed to \code{\link{tsme}}
 #' @param y_formula formula for the outcome model
@@ -151,20 +155,22 @@ qrme_nmix_select <- function(formula, data, tau,
 #'   \code{c("gaussian","clayton","gumbel","frank")} (default: all four).
 #' @param me_distributions character vector of ME distributions to try.  Any
 #'   subset of \code{c("gaussian","laplace")} (default: both).
-#' @param y_n_mix number of ME mixture components for the outcome equation
-#'   (default 1)
-#' @param t_n_mix number of ME mixture components for the treatment equation
-#'   (default 1)
-#' @param n_cores number of parallel workers (default 1); set to
-#'   \code{length(copulas) * length(me_distributions)} to run one worker per
-#'   grid cell
+#' @param y_n_mix integer or integer vector of ME mixture component counts to
+#'   try for the outcome equation (default \code{1L}).  When a vector is
+#'   supplied, all values are crossed with the other grid dimensions.
+#' @param t_n_mix integer or integer vector of ME mixture component counts to
+#'   try for the treatment equation (default \code{1L}).
+#' @param n_cores number of parallel workers (default 1)
 #' @param return_fits logical; if \code{TRUE} the fitted tsme objects are
 #'   returned alongside the table (default \code{FALSE})
 #' @param ... additional arguments passed to \code{\link{tsme}} for every cell
 #'   in the grid (e.g. \code{n_copula_me_draws}, \code{mcmc_draws})
 #'
-#' @return a list with element \code{table} (a data.frame sorted by BIC) and,
-#'   if \code{return_fits = TRUE}, element \code{fits} (a list of tsme objects
+#' @return a list with element \code{table} (a data.frame sorted by BIC with
+#'   columns \code{copula}, \code{me_distribution}, \code{y_n_mix},
+#'   \code{t_n_mix}, \code{k_params}, \code{ll_y}, \code{ll_t},
+#'   \code{ll_cop}, \code{ll}, \code{aic}, \code{bic}) and, if
+#'   \code{return_fits = TRUE}, element \code{fits} (a list of tsme objects
 #'   in the same order as \code{table})
 #'
 #' @examples
@@ -177,8 +183,8 @@ qrme_nmix_select <- function(formula, data, tau,
 #'     t_formula        = lpi ~ ageC_97 + ageF,
 #'     tau              = tau,
 #'     t_values         = t_values,
-#'     y_n_mix          = 1L,
-#'     t_n_mix          = 1L,
+#'     y_n_mix          = 1:2,
+#'     t_n_mix          = 1:2,
 #'     n_cores          = 4L,
 #'     mcmc_draws       = 200L,
 #'     mcmc_burn_in     = 20L
@@ -199,23 +205,43 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
   grid <- expand.grid(
     copula          = copulas,
     me_distribution = me_distributions,
+    y_n_mix         = y_n_mix,
+    t_n_mix         = t_n_mix,
     stringsAsFactors = FALSE
   )
+
+  # Laplace ME does not support mixture models; drop unsupported rows
+  laplace_bad <- grid$me_distribution == "laplace" &
+    (grid$y_n_mix > 1L | grid$t_n_mix > 1L)
+  if (any(laplace_bad)) {
+    message(sprintf(
+      "  Dropping %d combination(s): Laplace ME does not support n_mix > 1.",
+      sum(laplace_bad)
+    ))
+    grid <- grid[!laplace_bad, ]
+    rownames(grid) <- NULL
+  }
+
   n <- nrow(data)
 
   # free ME params per equation: k=2 for n_mix=1, k=3m-1 for n_mix>=2
   k_me <- function(m) if (m == 1L) 2L else 3L * m - 1L
-  k_params <- k_me(y_n_mix) + k_me(t_n_mix) + 1L  # +1 for copula parameter
 
   fit_one <- function(i) {
     cop  <- grid$copula[i]
     dist <- grid$me_distribution[i]
-    message(sprintf("  Fitting: copula=%-10s me_distribution=%s", cop, dist))
+    ym   <- grid$y_n_mix[i]
+    tm   <- grid$t_n_mix[i]
+    k    <- k_me(ym) + k_me(tm) + 1L  # +1 for copula parameter
+    message(sprintf(
+      "  Fitting: copula=%-10s me_dist=%-10s y_n_mix=%d t_n_mix=%d",
+      cop, dist, ym, tm
+    ))
     fit <- tryCatch(
       tsme(data = data, y_formula = y_formula, t_formula = t_formula,
            tau = tau, t_values = t_values,
            copula = cop, me_distribution = dist,
-           y_n_mix = y_n_mix, t_n_mix = t_n_mix,
+           y_n_mix = ym, t_n_mix = tm,
            se = FALSE, ...),
       error = function(e) {
         message(sprintf("    FAILED: %s", conditionMessage(e)))
@@ -230,12 +256,15 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
     list(
       copula          = cop,
       me_distribution = dist,
+      y_n_mix         = ym,
+      t_n_mix         = tm,
+      k_params        = k,
       ll_y            = ll_y,
       ll_t            = ll_t,
       ll_cop          = ll_cop,
       ll              = ll,
-      aic             = -2 * ll + 2 * k_params,
-      bic             = -2 * ll + k_params * log(n),
+      aic             = -2 * ll + 2 * k,
+      bic             = -2 * ll + k * log(n),
       fit             = fit
     )
   }
@@ -252,6 +281,9 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
   tbl <- data.frame(
     copula          = sapply(res, `[[`, "copula"),
     me_distribution = sapply(res, `[[`, "me_distribution"),
+    y_n_mix         = sapply(res, `[[`, "y_n_mix"),
+    t_n_mix         = sapply(res, `[[`, "t_n_mix"),
+    k_params        = sapply(res, `[[`, "k_params"),
     ll_y            = sapply(res, `[[`, "ll_y"),
     ll_t            = sapply(res, `[[`, "ll_t"),
     ll_cop          = sapply(res, `[[`, "ll_cop"),
@@ -264,7 +296,7 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
   tbl <- tbl[order(tbl$bic), ]
   rownames(tbl) <- NULL
 
-  out <- list(table = tbl, k_params = k_params)
+  out <- list(table = tbl)
   if (return_fits) out$fits <- lapply(res, `[[`, "fit")
   out
 }

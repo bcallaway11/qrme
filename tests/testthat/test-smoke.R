@@ -131,3 +131,127 @@ test_that("tsme runs and returns a well-formed result list", {
   expect_true(is.matrix(res$me_tmat))
   expect_equal(dim(res$me_tmat), c(4L, 4L))
 })
+
+# --- Shared tsme result for plot tests ----------------------------------------
+# Created once at file scope with minimal settings; shared by autoplot/plot tests.
+local({
+  tsme_res <<- suppressWarnings(tsme(
+    data           = dd,
+    y_formula      = Y ~ X,
+    t_formula      = T ~ X,
+    tau            = tau,
+    t_values       = mean(dd$T),
+    pov_line       = quantile(dd$Y, 0.2),
+    y_n_mix        = 1L,
+    t_n_mix        = 1L,
+    mcmc_draws     = ctrl$mcmc_draws,
+    mcmc_burn_in   = ctrl$mcmc_burn_in,
+    conv_criterion = ctrl$conv_criterion,
+    tol            = Inf,
+    max_em_iters   = 1L,
+    se             = FALSE,
+    verbose        = FALSE
+  ))
+})
+
+# --- Test 3: qrme_start_search ------------------------------------------------
+test_that("qrme_start_search returns best_fit and a ll-sorted table", {
+  out <- suppressWarnings(qrme_start_search(
+    formula        = Y ~ X,
+    data           = dd,
+    tau            = tau,
+    n_starts       = 3L,
+    mcmc_draws     = ctrl$mcmc_draws,
+    mcmc_burn_in   = ctrl$mcmc_burn_in,
+    max_em_iters   = ctrl$max_em_iters,
+    conv_criterion = ctrl$conv_criterion
+  ))
+
+  expect_type(out, "list")
+  expect_s3_class(out$best_fit, "merr")
+  expect_true(is.data.frame(out$table))
+  expect_true(all(c("start", "ll") %in% names(out$table)))
+  expect_gte(nrow(out$table), 1L)
+  expect_lte(nrow(out$table), 3L)
+  if (nrow(out$table) > 1L)
+    expect_gte(out$table$ll[1L], out$table$ll[nrow(out$table)])
+})
+
+# --- Test 4: qrme_nmix_select -------------------------------------------------
+test_that("qrme_nmix_select returns a BIC-sorted comparison table", {
+  out <- suppressWarnings(qrme_nmix_select(
+    formula        = Y ~ X,
+    data           = dd,
+    tau            = tau,
+    n_mix_vals     = 0:2,
+    mcmc_draws     = ctrl$mcmc_draws,
+    mcmc_burn_in   = ctrl$mcmc_burn_in,
+    max_em_iters   = ctrl$max_em_iters,
+    conv_criterion = ctrl$conv_criterion
+  ))
+
+  expect_type(out, "list")
+  expect_true(is.data.frame(out$table))
+  expect_true(all(c("n_mix", "k_me", "ll", "AIC", "BIC") %in% names(out$table)))
+  expect_equal(nrow(out$table), 3L)
+  expect_lte(out$table$BIC[1L], out$table$BIC[nrow(out$table)])
+})
+
+# --- Test 5: tsme_model_select ------------------------------------------------
+test_that("tsme_model_select returns a bic-sorted comparison table", {
+  out <- suppressWarnings(tsme_model_select(
+    data             = dd,
+    y_formula        = Y ~ X,
+    t_formula        = T ~ X,
+    tau              = tau,
+    t_values         = mean(dd$T),
+    pov_line         = quantile(dd$Y, 0.2),
+    copulas          = "gaussian",
+    me_distributions = "gaussian",
+    mcmc_draws       = ctrl$mcmc_draws,
+    mcmc_burn_in     = ctrl$mcmc_burn_in,
+    tol              = Inf,
+    max_em_iters     = 1L,
+    verbose          = FALSE
+  ))
+
+  expect_type(out, "list")
+  expect_true(is.data.frame(out$table))
+  expect_true(all(c("copula", "me_distribution", "y_n_mix", "t_n_mix",
+                    "k_params", "ll_y", "ll_t", "ll_cop", "ll",
+                    "aic", "bic") %in% names(out$table)))
+  expect_equal(nrow(out$table), 1L)
+  expect_equal(out$table$copula[1L], "gaussian")
+})
+
+# --- Test 6: tmat and upMob ---------------------------------------------------
+test_that("tmat returns a numeric transition matrix with correct structure", {
+  m <- tmat(dd$Y, dd$T)
+
+  expect_true(is.matrix(m))
+  expect_true(is.numeric(m))
+  expect_equal(dim(m), c(4L, 4L))
+  expect_true(all(m >= -1e-10))
+  expect_true(all(abs(colSums(m) - 1) < 1e-8))
+})
+
+test_that("upMob returns a numeric probability vector of correct length", {
+  mob <- upMob(dd$Y, dd$T)
+
+  expect_true(is.numeric(mob))
+  expect_equal(length(mob), 4L)
+  expect_true(all(mob >= 0 & mob <= 1))
+})
+
+# --- Test 7: autoplot.tsme and plot.tsme -------------------------------------
+test_that("autoplot.tsme returns a ggplot object", {
+  p <- autoplot(tsme_res)
+  expect_s3_class(p, "ggplot")
+
+  p2 <- autoplot(tsme_res, type = "cond_quant", which = "nome")
+  expect_s3_class(p2, "ggplot")
+})
+
+test_that("plot.tsme runs without error", {
+  expect_no_error(plot(tsme_res))
+})
