@@ -17,14 +17,14 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Callaway Brantly \email{brantly.callaway@uga.edu}
+\strong{Maintainer}: Brantly Callaway \email{brantly.callaway@uga.edu}
 
 Authors:
 \itemize{
-  \item Callaway Brantly \email{brantly.callaway@uga.edu}
-  \item Li Tong \email{tong.li@vanderbilt.edu}
-  \item Murtazashvili Irina \email{im99@drexel.edu}
-  \item Tsyawo Emmanuel S. \email{estsyawo@gmail.com}
+  \item Brantly Callaway \email{brantly.callaway@uga.edu}
+  \item Tong Li \email{tong.li@vanderbilt.edu}
+  \item Irina Murtazashvili \email{im99@drexel.edu}
+  \item Emmanuel S. Tsyawo \email{estsyawo@gmail.com}
 }
 
 }

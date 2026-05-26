@@ -48,7 +48,7 @@ Fit \code{\link{qrme}} with a range of mixture component counts
   \itemize{
     \item \code{n_mix = 0}: \eqn{k = 0} (no ME; LL from standard QR)
     \item \code{n_mix = 1}: \eqn{k = 2} (\eqn{\mu}, \eqn{\sigma})
-    \item \code{n_mix \ge 2}: \eqn{k = 3m - 1}
+    \item \code{n_mix >= 2}: \eqn{k = 3m - 1}
       (\eqn{\mu_1,\ldots,\mu_m}, \eqn{\sigma_1,\ldots,\sigma_m},
       \eqn{\pi_1,\ldots,\pi_{m-1}})
   }

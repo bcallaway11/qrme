@@ -63,17 +63,17 @@ fit$bet
 
 Key arguments:
 
-| Argument      | Default    | Description                                               |
-|---------------|------------|-----------------------------------------------------------|
-| `tau`         | `0.5`      | Quantile(s) to estimate                                   |
-| `n_mix`        | `1`        | Number of Gaussian mixture components for ME distribution |
-| `conv_criterion`   | `"params"` | Convergence criterion: `"params"` or `"loglik"`           |
-| `tol`         | `1e-2`     | Convergence tolerance                                     |
-| `max_em_iters`       | `100`      | Maximum EM iterations                                     |
-| `mcmc_draws`  | `200`      | MCMC draws per EM E-step                                  |
-| `mcmc_burn_in` | `100`      | MCMC burn-in draws                                        |
-| `se`          | `FALSE`    | Compute bootstrap standard errors                         |
-| `verbose`     | `FALSE`    | Print progress (numeric levels 0–3)                       |
+| Argument         | Default    | Description                                               |
+|------------------|------------|-----------------------------------------------------------|
+| `tau`            | `0.5`      | Quantile(s) to estimate                                   |
+| `n_mix`          | `1`        | Number of Gaussian mixture components for ME distribution |
+| `conv_criterion` | `"params"` | Convergence criterion: `"params"` or `"loglik"`           |
+| `tol`            | `1e-2`     | Convergence tolerance                                     |
+| `max_em_iters`   | `100`      | Maximum EM iterations                                     |
+| `mcmc_draws`     | `200`      | MCMC draws per EM E-step                                  |
+| `mcmc_burn_in`   | `100`      | MCMC burn-in draws                                        |
+| `se`             | `FALSE`    | Compute bootstrap standard errors                         |
+| `verbose`        | `FALSE`    | Print progress (numeric levels 0–3)                       |
 
 ### Two-sided measurement error (`tsme`)
 
@@ -100,20 +100,20 @@ quantile-on-quantile transition matrices and poverty measures.
 The EM algorithm involves several parameters with different roles. The
 table below groups them by the nature of their tradeoff.
 
-| Parameter       | Default       | Role                                                                                    |
-|-----------------|---------------|-----------------------------------------------------------------------------------------|
-| `tol`           | `1e-2`        | Pure speed–accuracy: loosen to converge faster, tighten for more precise estimates      |
-| `max_em_iters`         | `100`         | Hard iteration cap; does not affect per-iteration cost                                  |
+| Parameter       | Default       | Role                                                                                         |
+|-----------------|---------------|----------------------------------------------------------------------------------------------|
+| `tol`           | `1e-2`        | Pure speed–accuracy: loosen to converge faster, tighten for more precise estimates           |
+| `max_em_iters`  | `100`         | Hard iteration cap; does not affect per-iteration cost                                       |
 | `conv_patience` | `1`           | Consecutive iterations below `tol` required; raise to 2 if using `conv_criterion = "loglik"` |
-| `mcmc_draws`    | `200`         | **Fundamental tradeoff**: more draws = better E-step but slower per iteration           |
-| `mcmc_burn_in`   | `100`         | Burn-in fraction of `mcmc_draws`; 30–50% is typical                                     |
-| `loglik_draws`     | `100`         | MC draws for log-likelihood convergence check; ignored when `conv_criterion = "params"`      |
-| `proposal_sd`   | adaptive      | MH step size; auto-updated each iteration to track the current ME scale                 |
-| `n_mix`          | `1`           | Number of mixture components — a model choice, not a tuning parameter                   |
-| `start_beta`    | naive QR      | Defaults to QR ignoring ME, which is consistent under symmetric error                   |
-| `start_mu`      | data-informed | Evenly spaced over ±0.25 sd(Y) for n_mix \> 1; 0 for n_mix = 1                            |
-| `start_sigma`   | data-informed | Backed out so the mixture SD equals 0.5 sd(Y)                                           |
-| `start_pi`      | uniform       | Equal weights across components                                                         |
+| `mcmc_draws`    | `200`         | **Fundamental tradeoff**: more draws = better E-step but slower per iteration                |
+| `mcmc_burn_in`  | `100`         | Burn-in fraction of `mcmc_draws`; 30–50% is typical                                          |
+| `loglik_draws`  | `100`         | MC draws for log-likelihood convergence check; ignored when `conv_criterion = "params"`      |
+| `proposal_sd`   | adaptive      | MH step size; auto-updated each iteration to track the current ME scale                      |
+| `n_mix`         | `1`           | Number of mixture components — a model choice, not a tuning parameter                        |
+| `start_beta`    | naive QR      | Defaults to QR ignoring ME, which is consistent under symmetric error                        |
+| `start_mu`      | data-informed | Evenly spaced over ±0.25 sd(Y) for n_mix \> 1; 0 for n_mix = 1                               |
+| `start_sigma`   | data-informed | Backed out so the mixture SD equals 0.5 sd(Y)                                                |
+| `start_pi`      | uniform       | Equal weights across components                                                              |
 
 **`mcmc_draws` and `mcmc_burn_in`** are the most consequential
 parameters. Too few effective draws (= `mcmc_draws − mcmc_burn_in`) per
@@ -138,8 +138,10 @@ measurement error.
 
 ## Learn more
 
-- **Vignettes** — [Introduction to `qrme()`](https://bcallaway11.github.io/qrme/articles/qrme-intro.html) |
-  [NLSY97 application with `tsme()`](https://bcallaway11.github.io/qrme/articles/tsme-application.html)
+- **Vignettes** — [Introduction to
+  `qrme()`](https://bcallaway11.github.io/qrme/articles/qrme-intro.html)
+  \| [NLSY97 application with
+  `tsme()`](https://bcallaway11.github.io/qrme/articles/tsme-application.html)
 - **Package website** — <https://bcallaway11.github.io/qrme>
 
 ## References
@@ -150,4 +152,4 @@ measurement error.
 
 - Hausman, J., Liu, H., Luo, Y. and Palmer, C. (2021). Errors in the
   dependent variable of quantile regression models. *Econometrica*,
-  89(2), pp. 849-873.
+  89(2), pp. 849-873.

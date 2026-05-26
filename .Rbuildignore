@@ -9,3 +9,7 @@
 ^\.github$
 ^vignettes/\.quarto$
 ^LICENSE\.md$
+^dev$
+^\.claude$
+^\.codex$
+^\.agents$

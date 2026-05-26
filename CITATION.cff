@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "qrme: Quantile Regression with Measurement Error"
+version: 1.0.1
+date-released: "2026-05-26"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/bcallaway11/qrme"
+url: "https://bcallaway11.github.io/qrme"
+authors:
+  - family-names: Callaway
+    given-names: Brantly
+    email: brantly.callaway@uga.edu
+  - family-names: Li
+    given-names: Tong
+    email: tong.li@vanderbilt.edu
+  - family-names: Murtazashvili
+    given-names: Irina
+    email: im99@drexel.edu
+  - family-names: Tsyawo
+    given-names: Emmanuel S.
+    email: estsyawo@gmail.com
+preferred-citation:
+  type: article
+  title: "Distributional Effects with Two-Sided Measurement Error: An Application to Intergenerational Income Mobility"
+  authors:
+    - family-names: Callaway
+      given-names: Brantly
+    - family-names: Li
+      given-names: Tong
+    - family-names: Murtazashvili
+      given-names: Irina
+    - family-names: Tsyawo
+      given-names: Emmanuel S.
+  year: 2026
+  journal: "arXiv preprint"
+  notes: "arXiv:2107.09235"
+  url: "https://arxiv.org/abs/2107.09235"
+  doi: "10.48550/arXiv.2107.09235"

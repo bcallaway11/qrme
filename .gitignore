@@ -3,3 +3,6 @@
 .RData
 vignettes/.gitignore
 vignettes/tmp/
+dev/
+src/*.o
+src/*.so
