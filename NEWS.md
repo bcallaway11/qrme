@@ -2,6 +2,9 @@
 
 ## New functionality
 
+* **`qrme_nmix_select()`** — selects the number of ME mixture components by
+  fitting `qrme()` across a range of `n_mix` values (default 0–3) and ranking
+  by AIC/BIC.
 * **`tsme_model_select()`** — grid search over copula families (Gaussian,
   Clayton, Gumbel, Frank) and ME distributions (Gaussian, Laplace), returning
   AIC/BIC for each combination to guide model selection.

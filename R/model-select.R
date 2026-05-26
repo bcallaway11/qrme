@@ -1,11 +1,129 @@
 # =============================================================================
-# Title: Model Selection for tsme
-# Description: tsme_model_select() fits tsme() over a grid of copula families
+# Title: Model Selection for qrme and tsme
+# Description: qrme_nmix_select() selects the number of ME mixture components
+#   via AIC/BIC. tsme_model_select() fits tsme() over a grid of copula families
 #   and ME distributions and returns an AIC/BIC comparison table.
 # Author: Brant Callaway
-# Last update: 2026-05-17
+# Last update: 2026-05-26
 # Date created: 2026-05-17
 # =============================================================================
+
+#' @title qrme_nmix_select
+#' @description Fit \code{\link{qrme}} with a range of mixture component counts
+#'   and rank the specifications by AIC and BIC.  Use this to choose the number
+#'   of ME mixture components for a single equation.
+#'
+#'   The number of free ME parameters is:
+#'   \itemize{
+#'     \item \code{n_mix = 0}: \eqn{k = 0} (no ME; LL from standard QR)
+#'     \item \code{n_mix = 1}: \eqn{k = 2} (\eqn{\mu}, \eqn{\sigma})
+#'     \item \code{n_mix \ge 2}: \eqn{k = 3m - 1}
+#'       (\eqn{\mu_1,\ldots,\mu_m}, \eqn{\sigma_1,\ldots,\sigma_m},
+#'       \eqn{\pi_1,\ldots,\pi_{m-1}})
+#'   }
+#'
+#' @param formula formula for the outcome model (passed to \code{\link{qrme}})
+#' @param data data.frame
+#' @param tau quantile levels for QR
+#' @param n_mix_vals integer vector of component counts to evaluate
+#'   (default \code{0:3}; \code{0} is the no-ME baseline)
+#' @param return_fits logical; if \code{TRUE} the fitted qrme objects are
+#'   included in the output (default \code{FALSE})
+#' @param ... additional arguments passed to \code{\link{qrme}} for every fit
+#'   (e.g. \code{me_distribution}, \code{mcmc_draws}, \code{mcmc_burn_in}).
+#'   \code{n_mix} and \code{se} are set internally and must not be passed.
+#'
+#' @return a list with:
+#'   \describe{
+#'     \item{\code{table}}{data.frame sorted by BIC with columns \code{n_mix},
+#'       \code{k_me}, \code{ll}, \code{AIC}, \code{BIC}}
+#'     \item{\code{fits}}{(only when \code{return_fits = TRUE}) named list of
+#'       qrme objects; the \code{n_mix = 0} entry is \code{NULL}}
+#'   }
+#'
+#' @examples
+#' \dontrun{
+#'   set.seed(1)
+#'   n <- 300; X <- runif(n)
+#'   Y <- 1 + 2 * X + rnorm(n) + rnorm(n, sd = 0.5)
+#'   sel <- qrme_nmix_select(
+#'     Y ~ X, data.frame(Y, X),
+#'     tau          = c(0.25, 0.5, 0.75),
+#'     n_mix_vals   = 0:3,
+#'     mcmc_draws   = 100L,
+#'     mcmc_burn_in = 50L
+#'   )
+#'   sel$table
+#' }
+#'
+#' @export
+qrme_nmix_select <- function(formula, data, tau,
+                             n_mix_vals  = 0:3,
+                             return_fits = FALSE,
+                             ...) {
+  n          <- nrow(data)
+  dots_clean <- list(...)[!names(list(...)) %in% c("n_mix", "se")]
+
+  # free ME parameter count per component count
+  k_me <- function(m) {
+    if (m == 0L) return(0L)
+    if (m == 1L) return(2L)
+    3L * m - 1L
+  }
+
+  # n_mix = 0: no-ME log-likelihood via QR asymmetric Laplace LL (sig -> 0)
+  ll_nome <- function() {
+    mf     <- model.frame(formula, data)
+    y      <- model.response(mf)
+    x      <- model.matrix(formula, data)
+    betmat <- t(coef(quantreg::rq(formula, tau = tau, data = data)))
+    loglik_raw(y = y, x = x, betmat = betmat, tau = tau,
+               pi = 1, mu = 0, sig = 1e-10,
+               me_distribution = "normal", ndraws = 1L)
+  }
+
+  results <- lapply(n_mix_vals, function(m) {
+    if (m == 0L) {
+      ll <- tryCatch(ll_nome(), error = function(e) NA_real_)
+      return(list(n_mix = 0L, k = 0L, ll = ll, fit = NULL))
+    }
+    fit <- tryCatch(
+      do.call(qrme, c(
+        list(formula = formula, data = data, tau = tau, n_mix = m, se = FALSE),
+        dots_clean
+      )),
+      error = function(e) {
+        message(sprintf("  n_mix = %d failed: %s", m, conditionMessage(e)))
+        NULL
+      }
+    )
+    ll <- if (is.null(fit)) {
+      NA_real_
+    } else {
+      tryCatch(as.numeric(logLik(fit)), error = function(e) NA_real_)
+    }
+    list(n_mix = m, k = k_me(m), ll = ll, fit = fit)
+  })
+
+  tbl <- data.frame(
+    n_mix = sapply(results, `[[`, "n_mix"),
+    k_me  = sapply(results, `[[`, "k"),
+    ll    = sapply(results, `[[`, "ll"),
+    stringsAsFactors = FALSE
+  )
+  tbl$AIC <- -2 * tbl$ll + 2 * tbl$k_me
+  tbl$BIC <- -2 * tbl$ll + tbl$k_me * log(n)
+  tbl <- tbl[order(tbl$BIC), ]
+  rownames(tbl) <- NULL
+
+  out <- list(table = tbl)
+  if (return_fits) {
+    fits        <- lapply(results, `[[`, "fit")
+    names(fits) <- paste0("n_mix", sapply(results, `[[`, "n_mix"))
+    out$fits    <- fits
+  }
+  out
+}
 
 #' @title tsme_model_select
 #' @description Fit \code{\link{tsme}} over a grid of copula families and
