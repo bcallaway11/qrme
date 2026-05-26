@@ -4,7 +4,7 @@
 #   values and returns the best fit by log-likelihood, helping diagnose
 #   convergence sensitivity.
 # Author: Brant Callaway
-# Last update: 2026-05-17
+# Last update: 2026-05-26
 # Date created: 2026-05-17
 # =============================================================================
 
@@ -23,7 +23,6 @@
 #' @param data data.frame
 #' @param tau quantile levels for QR
 #' @param n_starts number of random restarts (default 10)
-#' @param seed optional integer seed for reproducibility (default \code{NULL})
 #' @param sigma_range length-2 numeric vector giving the \eqn{[\min, \max]}
 #'   interval from which \code{start_sigma} is drawn for each component
 #'   (default \code{c(0.1, 2.0)})
@@ -62,11 +61,9 @@
 #' @export
 qrme_start_search <- function(formula, data, tau,
                               n_starts    = 10L,
-                              seed        = NULL,
                               sigma_range = c(0.1, 2.0),
                               return_fits = FALSE,
                               ...) {
-  if (!is.null(seed)) set.seed(seed)
   dots  <- list(...)
   n_mix <- if (!is.null(dots$n_mix)) dots$n_mix else 1L
 

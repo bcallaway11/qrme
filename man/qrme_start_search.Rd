@@ -9,7 +9,6 @@ qrme_start_search(
   data,
   tau,
   n_starts = 10L,
-  seed = NULL,
   sigma_range = c(0.1, 2),
   return_fits = FALSE,
   ...
@@ -23,8 +22,6 @@ qrme_start_search(
 \item{tau}{quantile levels for QR}
 
 \item{n_starts}{number of random restarts (default 10)}
-
-\item{seed}{optional integer seed for reproducibility (default \code{NULL})}
 
 \item{sigma_range}{length-2 numeric vector giving the \eqn{[\min, \max]}
 interval from which \code{start_sigma} is drawn for each component
