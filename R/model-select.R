@@ -17,7 +17,7 @@
 #'   \itemize{
 #'     \item \code{n_mix = 0}: \eqn{k = 0} (no ME; LL from standard QR)
 #'     \item \code{n_mix = 1}: \eqn{k = 2} (\eqn{\mu}, \eqn{\sigma})
-#'     \item \code{n_mix \ge 2}: \eqn{k = 3m - 1}
+#'     \item \code{n_mix >= 2}: \eqn{k = 3m - 1}
 #'       (\eqn{\mu_1,\ldots,\mu_m}, \eqn{\sigma_1,\ldots,\sigma_m},
 #'       \eqn{\pi_1,\ldots,\pi_{m-1}})
 #'   }
@@ -131,31 +131,37 @@ qrme_nmix_select <- function(formula, data, tau,
 #'
 #'   The log-likelihood is computed as the sum of three components:
 #'   \itemize{
-#'     \item \code{ll_y}: log-likelihood of the outcome ME model (\code{logLik(fit$me_qyx)})
-#'     \item \code{ll_t}: log-likelihood of the treatment ME model (\code{logLik(fit$me_qtx)})
-#'     \item \code{ll_cop}: copula log-likelihood (\code{fit$me_cop_loglik})
+#'     \item \code{ll_y}: log-likelihood of the outcome ME model
+#'     \item \code{ll_t}: log-likelihood of the treatment ME model
+#'     \item \code{ll_cop}: copula log-likelihood
 #'   }
 #'   \deqn{AIC = -2 \ell + 2k, \quad BIC = -2 \ell + k \log n}
-#'   where \eqn{k} is the number of free parameters specified by \code{k_params}.
-#'   For \code{y_n_mix = t_n_mix = 1} the free parameters are \eqn{\sigma_Y},
-#'   \eqn{\sigma_T}, and \eqn{\theta_{\text{cop}}}, giving \code{k_params = 3}.
+#'   where \eqn{k} is computed automatically from \code{y_n_mix} and
+#'   \code{t_n_mix}: \eqn{k = k_Y + k_T + 1}, with \eqn{k_m = 2} for
+#'   \eqn{m = 1} and \eqn{k_m = 3m - 1} for \eqn{m \ge 2}, plus one
+#'   copula parameter.
 #'
 #' @param data data.frame passed to \code{\link{tsme}}
 #' @param y_formula formula for the outcome model
 #' @param t_formula formula for the treatment model
-#' @param tau quantile levels for the first-stage QR (passed to \code{\link{tsme}})
+#' @param tau quantile levels for the first-stage QR (passed to
+#'   \code{\link{tsme}})
 #' @param t_values treatment values for conditional distribution summaries
 #' @param copulas character vector of copula families to try.  Any subset of
 #'   \code{c("gaussian","clayton","gumbel","frank")} (default: all four).
 #' @param me_distributions character vector of ME distributions to try.  Any
 #'   subset of \code{c("gaussian","laplace")} (default: both).
-#' @param k_params number of free parameters used in AIC/BIC (default 3,
-#'   appropriate for \code{y_n_mix = t_n_mix = 1})
+#' @param y_n_mix number of ME mixture components for the outcome equation
+#'   (default 1)
+#' @param t_n_mix number of ME mixture components for the treatment equation
+#'   (default 1)
+#' @param n_cores number of parallel workers (default 1); set to
+#'   \code{length(copulas) * length(me_distributions)} to run one worker per
+#'   grid cell
 #' @param return_fits logical; if \code{TRUE} the fitted tsme objects are
 #'   returned alongside the table (default \code{FALSE})
 #' @param ... additional arguments passed to \code{\link{tsme}} for every cell
-#'   in the grid (e.g. \code{n_copula_me_draws}, \code{mcmc_draws},
-#'   \code{y_n_mix}, \code{t_n_mix})
+#'   in the grid (e.g. \code{n_copula_me_draws}, \code{mcmc_draws})
 #'
 #' @return a list with element \code{table} (a data.frame sorted by BIC) and,
 #'   if \code{return_fits = TRUE}, element \code{fits} (a list of tsme objects
@@ -166,15 +172,16 @@ qrme_nmix_select <- function(formula, data, tau,
 #'   tau      <- seq(0.05, 0.95, length.out = 15)
 #'   t_values <- quantile(nlsy97$lpi, probs = seq(0.1, 0.9, by = 0.1))
 #'   sel <- tsme_model_select(
-#'     data            = nlsy97,
-#'     y_formula       = lci ~ ageC_97 + ageF,
-#'     t_formula       = lpi ~ ageC_97 + ageF,
-#'     tau             = tau,
-#'     t_values        = t_values,
-#'     me_distribution = "laplace",
-#'     mcmc_draws      = 200L,
-#'     mcmc_burn_in    = 20L,
-#'     n_cores         = 4L
+#'     data             = nlsy97,
+#'     y_formula        = lci ~ ageC_97 + ageF,
+#'     t_formula        = lpi ~ ageC_97 + ageF,
+#'     tau              = tau,
+#'     t_values         = t_values,
+#'     y_n_mix          = 1L,
+#'     t_n_mix          = 1L,
+#'     n_cores          = 4L,
+#'     mcmc_draws       = 200L,
+#'     mcmc_burn_in     = 20L
 #'   )
 #'   print(sel)
 #' }
@@ -184,7 +191,9 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
                               copulas          = c("gaussian", "clayton",
                                                    "gumbel",   "frank"),
                               me_distributions = c("gaussian", "laplace"),
-                              k_params         = 3L,
+                              y_n_mix          = 1L,
+                              t_n_mix          = 1L,
+                              n_cores          = 1L,
                               return_fits      = FALSE,
                               ...) {
   grid <- expand.grid(
@@ -194,7 +203,11 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
   )
   n <- nrow(data)
 
-  results <- lapply(seq_len(nrow(grid)), function(i) {
+  # free ME params per equation: k=2 for n_mix=1, k=3m-1 for n_mix>=2
+  k_me <- function(m) if (m == 1L) 2L else 3L * m - 1L
+  k_params <- k_me(y_n_mix) + k_me(t_n_mix) + 1L  # +1 for copula parameter
+
+  fit_one <- function(i) {
     cop  <- grid$copula[i]
     dist <- grid$me_distribution[i]
     message(sprintf("  Fitting: copula=%-10s me_distribution=%s", cop, dist))
@@ -202,6 +215,7 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
       tsme(data = data, y_formula = y_formula, t_formula = t_formula,
            tau = tau, t_values = t_values,
            copula = cop, me_distribution = dist,
+           y_n_mix = y_n_mix, t_n_mix = t_n_mix,
            se = FALSE, ...),
       error = function(e) {
         message(sprintf("    FAILED: %s", conditionMessage(e)))
@@ -224,7 +238,13 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
       bic             = -2 * ll + k_params * log(n),
       fit             = fit
     )
-  })
+  }
+
+  results <- if (n_cores > 1L) {
+    parallel::mclapply(seq_len(nrow(grid)), fit_one, mc.cores = n_cores)
+  } else {
+    lapply(seq_len(nrow(grid)), fit_one)
+  }
 
   ok  <- !sapply(results, is.null)
   res <- results[ok]
@@ -244,7 +264,7 @@ tsme_model_select <- function(data, y_formula, t_formula, tau, t_values,
   tbl <- tbl[order(tbl$bic), ]
   rownames(tbl) <- NULL
 
-  out <- list(table = tbl)
+  out <- list(table = tbl, k_params = k_params)
   if (return_fits) out$fits <- lapply(res, `[[`, "fit")
   out
 }

@@ -7,7 +7,10 @@
   by AIC/BIC.
 * **`tsme_model_select()`** — grid search over copula families (Gaussian,
   Clayton, Gumbel, Frank) and ME distributions (Gaussian, Laplace), returning
-  AIC/BIC for each combination to guide model selection.
+  AIC/BIC for each combination to guide model selection.  Now accepts explicit
+  `y_n_mix`, `t_n_mix`, and `n_cores` arguments; `k_params` is computed
+  automatically from the mixture counts and no longer needs to be supplied by
+  the caller.
 * **`logLik.merr()`**, **`AIC.merr()`**, **`BIC.merr()`** — log-likelihood
   and information criteria for `merr` objects, enabling mixture-order selection
   via `AIC()`/`BIC()`.
