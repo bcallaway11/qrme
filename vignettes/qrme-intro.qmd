@@ -115,6 +115,7 @@ because additive ME compresses the conditional distribution.
 
 ```{r}
 #| label: qrme-fit
+#| warning: false
 fit_me <- qrme(
   formula      = Y ~ X,
   data         = dd,
@@ -207,6 +208,7 @@ EM fits a two-component mixture:
 
 ```{r}
 #| label: nmix2
+#| warning: false
 fit_m2 <- qrme(
   formula      = Y ~ X,
   data         = dd,
