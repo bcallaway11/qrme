@@ -110,28 +110,6 @@ fit_me <- qrme(
   se           = FALSE,
   verbose      = FALSE
 )
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
 ```
 
 The result is an object of class `merr`. Printing it shows the estimated
@@ -237,70 +215,6 @@ fit_m2 <- qrme(
   se           = FALSE,
   verbose      = FALSE
 )
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning in rq.fit.pfn(wx, wy, tau = tau, ...): Too many fixups: doubling m
-#> Warning: EM algorithm failed to converge after 30 iterations
 print(fit_m2)
 #> Measurement error: gaussian (n_mix = 2)
 #>            Pi      Mu  Sigma
@@ -349,8 +263,9 @@ print(fit_se)           # shows SEs alongside point estimates
 
 ### Multi-start estimation
 
-The EM algorithm is not globally convergent and can settle at local
-optima.
+The observed-data likelihood may have multiple local optima (a property
+of the likelihood surface, not specific to EM), so the estimator can
+converge to a suboptimal solution depending on starting values.
 [`qrme_start_search()`](https://bcallaway11.github.io/qrme/reference/qrme_start_search.md)
 runs the estimator from multiple random starting values and returns the
 best fit by log-likelihood:
