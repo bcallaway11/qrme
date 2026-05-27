@@ -262,7 +262,9 @@ print(fit_se)           # shows SEs alongside point estimates
 
 ### Multi-start estimation
 
-The EM algorithm is not globally convergent and can settle at local optima.
+The observed-data likelihood may have multiple local optima (a property
+of the likelihood surface, not specific to EM), so the estimator can
+converge to a suboptimal solution depending on starting values.
 `qrme_start_search()` runs the estimator from multiple random starting
 values and returns the best fit by log-likelihood:
 
