@@ -8,6 +8,8 @@
 ^README\.html$
 ^\.github$
 ^vignettes/\.quarto$
+^vignettes/tmp$
+^tests/testthat/Rplots\.pdf$
 ^LICENSE\.md$
 ^dev$
 ^\.claude$
