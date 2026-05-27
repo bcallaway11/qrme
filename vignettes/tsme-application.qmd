@@ -250,15 +250,15 @@ a typical call looks like:
 #| label: model-select
 #| eval: false
 sel <- tsme_model_select(
-  data            = nlsy97,
-  y_formula       = lci ~ ageC_97 + ageF,
-  t_formula       = lpi ~ ageC_97 + ageF,
-  tau             = tau,
-  t_values        = t_values,
-  me_distribution = "laplace",  # or c("gaussian", "laplace") for full grid
-  mcmc_draws      = 400L,
-  mcmc_burn_in    = 20L,
-  n_cores         = 10L
+  data             = nlsy97,
+  y_formula        = lci ~ ageC_97 + ageF,
+  t_formula        = lpi ~ ageC_97 + ageF,
+  tau              = tau,
+  t_values         = t_values,
+  me_distributions = "laplace",  # or c("gaussian", "laplace") for full grid
+  mcmc_draws       = 400L,
+  mcmc_burn_in     = 20L,
+  n_cores          = 10L
 )
 print(sel)
 ```
