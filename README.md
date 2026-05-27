@@ -78,13 +78,16 @@ Key arguments:
 ### Two-sided measurement error (`tsme`)
 
 ``` r
+data(nlsy97)
+tau      <- seq(0.1, 0.9, by = 0.1)
+t_values <- quantile(nlsy97$lpi, probs = c(0.25, 0.5, 0.75))
+
 res <- tsme(
-  data     = dd,
-  y_formula  = Y ~ X,
-  t_formula  = T ~ X,
-  tau      = c(0.25, 0.5, 0.75),
-  t_values    = mean(dd$T),
-  pov_line  = quantile(dd$Y, 0.2)
+  data      = nlsy97,
+  y_formula = lci ~ ageC_97 + ageF,
+  t_formula = lpi ~ ageC_97 + ageF,
+  tau       = tau,
+  t_values  = t_values
 )
 
 # Transition matrix (distributional mobility summary)
