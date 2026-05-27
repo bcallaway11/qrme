@@ -3,6 +3,10 @@
 .RData
 vignettes/.gitignore
 vignettes/tmp/
+vignettes/*.html
+vignettes/*_files/
+..Rcheck/
+tests/testthat/Rplots.pdf
 dev/
 src/*.o
 src/*.so
