@@ -20,14 +20,14 @@ Useful links:
 
 ## Author
 
-**Maintainer**: Callaway Brantly <brantly.callaway@uga.edu>
+**Maintainer**: Brantly Callaway <brantly.callaway@uga.edu>
 
 Authors:
 
-- Callaway Brantly <brantly.callaway@uga.edu>
+- Brantly Callaway <brantly.callaway@uga.edu>
 
-- Li Tong <tong.li@vanderbilt.edu>
+- Tong Li <tong.li@vanderbilt.edu>
 
-- Murtazashvili Irina <im99@drexel.edu>
+- Irina Murtazashvili <im99@drexel.edu>
 
-- Tsyawo Emmanuel S. <estsyawo@gmail.com>
+- Emmanuel S. Tsyawo <estsyawo@gmail.com>

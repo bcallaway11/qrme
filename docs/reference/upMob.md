@@ -1,6 +1,6 @@
 # upMob
 
-Upward Mobility Paramters
+Upward Mobility Parameters
 
 ## Usage
 

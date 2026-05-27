@@ -22,7 +22,9 @@ betfun.inner(betvec, tau, isconst = FALSE)
 
 - isconst:
 
-  ?? – what is this doing?
+  logical; if `TRUE` the function is treated as a constant (intercept)
+  term and tail extrapolation uses a log-linear correction rather than a
+  flat extension
 
 ## Value
 

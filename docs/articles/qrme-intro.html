@@ -64,7 +64,7 @@
       <h1>Introduction to qrme: Quantile Regression with Measurement Error</h1>
 
       <p class="author">Brantly Callaway, Tong Li, Irina Murtazashvili, Emmanuel S. Tsyawo</p>
-      <p class="date">2026-05-18</p>
+      <p class="date">2026-05-26</p>
 
       <small class="dont-index">Source: <a href="https://github.com/bcallaway11/qrme/blob/HEAD/vignettes/qrme-intro.qmd" class="external-link"><code>vignettes/qrme-intro.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
@@ -414,7 +414,7 @@ Y^* = \beta_0(U) + \beta_1(U)\,X, \quad U \sim \text{Uniform}(0,1),
 </div>
 </section><section class="level3"><h3 id="bootstrap-standard-errors">Bootstrap standard errors<a class="anchor" aria-label="anchor" href="#bootstrap-standard-errors"></a>
 </h3>
-<p>Set <code>se = TRUE</code> and choose <code>n_boot</code> to obtain percentile bootstrap SEs. This adds <code>$bet.se</code>, <code>$sig.se</code>, <code>$mu.se</code>, and <code>$pi.se</code> to the returned object. Bootstrap is omitted here because it is slow; a typical call looks like:</p>
+<p>Set <code>se = TRUE</code> and choose <code>n_boot</code> to obtain percentile bootstrap SEs. This adds <code>$bet_se</code>, <code>$sig_se</code>, <code>$mu_se</code>, and <code>$pi_se</code> to the returned object. Bootstrap is omitted here because it is slow; a typical call looks like:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_se</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/qrme.html">qrme</a></span><span class="op">(</span></span>

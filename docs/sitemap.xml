@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://bcallaway11.github.io/qrme/404.html</loc></url>
+<url><loc>https://bcallaway11.github.io/qrme/LICENSE.html</loc></url>
 <url><loc>https://bcallaway11.github.io/qrme/articles/index.html</loc></url>
 <url><loc>https://bcallaway11.github.io/qrme/articles/qrme-intro.html</loc></url>
 <url><loc>https://bcallaway11.github.io/qrme/articles/tsme-application.html</loc></url>
@@ -45,6 +46,7 @@
 <url><loc>https://bcallaway11.github.io/qrme/reference/qr2meobj.html</loc></url>
 <url><loc>https://bcallaway11.github.io/qrme/reference/qrme-package.html</loc></url>
 <url><loc>https://bcallaway11.github.io/qrme/reference/qrme.html</loc></url>
+<url><loc>https://bcallaway11.github.io/qrme/reference/qrme_nmix_select.html</loc></url>
 <url><loc>https://bcallaway11.github.io/qrme/reference/qrme_start_search.html</loc></url>
 <url><loc>https://bcallaway11.github.io/qrme/reference/rlaplace.html</loc></url>
 <url><loc>https://bcallaway11.github.io/qrme/reference/summary.tsme.html</loc></url>

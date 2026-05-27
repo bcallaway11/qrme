@@ -26,7 +26,7 @@ cop.pdf(u, v, type = "gumbel", delt, eps = .Machine$double.eps)
 
 - delt:
 
-  the copula paramter
+  the copula parameter
 
 - eps:
 

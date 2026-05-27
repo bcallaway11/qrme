@@ -23,6 +23,10 @@ plot(x, ...)
   passed to
   [`autoplot.tsme`](https://bcallaway11.github.io/qrme/reference/autoplot.tsme.md)
 
+## Value
+
+`x`, invisibly.
+
 ## Examples
 
 ``` r

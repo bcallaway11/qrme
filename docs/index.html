@@ -108,9 +108,9 @@
 <p>Key arguments:</p>
 <table class="table">
 <colgroup>
-<col width="17%">
+<col width="20%">
 <col width="13%">
-<col width="68%">
+<col width="66%">
 </colgroup>
 <thead><tr class="header">
 <th>Argument</th>
@@ -171,13 +171,16 @@
 <h3 id="two-sided-measurement-error-tsme">Two-sided measurement error (<code>tsme</code>)<a class="anchor" aria-label="anchor" href="#two-sided-measurement-error-tsme"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tsme.html">tsme</a></span><span class="op">(</span></span>
-<span>  data     <span class="op">=</span> <span class="va">dd</span>,</span>
-<span>  y_formula  <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">X</span>,</span>
-<span>  t_formula  <span class="op">=</span> <span class="cn">T</span> <span class="op">~</span> <span class="va">X</span>,</span>
-<span>  tau      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span><span class="op">)</span>,</span>
-<span>  t_values    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">dd</span><span class="op">$</span><span class="cn">T</span><span class="op">)</span>,</span>
-<span>  pov_line  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">dd</span><span class="op">$</span><span class="va">Y</span>, <span class="fl">0.2</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">nlsy97</span><span class="op">)</span></span>
+<span><span class="va">tau</span>      <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.9</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<span><span class="va">t_values</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">nlsy97</span><span class="op">$</span><span class="va">lpi</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tsme.html">tsme</a></span><span class="op">(</span></span>
+<span>  data      <span class="op">=</span> <span class="va">nlsy97</span>,</span>
+<span>  y_formula <span class="op">=</span> <span class="va">lci</span> <span class="op">~</span> <span class="va">ageC_97</span> <span class="op">+</span> <span class="va">ageF</span>,</span>
+<span>  t_formula <span class="op">=</span> <span class="va">lpi</span> <span class="op">~</span> <span class="va">ageC_97</span> <span class="op">+</span> <span class="va">ageF</span>,</span>
+<span>  tau       <span class="op">=</span> <span class="va">tau</span>,</span>
+<span>  t_values  <span class="op">=</span> <span class="va">t_values</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Transition matrix (distributional mobility summary)</span></span>
@@ -191,9 +194,9 @@
 <p>The EM algorithm involves several parameters with different roles. The table below groups them by the nature of their tradeoff.</p>
 <table class="table">
 <colgroup>
-<col width="14%">
-<col width="12%">
-<col width="73%">
+<col width="13%">
+<col width="11%">
+<col width="74%">
 </colgroup>
 <thead><tr class="header">
 <th>Parameter</th>
@@ -304,7 +307,8 @@
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://www.r-project.org/Licenses/GPL-2" class="external-link">GPL-2</a></li>
+<li><a href="LICENSE.html">Full license</a></li>
+<li><small>GPL (&gt;= 3)</small></li>
 </ul>
 </div>
 
@@ -319,10 +323,14 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Callaway Brantly <br><small class="roles"> Author, maintainer </small>   </li>
-<li>Li Tong <br><small class="roles"> Author </small>   </li>
-<li>Murtazashvili Irina <br><small class="roles"> Author </small>   </li>
-<li>Tsyawo Emmanuel S. <br><small class="roles"> Author </small>   </li>
+<li>
+<a href="https://bcallaway11.github.io/" class="external-link">Brantly Callaway</a> <br><small class="roles"> Author, maintainer </small>   </li>
+<li>
+<a href="https://sites.google.com/view/tong-li-econ/" class="external-link">Tong Li</a> <br><small class="roles"> Author </small>   </li>
+<li>
+<a href="https://www.irimurtazashvili.com/" class="external-link">Irina Murtazashvili</a> <br><small class="roles"> Author </small>   </li>
+<li>
+<a href="https://estsyawo.github.io/" class="external-link">Emmanuel S. Tsyawo</a> <br><small class="roles"> Author </small>   </li>
 </ul>
 </div>
 

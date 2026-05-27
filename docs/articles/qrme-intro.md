@@ -328,7 +328,7 @@ data.frame(
 ### Bootstrap standard errors
 
 Set `se = TRUE` and choose `n_boot` to obtain percentile bootstrap SEs.
-This adds `$bet.se`, `$sig.se`, `$mu.se`, and `$pi.se` to the returned
+This adds `$bet_se`, `$sig_se`, `$mu_se`, and `$pi_se` to the returned
 object. Bootstrap is omitted here because it is slow; a typical call
 looks like:
 

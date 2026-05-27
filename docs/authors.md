@@ -2,13 +2,14 @@
 
 ## Authors
 
-- **Callaway Brantly**. Author, maintainer.
+- **[Brantly Callaway](https://bcallaway11.github.io/)**. Author,
+  maintainer.
 
-- **Li Tong**. Author.
+- **[Tong Li](https://sites.google.com/view/tong-li-econ/)**. Author.
 
-- **Murtazashvili Irina**. Author.
+- **[Irina Murtazashvili](https://www.irimurtazashvili.com/)**. Author.
 
-- **Tsyawo Emmanuel S.**. Author.
+- **[Emmanuel S. Tsyawo](https://estsyawo.github.io/)**. Author.
 
 ## Citation
 
@@ -18,7 +19,7 @@ Source:
 Callaway B, Li T, Murtazashvili I, Tsyawo E (2026). “Distributional
 Effects with Two-Sided Measurement Error: An Application to
 Intergenerational Income Mobility.” *arXiv preprint*.
-[doi:10.48550/arXiv.2107.09235](https://doi.org/10.48550/arXiv.2107.09235),
+[doi:10.48550/arXiv.2107.09235](https://doi.org/10.48550/arXiv.2107.09235).
 arXiv:2107.09235, <https://arxiv.org/abs/2107.09235>.
 
     @Article{,

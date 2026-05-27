@@ -23,6 +23,10 @@ print(x, ...)
 
   unused
 
+## Value
+
+`x`, invisibly.
+
 ## Examples
 
 ``` r

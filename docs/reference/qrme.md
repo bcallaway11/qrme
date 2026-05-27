@@ -208,8 +208,8 @@ different starting values.
 #> Warning: EM algorithm failed to converge after 15 iterations
   print(fit)
 #> Measurement error: gaussian
-#>  Pi Mu  Sigma
-#>   1  0 0.7085
+#>   Pi Mu  Sigma
+#> 1  1  0 0.7085
   fit$bet   # coefficient matrix: rows = tau, cols = regressors
 #>           (Intercept)        X
 #> tau= 0.25   0.6019999 2.145111

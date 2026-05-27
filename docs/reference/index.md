@@ -25,6 +25,8 @@ orders, and for checking convergence sensitivity.
 
 - [`tsme_model_select()`](https://bcallaway11.github.io/qrme/reference/tsme_model_select.md)
   : tsme_model_select
+- [`qrme_nmix_select()`](https://bcallaway11.github.io/qrme/reference/qrme_nmix_select.md)
+  : qrme_nmix_select
 - [`qrme_start_search()`](https://bcallaway11.github.io/qrme/reference/qrme_start_search.md)
   : qrme_start_search
 - [`logLik(`*`<merr>`*`)`](https://bcallaway11.github.io/qrme/reference/logLik.merr.md)

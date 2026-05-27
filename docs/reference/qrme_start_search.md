@@ -17,7 +17,6 @@ qrme_start_search(
   data,
   tau,
   n_starts = 10L,
-  seed = NULL,
   sigma_range = c(0.1, 2),
   return_fits = FALSE,
   ...
@@ -42,10 +41,6 @@ qrme_start_search(
 - n_starts:
 
   number of random restarts (default 10)
-
-- seed:
-
-  optional integer seed for reproducibility (default `NULL`)
 
 - sigma_range:
 

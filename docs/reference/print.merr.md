@@ -23,6 +23,10 @@ print(x, ...)
 
   unused
 
+## Value
+
+`x`, invisibly.
+
 ## Examples
 
 ``` r
@@ -39,7 +43,7 @@ print(x, ...)
 #> Warning: EM algorithm failed to converge after 10 iterations
   print(fit)
 #> Measurement error: gaussian
-#>  Pi Mu Sigma
-#>   1  0 0.443
+#>   Pi Mu Sigma
+#> 1  1  0 0.443
 # }
 ```

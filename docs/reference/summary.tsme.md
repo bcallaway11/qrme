@@ -23,6 +23,10 @@ summary(object, ...)
 
   unused
 
+## Value
+
+`object`, invisibly.
+
 ## Examples
 
 ``` r

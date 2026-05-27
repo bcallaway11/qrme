@@ -99,6 +99,7 @@ reference:
       mixture orders, and for checking convergence sensitivity.
     contents:
       - tsme_model_select
+      - qrme_nmix_select
       - qrme_start_search
       - logLik.merr
 

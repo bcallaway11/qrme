@@ -44,11 +44,21 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.0.2" id="qrme-102-development">qrme 1.0.2 (development)<a class="anchor" aria-label="anchor" href="#qrme-102-development"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-1-0-2">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-0-2"></a></h3>
+<ul><li>
+<code><a href="../reference/print.merr.html">print.merr()</a></code> now correctly displays bootstrap standard errors when <code><a href="../reference/qrme.html">qrme()</a></code> is called with <code>se = TRUE</code>. The SE fields were stored under dot-separated names (<code>sig.se</code>, <code>mu.se</code>, <code>pi.se</code>, <code>bet.se</code>) but <code><a href="../reference/print.merr.html">print.merr()</a></code> expected underscore-separated names; both are now underscore-separated. Also fixed <code><a href="../reference/print.merr.html">print.merr()</a></code> for the <code>n_mix = 1</code> case, where <code>row.names = ""</code> caused a spurious “should specify one of the variables” error from <code><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame()</a></code>.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.1" id="qrme-101">qrme 1.0.1<a class="anchor" aria-label="anchor" href="#qrme-101"></a></h2>
 <div class="section level3">
 <h3 id="new-functionality-1-0-1">New functionality<a class="anchor" aria-label="anchor" href="#new-functionality-1-0-1"></a></h3>
 <ul><li>
-<strong><code><a href="../reference/tsme_model_select.html">tsme_model_select()</a></code></strong> — grid search over copula families (Gaussian, Clayton, Gumbel, Frank) and ME distributions (Gaussian, Laplace), returning AIC/BIC for each combination to guide model selection.</li>
+<strong><code><a href="../reference/qrme_nmix_select.html">qrme_nmix_select()</a></code></strong> — selects the number of ME mixture components by fitting <code><a href="../reference/qrme.html">qrme()</a></code> across a range of <code>n_mix</code> values (default 0–3) and ranking by AIC/BIC.</li>
+<li>
+<strong><code><a href="../reference/tsme_model_select.html">tsme_model_select()</a></code></strong> — grid search over copula families (Gaussian, Clayton, Gumbel, Frank) and ME distributions (Gaussian, Laplace), returning AIC/BIC for each combination to guide model selection. Now accepts explicit <code>y_n_mix</code>, <code>t_n_mix</code>, and <code>n_cores</code> arguments; <code>k_params</code> is computed automatically from the mixture counts and no longer needs to be supplied by the caller.</li>
 <li>
 <strong><code><a href="../reference/logLik.merr.html">logLik.merr()</a></code></strong>, <strong><code>AIC.merr()</code></strong>, <strong><code>BIC.merr()</code></strong> — log-likelihood and information criteria for <code>merr</code> objects, enabling mixture-order selection via <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code>/<code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code>.</li>
 <li>

@@ -1,13 +1,39 @@
 # Changelog
 
+## qrme 1.0.2 (development)
+
+### Bug fixes
+
+- [`print.merr()`](https://bcallaway11.github.io/qrme/reference/print.merr.md)
+  now correctly displays bootstrap standard errors when
+  [`qrme()`](https://bcallaway11.github.io/qrme/reference/qrme.md) is
+  called with `se = TRUE`. The SE fields were stored under dot-separated
+  names (`sig.se`, `mu.se`, `pi.se`, `bet.se`) but
+  [`print.merr()`](https://bcallaway11.github.io/qrme/reference/print.merr.md)
+  expected underscore-separated names; both are now
+  underscore-separated. Also fixed
+  [`print.merr()`](https://bcallaway11.github.io/qrme/reference/print.merr.md)
+  for the `n_mix = 1` case, where `row.names = ""` caused a spurious
+  “should specify one of the variables” error from
+  [`data.frame()`](https://rdrr.io/r/base/data.frame.html).
+
+------------------------------------------------------------------------
+
 ## qrme 1.0.1
 
 ### New functionality
 
+- **[`qrme_nmix_select()`](https://bcallaway11.github.io/qrme/reference/qrme_nmix_select.md)**
+  — selects the number of ME mixture components by fitting
+  [`qrme()`](https://bcallaway11.github.io/qrme/reference/qrme.md)
+  across a range of `n_mix` values (default 0–3) and ranking by AIC/BIC.
 - **[`tsme_model_select()`](https://bcallaway11.github.io/qrme/reference/tsme_model_select.md)**
   — grid search over copula families (Gaussian, Clayton, Gumbel, Frank)
   and ME distributions (Gaussian, Laplace), returning AIC/BIC for each
-  combination to guide model selection.
+  combination to guide model selection. Now accepts explicit `y_n_mix`,
+  `t_n_mix`, and `n_cores` arguments; `k_params` is computed
+  automatically from the mixture counts and no longer needs to be
+  supplied by the caller.
 - **[`logLik.merr()`](https://bcallaway11.github.io/qrme/reference/logLik.merr.md)**,
   **`AIC.merr()`**, **`BIC.merr()`** — log-likelihood and information
   criteria for `merr` objects, enabling mixture-order selection via
