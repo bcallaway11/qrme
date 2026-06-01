@@ -393,8 +393,6 @@ em.algo.inner <- function(formula, data,
             data = newdta1,
             method = "pfn"
         )
-        # this is part I am not sure about, once you have a new beta then estimate a new sigma??
-        # also should probably restrict overall mean of measurement error term to be equal to 0
         if (me_distribution == "laplace") {
             # Laplace M-step: MLE of scale parameter with mu fixed to 0 is
             # mean(|epsilon|). Fitting a normal mixture here would be wrong
